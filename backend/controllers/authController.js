@@ -54,7 +54,8 @@ exports.register = async (req, res) => {
       lastName,
       email,
       password,
-      role
+      role,
+      requirementsCompleted: false
     });
 
     sendTokenResponse(user, 201, res);
@@ -143,6 +144,37 @@ exports.getMe = async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Error fetching user data'
+    });
+  }
+};
+
+// Update user requirements
+exports.updateRequirements = async (req, res) => {
+  try {
+    const { requirements } = req.body;
+
+    const user = await User.findByIdAndUpdate(
+      req.user.id,
+      { 
+        requirements,
+        requirementsCompleted: true
+      },
+      {
+        new: true,
+        runValidators: true
+      }
+    );
+
+    res.status(200).json({
+      success: true,
+      user
+    });
+  } catch (error) {
+    console.error('Update requirements error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error updating requirements',
+      error: error.message
     });
   }
 };

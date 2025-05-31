@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import SignUp from "./pages/SignUp";
 import Login from "./pages/Login";
+import Onboarding from "./pages/Onboarding";
 import Services from "./pages/Services";
 import ServiceDetail from "./pages/ServiceDetail";
 import CreateService from "./pages/CreateService";
@@ -28,6 +29,7 @@ const App = () => (
           <Route path="/" element={<Index />} />
           <Route path="/signup" element={<SignUp />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/onboarding" element={<Onboarding />} />
           <Route path="/services" element={<Services />} />
           <Route path="/services/:serviceId" element={<ServiceDetail />} />
           <Route path="/create-service" element={<CreateService />} />

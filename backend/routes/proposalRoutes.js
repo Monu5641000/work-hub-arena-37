@@ -1,5 +1,11 @@
 
 const express = require('express');
+const {
+  getProposalsForProject,
+  submitProposal,
+  updateProposalStatus,
+  getFreelancerProposals
+} = require('../controllers/proposalController');
 const { protect, restrictTo } = require('../middleware/auth');
 
 const router = express.Router();
@@ -7,21 +13,14 @@ const router = express.Router();
 // All routes are protected
 router.use(protect);
 
-// Proposal routes will be implemented here
-router.get('/project/:projectId', (req, res) => {
-  res.json({ message: 'Get proposals for project - To be implemented' });
-});
+// Get freelancer's proposals
+router.get('/my-proposals', restrictTo('freelancer'), getFreelancerProposals);
 
-router.post('/project/:projectId', restrictTo('freelancer'), (req, res) => {
-  res.json({ message: 'Submit proposal - To be implemented' });
-});
+// Project-specific proposal routes
+router.get('/project/:projectId', getProposalsForProject);
+router.post('/project/:projectId', restrictTo('freelancer'), submitProposal);
 
-router.put('/:id', (req, res) => {
-  res.json({ message: 'Update proposal - To be implemented' });
-});
-
-router.delete('/:id', (req, res) => {
-  res.json({ message: 'Delete proposal - To be implemented' });
-});
+// Individual proposal routes
+router.put('/:id/status', restrictTo('client', 'admin'), updateProposalStatus);
 
 module.exports = router;

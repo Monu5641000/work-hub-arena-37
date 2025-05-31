@@ -34,6 +34,32 @@ const userSchema = new mongoose.Schema({
     enum: ['client', 'freelancer', 'admin'],
     required: [true, 'User role is required']
   },
+  // Requirements based on user role
+  requirements: {
+    // Client requirements
+    projectTypes: [String], // ['web-development', 'mobile-app', 'design', 'marketing']
+    budget: {
+      min: Number,
+      max: Number,
+      currency: { type: String, default: 'USD' }
+    },
+    timeline: String, // 'urgent', 'within-week', 'within-month', 'flexible'
+    experience: String, // 'beginner', 'intermediate', 'expert'
+    
+    // Freelancer requirements
+    serviceCategories: [String], // ['web-development', 'design', 'writing', 'marketing']
+    skillLevel: String, // 'beginner', 'intermediate', 'expert'
+    availability: String, // 'full-time', 'part-time', 'project-based'
+    preferredProjectSize: String, // 'small', 'medium', 'large'
+    workingHours: {
+      timezone: String,
+      availability: [String] // ['morning', 'afternoon', 'evening', 'night']
+    }
+  },
+  requirementsCompleted: {
+    type: Boolean,
+    default: false
+  },
   profilePicture: {
     type: String,
     default: null

@@ -6,10 +6,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useNavigate } from "react-router-dom";
+import { useToast } from "@/hooks/use-toast";
+import { authAPI } from "@/api/auth";
 
 const Login = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
     password: ''
@@ -22,13 +26,40 @@ const Login = () => {
     });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Handle login logic here
-    console.log('Login:', formData);
-    
-    // For demo purposes, redirect to client dashboard
-    navigate('/dashboard/client');
+    setIsLoading(true);
+
+    try {
+      const result = await authAPI.login(formData);
+      
+      toast({
+        title: "Login Successful",
+        description: "Welcome back to Servpe!",
+      });
+
+      // Check if user has completed requirements
+      if (!result.user.requirementsCompleted) {
+        navigate('/onboarding');
+      } else {
+        // Redirect based on user role
+        if (result.user.role === 'client') {
+          navigate('/dashboard/client');
+        } else if (result.user.role === 'freelancer') {
+          navigate('/dashboard/freelancer');
+        } else {
+          navigate('/admin');
+        }
+      }
+    } catch (error: any) {
+      toast({
+        title: "Login Failed",
+        description: error.message || "Invalid credentials",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -59,6 +90,7 @@ const Login = () => {
                 value={formData.email}
                 onChange={handleInputChange}
                 required
+                disabled={isLoading}
               />
             </div>
             <div className="space-y-2">
@@ -71,6 +103,7 @@ const Login = () => {
                   value={formData.password}
                   onChange={handleInputChange}
                   required
+                  disabled={isLoading}
                 />
                 <Button
                   type="button"
@@ -78,6 +111,7 @@ const Login = () => {
                   size="sm"
                   className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
                   onClick={() => setShowPassword(!showPassword)}
+                  disabled={isLoading}
                 >
                   {showPassword ? (
                     <EyeOff className="h-4 w-4 text-gray-400" />
@@ -97,8 +131,9 @@ const Login = () => {
             <Button 
               type="submit" 
               className="w-full bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700"
+              disabled={isLoading}
             >
-              Sign In
+              {isLoading ? "Signing In..." : "Sign In"}
             </Button>
           </form>
           
@@ -124,6 +159,7 @@ const Login = () => {
               variant="outline" 
               className="w-full mt-4"
               onClick={() => console.log('Google login')}
+              disabled={isLoading}
             >
               <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
                 <path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>

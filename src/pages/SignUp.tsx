@@ -6,34 +6,77 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useNavigate } from "react-router-dom";
+import { useToast } from "@/hooks/use-toast";
+import { authAPI } from "@/api/auth";
 
 const SignUp = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [userType, setUserType] = useState<'client' | 'freelancer' | null>(null);
   const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
-    name: '',
+    firstName: '',
+    lastName: '',
     email: '',
     password: ''
   });
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
+    const [firstName, ...lastNameParts] = e.target.name === 'name' ? e.target.value.split(' ') : [e.target.value];
+    
+    if (e.target.name === 'name') {
+      setFormData({
+        ...formData,
+        firstName: firstName || '',
+        lastName: lastNameParts.join(' ') || ''
+      });
+    } else {
+      setFormData({
+        ...formData,
+        [e.target.name]: e.target.value
+      });
+    }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Handle signup logic here
-    console.log('Signup:', { ...formData, userType });
     
-    // Redirect based on user type
-    if (userType === 'client') {
-      navigate('/dashboard/client');
-    } else if (userType === 'freelancer') {
-      navigate('/dashboard/freelancer');
+    if (!userType) {
+      toast({
+        title: "Error",
+        description: "Please select user type",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      const result = await authAPI.register({
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        email: formData.email,
+        password: formData.password,
+        role: userType
+      });
+      
+      toast({
+        title: "Registration Successful",
+        description: "Welcome to Servpe!",
+      });
+
+      // Redirect to onboarding to collect requirements
+      navigate('/onboarding');
+    } catch (error: any) {
+      toast({
+        title: "Registration Failed",
+        description: error.message || "Failed to create account",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -147,9 +190,9 @@ const SignUp = () => {
                 id="name"
                 name="name"
                 type="text"
-                value={formData.name}
                 onChange={handleInputChange}
                 required
+                disabled={isLoading}
               />
             </div>
             <div className="space-y-2">
@@ -161,6 +204,7 @@ const SignUp = () => {
                 value={formData.email}
                 onChange={handleInputChange}
                 required
+                disabled={isLoading}
               />
             </div>
             <div className="space-y-2">
@@ -173,6 +217,7 @@ const SignUp = () => {
                   value={formData.password}
                   onChange={handleInputChange}
                   required
+                  disabled={isLoading}
                 />
                 <Button
                   type="button"
@@ -180,6 +225,7 @@ const SignUp = () => {
                   size="sm"
                   className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
                   onClick={() => setShowPassword(!showPassword)}
+                  disabled={isLoading}
                 >
                   {showPassword ? (
                     <EyeOff className="h-4 w-4 text-gray-400" />
@@ -192,8 +238,9 @@ const SignUp = () => {
             <Button 
               type="submit" 
               className="w-full bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700"
+              disabled={isLoading}
             >
-              Create Account
+              {isLoading ? "Creating Account..." : "Create Account"}
             </Button>
           </form>
           
@@ -219,6 +266,7 @@ const SignUp = () => {
               variant="outline" 
               className="w-full mt-4"
               onClick={() => console.log('Google signup')}
+              disabled={isLoading}
             >
               <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
                 <path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
