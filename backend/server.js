@@ -10,6 +10,7 @@ const authRoutes = require('./routes/authRoutes');
 const userRoutes = require('./routes/userRoutes');
 const projectRoutes = require('./routes/projectRoutes');
 const proposalRoutes = require('./routes/proposalRoutes');
+const serviceRoutes = require('./routes/serviceRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 
 // Load environment variables
@@ -23,7 +24,7 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
 // Database connection
-mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/freelancehub', {
+mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/servpe', {
   useNewUrlParser: true,
   useUnifiedTopology: true,
 })
@@ -35,11 +36,16 @@ app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/projects', projectRoutes);
 app.use('/api/proposals', proposalRoutes);
+app.use('/api/services', serviceRoutes);
 app.use('/api/admin', adminRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
-  res.status(200).json({ message: 'Server is running', timestamp: new Date() });
+  res.status(200).json({ 
+    message: 'Servpe API is running', 
+    timestamp: new Date(),
+    version: '1.0.0'
+  });
 });
 
 // Error handling middleware
@@ -56,7 +62,7 @@ app.use('*', (req, res) => {
 const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
+  console.log(`Servpe server is running on port ${PORT}`);
 });
 
 module.exports = app;
