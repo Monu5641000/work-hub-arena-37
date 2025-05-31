@@ -8,6 +8,9 @@ import Index from "./pages/Index";
 import SignUp from "./pages/SignUp";
 import Login from "./pages/Login";
 import Services from "./pages/Services";
+import ServiceDetail from "./pages/ServiceDetail";
+import CreateService from "./pages/CreateService";
+import Messages from "./pages/Messages";
 import ClientDashboard from "./pages/ClientDashboard";
 import FreelancerDashboard from "./pages/FreelancerDashboard";
 import AdminDashboard from "./pages/AdminDashboard";
@@ -26,6 +29,9 @@ const App = () => (
           <Route path="/signup" element={<SignUp />} />
           <Route path="/login" element={<Login />} />
           <Route path="/services" element={<Services />} />
+          <Route path="/services/:serviceId" element={<ServiceDetail />} />
+          <Route path="/create-service" element={<CreateService />} />
+          <Route path="/messages" element={<Messages />} />
           <Route path="/dashboard/client" element={<ClientDashboard />} />
           <Route path="/dashboard/freelancer" element={<FreelancerDashboard />} />
           <Route path="/admin" element={<AdminDashboard />} />
