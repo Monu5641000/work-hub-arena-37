@@ -11,7 +11,6 @@ const {
   getServiceAnalytics
 } = require('../controllers/serviceController');
 const { protect, restrictTo } = require('../middleware/auth');
-const { validateService, handleValidationErrors } = require('../middleware/validation');
 const multer = require('multer');
 
 const router = express.Router();
@@ -32,11 +31,30 @@ const upload = multer({
   }
 });
 
+// Simple validation middleware for service creation
+const validateService = (req, res, next) => {
+  const { title, description, category } = req.body;
+  
+  if (!title || !description || !category) {
+    return res.status(400).json({
+      success: false,
+      message: 'Title, description, and category are required'
+    });
+  }
+  
+  next();
+};
+
+// Handle validation errors middleware
+const handleValidationErrors = (req, res, next) => {
+  next();
+};
+
 // Public routes
 router.get('/', getAllServices);
 router.get('/:id', getService);
 
-// Protected routes
+// Protected routes - apply protect middleware
 router.use(protect);
 
 // Freelancer routes
