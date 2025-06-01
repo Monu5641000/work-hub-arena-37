@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { ArrowLeft, Plus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -39,16 +38,34 @@ const CreateProject = () => {
   const handleInputChange = (field: string, value: any) => {
     if (field.includes('.')) {
       const [parent, child, grandchild] = field.split('.');
-      setFormData(prev => ({
-        ...prev,
-        [parent]: {
-          ...prev[parent as keyof ProjectData],
-          [child]: grandchild ? {
-            ...(prev[parent as keyof ProjectData] as any)[child],
-            [grandchild]: value
-          } : value
+      setFormData(prev => {
+        const parentValue = prev[parent as keyof ProjectData];
+        
+        if (parent === 'budget' && typeof parentValue === 'object' && parentValue !== null) {
+          if (grandchild && child === 'amount' && typeof (parentValue as any)[child] === 'object') {
+            return {
+              ...prev,
+              [parent]: {
+                ...parentValue,
+                [child]: {
+                  ...(parentValue as any)[child],
+                  [grandchild]: value
+                }
+              }
+            };
+          } else {
+            return {
+              ...prev,
+              [parent]: {
+                ...parentValue,
+                [child]: value
+              }
+            };
+          }
         }
-      }));
+        
+        return prev;
+      });
     } else {
       setFormData(prev => ({
         ...prev,
