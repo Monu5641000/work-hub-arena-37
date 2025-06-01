@@ -11,6 +11,7 @@ import Onboarding from "./pages/Onboarding";
 import Services from "./pages/Services";
 import ServiceDetail from "./pages/ServiceDetail";
 import CreateService from "./pages/CreateService";
+import CreateProject from "./pages/CreateProject";
 import Messages from "./pages/Messages";
 import ClientDashboard from "./pages/ClientDashboard";
 import FreelancerDashboard from "./pages/FreelancerDashboard";
@@ -33,6 +34,7 @@ const App = () => (
           <Route path="/services" element={<Services />} />
           <Route path="/services/:serviceId" element={<ServiceDetail />} />
           <Route path="/create-service" element={<CreateService />} />
+          <Route path="/create-project" element={<CreateProject />} />
           <Route path="/messages" element={<Messages />} />
           <Route path="/dashboard/client" element={<ClientDashboard />} />
           <Route path="/dashboard/freelancer" element={<FreelancerDashboard />} />

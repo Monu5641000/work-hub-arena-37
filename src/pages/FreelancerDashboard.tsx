@@ -1,68 +1,115 @@
 
-import { ArrowLeft, Search, Filter, Star, MapPin, Clock, DollarSign, Bookmark } from "lucide-react";
+import { useState, useEffect } from "react";
+import { ArrowLeft, Plus, Star, DollarSign, Clock, TrendingUp, Eye, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
+import { useToast } from "@/hooks/use-toast";
+import { orderAPI } from "@/api/orders";
+import { serviceAPI } from "@/api/services";
+import { proposalAPI } from "@/api/proposals";
+import { authAPI } from "@/api/auth";
 
 const FreelancerDashboard = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
+  const [user, setUser] = useState<any>(null);
+  const [activeOrders, setActiveOrders] = useState([]);
+  const [services, setServices] = useState([]);
+  const [proposals, setProposals] = useState([]);
+  const [stats, setStats] = useState({
+    totalEarnings: 0,
+    activeOrders: 0,
+    completedOrders: 0,
+    successRate: 0,
+    totalServices: 0,
+    pendingProposals: 0
+  });
+  const [loading, setLoading] = useState(true);
 
-  const availableJobs = [
-    {
-      title: "Full-Stack React Developer Needed",
-      client: "TechStart Inc.",
-      budget: "$3,000 - $5,000",
-      deadline: "3 weeks",
-      skills: ["React", "Node.js", "MongoDB"],
-      rating: 4.8,
-      location: "Remote",
-      posted: "2 hours ago",
-      proposals: 5
-    },
-    {
-      title: "Mobile App UI/UX Design",
-      client: "Creative Agency",
-      budget: "$1,500 - $2,500", 
-      deadline: "2 weeks",
-      skills: ["Figma", "UI/UX", "Mobile Design"],
-      rating: 4.9,
-      location: "Remote",
-      posted: "5 hours ago",
-      proposals: 8
-    },
-    {
-      title: "WordPress E-commerce Website",
-      client: "Online Retailer",
-      budget: "$2,000 - $3,500",
-      deadline: "4 weeks", 
-      skills: ["WordPress", "WooCommerce", "PHP"],
-      rating: 4.7,
-      location: "Remote",
-      posted: "1 day ago",
-      proposals: 12
-    }
-  ];
+  useEffect(() => {
+    fetchDashboardData();
+  }, []);
 
-  const myProjects = [
-    {
-      title: "Dashboard Analytics Platform",
-      client: "DataCorp",
-      budget: "$4,500",
-      progress: 65,
-      deadline: "1 week",
-      status: "In Progress"
-    },
-    {
-      title: "Brand Identity Design",
-      client: "Startup XYZ",
-      budget: "$1,800",
-      progress: 90,
-      deadline: "3 days", 
-      status: "Review"
+  const fetchDashboardData = async () => {
+    try {
+      const currentUser = authAPI.getCurrentUser();
+      if (!currentUser || currentUser.role !== 'freelancer') {
+        navigate('/login');
+        return;
+      }
+      setUser(currentUser);
+
+      // Fetch orders
+      const ordersResponse = await orderAPI.getMyOrders();
+      if (ordersResponse.success) {
+        const allOrders = ordersResponse.data;
+        const activeOrdersList = allOrders.filter((order: any) => 
+          ['in_progress', 'delivered'].includes(order.status)
+        );
+        setActiveOrders(activeOrdersList);
+
+        // Calculate earnings and stats
+        const totalEarnings = allOrders
+          .filter((order: any) => order.status === 'completed')
+          .reduce((sum: number, order: any) => sum + (order.freelancerEarnings || 0), 0);
+        
+        const completedOrders = allOrders.filter((order: any) => order.status === 'completed').length;
+        const successRate = allOrders.length > 0 ? (completedOrders / allOrders.length) * 100 : 0;
+
+        setStats(prev => ({
+          ...prev,
+          totalEarnings,
+          activeOrders: activeOrdersList.length,
+          completedOrders,
+          successRate: Math.round(successRate)
+        }));
+      }
+
+      // Fetch services
+      const servicesResponse = await serviceAPI.getMyServices();
+      if (servicesResponse.success) {
+        setServices(servicesResponse.data);
+        setStats(prev => ({
+          ...prev,
+          totalServices: servicesResponse.data.length
+        }));
+      }
+
+      // Fetch proposals
+      const proposalsResponse = await proposalAPI.getMyProposals();
+      if (proposalsResponse.success) {
+        setProposals(proposalsResponse.data);
+        const pendingProposals = proposalsResponse.data.filter((proposal: any) => 
+          proposal.status === 'pending'
+        ).length;
+        setStats(prev => ({
+          ...prev,
+          pendingProposals
+        }));
+      }
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to load dashboard data",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
     }
-  ];
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading dashboard...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -84,8 +131,10 @@ const FreelancerDashboard = () => {
               <h1 className="text-xl font-semibold text-gray-900">Freelancer Dashboard</h1>
             </div>
             <div className="flex items-center space-x-4">
-              <Button variant="outline">My Profile</Button>
-              <Button className="bg-purple-600 hover:bg-purple-700">Submit Proposal</Button>
+              <Button onClick={() => navigate('/create-service')} className="bg-green-600 hover:bg-green-700">
+                <Plus className="h-4 w-4 mr-2" />
+                Create Service
+              </Button>
             </div>
           </div>
         </div>
@@ -94,8 +143,10 @@ const FreelancerDashboard = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">
-          <h2 className="text-3xl font-bold text-gray-900 mb-2">Welcome back, Sarah!</h2>
-          <p className="text-gray-600">Find your next opportunity and grow your freelancing career.</p>
+          <h2 className="text-3xl font-bold text-gray-900 mb-2">
+            Welcome back, {user?.firstName || 'Freelancer'}!
+          </h2>
+          <p className="text-gray-600">Manage your services, orders, and grow your freelancing business.</p>
         </div>
 
         {/* Stats Cards */}
@@ -104,21 +155,8 @@ const FreelancerDashboard = () => {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">Active Projects</p>
-                  <p className="text-2xl font-bold text-gray-900">3</p>
-                </div>
-                <div className="h-12 w-12 bg-purple-100 rounded-lg flex items-center justify-center">
-                  <Clock className="h-6 w-6 text-purple-600" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Total Earned</p>
-                  <p className="text-2xl font-bold text-gray-900">$18,750</p>
+                  <p className="text-sm font-medium text-gray-600">Total Earnings</p>
+                  <p className="text-2xl font-bold text-gray-900">${stats.totalEarnings}</p>
                 </div>
                 <div className="h-12 w-12 bg-green-100 rounded-lg flex items-center justify-center">
                   <DollarSign className="h-6 w-6 text-green-600" />
@@ -130,11 +168,11 @@ const FreelancerDashboard = () => {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">Success Rate</p>
-                  <p className="text-2xl font-bold text-gray-900">98%</p>
+                  <p className="text-sm font-medium text-gray-600">Active Orders</p>
+                  <p className="text-2xl font-bold text-gray-900">{stats.activeOrders}</p>
                 </div>
-                <div className="h-12 w-12 bg-yellow-100 rounded-lg flex items-center justify-center">
-                  <Star className="h-6 w-6 text-yellow-600" />
+                <div className="h-12 w-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                  <Clock className="h-6 w-6 text-blue-600" />
                 </div>
               </div>
             </CardContent>
@@ -143,86 +181,132 @@ const FreelancerDashboard = () => {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">Client Rating</p>
-                  <p className="text-2xl font-bold text-gray-900">4.9</p>
+                  <p className="text-sm font-medium text-gray-600">Completed Orders</p>
+                  <p className="text-2xl font-bold text-gray-900">{stats.completedOrders}</p>
                 </div>
-                <div className="h-12 w-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                  <Star className="h-6 w-6 text-blue-600" />
+                <div className="h-12 w-12 bg-purple-100 rounded-lg flex items-center justify-center">
+                  <Star className="h-6 w-6 text-purple-600" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Success Rate</p>
+                  <p className="text-2xl font-bold text-gray-900">{stats.successRate}%</p>
+                </div>
+                <div className="h-12 w-12 bg-yellow-100 rounded-lg flex items-center justify-center">
+                  <TrendingUp className="h-6 w-6 text-yellow-600" />
                 </div>
               </div>
             </CardContent>
           </Card>
         </div>
 
-        <div className="grid lg:grid-cols-3 gap-8">
-          {/* Available Jobs */}
-          <div className="lg:col-span-2">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-semibold text-gray-900">Available Jobs</h3>
-              <div className="flex items-center space-x-2">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                  <Input placeholder="Search jobs..." className="pl-10 w-64" />
+        {/* Quick Actions */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-lg font-medium text-gray-900">My Services</h3>
+                  <p className="text-sm text-gray-600">{stats.totalServices} active services</p>
                 </div>
-                <Button variant="outline" size="sm">
-                  <Filter className="h-4 w-4 mr-2" />
-                  Filter
+                <Button variant="outline" onClick={() => navigate('/my-services')}>
+                  Manage
                 </Button>
               </div>
-            </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-lg font-medium text-gray-900">Proposals</h3>
+                  <p className="text-sm text-gray-600">{stats.pendingProposals} pending responses</p>
+                </div>
+                <Button variant="outline" onClick={() => navigate('/my-proposals')}>
+                  View All
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-lg font-medium text-gray-900">Messages</h3>
+                  <p className="text-sm text-gray-600">Client communications</p>
+                </div>
+                <Button variant="outline" onClick={() => navigate('/messages')}>
+                  Open
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
 
-            <div className="space-y-6">
-              {availableJobs.map((job, index) => (
-                <Card key={index} className="hover:shadow-md transition-shadow">
+        {/* Active Orders */}
+        <div className="mb-8">
+          <h3 className="text-xl font-semibold text-gray-900 mb-4">Active Orders</h3>
+          {activeOrders.length === 0 ? (
+            <Card>
+              <CardContent className="p-6 text-center">
+                <p className="text-gray-500">No active orders at the moment.</p>
+                <Button variant="outline" className="mt-4" onClick={() => navigate('/create-service')}>
+                  Create a Service
+                </Button>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-4">
+              {activeOrders.map((order: any) => (
+                <Card key={order._id} className="hover:shadow-md transition-shadow">
                   <CardContent className="p-6">
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="flex-1">
-                        <h4 className="text-lg font-medium text-gray-900 mb-1">{job.title}</h4>
-                        <div className="flex items-center space-x-2 text-sm text-gray-600 mb-2">
-                          <span>{job.client}</span>
-                          <div className="flex items-center">
-                            <Star className="h-4 w-4 text-yellow-400 mr-1" />
-                            <span>{job.rating}</span>
-                          </div>
-                        </div>
-                      </div>
-                      <Button variant="ghost" size="sm">
-                        <Bookmark className="h-4 w-4" />
-                      </Button>
-                    </div>
-
-                    <div className="flex flex-wrap gap-2 mb-4">
-                      {job.skills.map((skill, skillIndex) => (
-                        <Badge key={skillIndex} variant="secondary" className="text-xs">
-                          {skill}
-                        </Badge>
-                      ))}
-                    </div>
-
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm text-gray-600 mb-4">
-                      <div className="flex items-center">
-                        <DollarSign className="h-4 w-4 mr-1" />
-                        <span>{job.budget}</span>
-                      </div>
-                      <div className="flex items-center">
-                        <Clock className="h-4 w-4 mr-1" />
-                        <span>{job.deadline}</span>
-                      </div>
-                      <div className="flex items-center">
-                        <MapPin className="h-4 w-4 mr-1" />
-                        <span>{job.location}</span>
-                      </div>
+                    <div className="flex items-center justify-between mb-4">
                       <div>
-                        <span>{job.proposals} proposals</span>
+                        <h4 className="text-lg font-medium text-gray-900">
+                          {order.service?.title || 'Service Order'}
+                        </h4>
+                        <p className="text-gray-600">
+                          Client: {order.client?.firstName} {order.client?.lastName}
+                        </p>
                       </div>
+                      <Badge 
+                        variant={order.status === "delivered" ? "default" : "secondary"}
+                        className={order.status === "delivered" ? "bg-green-100 text-green-800" : "bg-blue-100 text-blue-800"}
+                      >
+                        {order.status.replace('_', ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())}
+                      </Badge>
                     </div>
-
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-500">Posted {job.posted}</span>
+                    <div className="flex items-center justify-between text-sm text-gray-600 mb-4">
+                      <span>Earnings: ${order.freelancerEarnings}</span>
+                      <span>
+                        {order.daysRemaining > 0 
+                          ? `${order.daysRemaining} days remaining` 
+                          : order.isOverdue 
+                            ? 'Overdue' 
+                            : 'Due today'
+                        }
+                      </span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div 
+                        className="bg-blue-600 h-2 rounded-full" 
+                        style={{ width: `${order.progress || 0}%` }}
+                      ></div>
+                    </div>
+                    <div className="flex justify-between items-center mt-4">
+                      <p className="text-sm text-gray-600">{order.progress || 0}% Complete</p>
                       <div className="space-x-2">
-                        <Button variant="outline" size="sm">View Details</Button>
-                        <Button size="sm" className="bg-purple-600 hover:bg-purple-700">
-                          Submit Proposal
+                        <Button variant="outline" size="sm" onClick={() => navigate(`/messages?order=${order._id}`)}>
+                          <MessageSquare className="h-4 w-4 mr-1" />
+                          Message
+                        </Button>
+                        <Button size="sm" onClick={() => navigate(`/order/${order._id}`)}>
+                          View Details
                         </Button>
                       </div>
                     </div>
@@ -230,61 +314,66 @@ const FreelancerDashboard = () => {
                 </Card>
               ))}
             </div>
-          </div>
+          )}
+        </div>
 
-          {/* My Active Projects */}
-          <div>
-            <h3 className="text-xl font-semibold text-gray-900 mb-6">My Active Projects</h3>
-            <div className="space-y-4">
-              {myProjects.map((project, index) => (
-                <Card key={index}>
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between mb-3">
-                      <h4 className="font-medium text-gray-900">{project.title}</h4>
-                      <Badge 
-                        variant={project.status === "Review" ? "default" : "secondary"}
-                        className={project.status === "Review" ? "bg-green-100 text-green-800" : "bg-blue-100 text-blue-800"}
-                      >
-                        {project.status}
+        {/* My Services */}
+        <div>
+          <h3 className="text-xl font-semibold text-gray-900 mb-4">My Services</h3>
+          {services.length === 0 ? (
+            <Card>
+              <CardContent className="p-6 text-center">
+                <p className="text-gray-500">No services created yet.</p>
+                <Button className="mt-4" onClick={() => navigate('/create-service')}>
+                  Create Your First Service
+                </Button>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {services.slice(0, 6).map((service: any) => (
+                <Card key={service._id} className="hover:shadow-md transition-shadow">
+                  <CardContent className="p-6">
+                    <div className="mb-4">
+                      {service.images?.[0] && (
+                        <img 
+                          src={service.images[0].url} 
+                          alt={service.title}
+                          className="w-full h-32 object-cover rounded-lg mb-3"
+                        />
+                      )}
+                      <h4 className="text-lg font-medium text-gray-900 mb-2">{service.title}</h4>
+                      <p className="text-sm text-gray-600 line-clamp-2">{service.description}</p>
+                    </div>
+                    <div className="flex items-center justify-between text-sm text-gray-600 mb-4">
+                      <span className="flex items-center">
+                        <Star className="h-4 w-4 mr-1 text-yellow-500" />
+                        {service.averageRating || 0} ({service.totalReviews || 0})
+                      </span>
+                      <span>${service.pricingPlans?.basic?.price}</span>
+                    </div>
+                    <div className="flex items-center justify-between text-sm text-gray-600 mb-4">
+                      <span className="flex items-center">
+                        <Eye className="h-4 w-4 mr-1" />
+                        {service.impressions || 0} views
+                      </span>
+                      <Badge variant="outline">
+                        {service.status}
                       </Badge>
                     </div>
-                    <p className="text-sm text-gray-600 mb-2">Client: {project.client}</p>
-                    <p className="text-sm text-gray-600 mb-3">Budget: {project.budget}</p>
-                    <div className="w-full bg-gray-200 rounded-full h-2 mb-2">
-                      <div 
-                        className="bg-purple-600 h-2 rounded-full" 
-                        style={{ width: `${project.progress}%` }}
-                      ></div>
-                    </div>
-                    <div className="flex justify-between text-xs text-gray-600">
-                      <span>{project.progress}% Complete</span>
-                      <span>Due in {project.deadline}</span>
+                    <div className="flex space-x-2">
+                      <Button variant="outline" size="sm" onClick={() => navigate(`/services/${service._id}`)}>
+                        View
+                      </Button>
+                      <Button size="sm" onClick={() => navigate(`/edit-service/${service._id}`)}>
+                        Edit
+                      </Button>
                     </div>
                   </CardContent>
                 </Card>
               ))}
             </div>
-
-            <Card className="mt-6">
-              <CardHeader>
-                <CardTitle className="text-lg">Quick Actions</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <Button variant="outline" className="w-full justify-start">
-                  Update Profile
-                </Button>
-                <Button variant="outline" className="w-full justify-start">
-                  Portfolio Manager
-                </Button>
-                <Button variant="outline" className="w-full justify-start">
-                  Message Center
-                </Button>
-                <Button variant="outline" className="w-full justify-start">
-                  Payment History
-                </Button>
-              </CardContent>
-            </Card>
-          </div>
+          )}
         </div>
       </div>
     </div>
