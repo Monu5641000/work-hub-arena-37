@@ -1,7 +1,17 @@
-
 const Service = require('../models/Service');
 const User = require('../models/User');
 const cloudinary = require('cloudinary').v2;
+
+console.log('Service controller functions:', {
+  getAllServices: typeof exports.getAllServices,
+  getService: typeof exports.getService,
+  createService: typeof exports.createService,
+  updateService: typeof exports.updateService,
+  deleteService: typeof exports.deleteService,
+  getMyServices: typeof exports.getMyServices,
+  uploadServiceImages: typeof exports.uploadServiceImages,
+  getServiceAnalytics: typeof exports.getServiceAnalytics
+});
 
 // @desc    Get all services with filtering and pagination
 // @route   GET /api/services

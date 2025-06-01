@@ -42,9 +42,9 @@ router.use(protect);
 // Freelancer routes
 router.get('/my/services', restrictTo('freelancer'), getMyServices);
 router.post('/', restrictTo('freelancer'), validateService, handleValidationErrors, createService);
-router.put('/:id', updateService);
-router.delete('/:id', deleteService);
+router.put('/:id', restrictTo('freelancer'), updateService);
+router.delete('/:id', restrictTo('freelancer'), deleteService);
 router.post('/:id/images', restrictTo('freelancer'), upload.array('images', 5), uploadServiceImages);
-router.get('/:id/analytics', getServiceAnalytics);
+router.get('/:id/analytics', restrictTo('freelancer'), getServiceAnalytics);
 
 module.exports = router;
