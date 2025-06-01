@@ -37,35 +37,51 @@ const CreateProject = () => {
 
   const handleInputChange = (field: string, value: any) => {
     if (field.includes('.')) {
-      const [parent, child, grandchild] = field.split('.');
-      setFormData(prev => {
-        const parentValue = prev[parent as keyof ProjectData];
-        
-        if (parent === 'budget' && typeof parentValue === 'object' && parentValue !== null) {
-          if (grandchild && child === 'amount' && typeof (parentValue as any)[child] === 'object') {
-            return {
+      const fieldParts = field.split('.');
+      
+      if (fieldParts[0] === 'budget') {
+        if (fieldParts[1] === 'type') {
+          setFormData(prev => ({
+            ...prev,
+            budget: {
+              ...prev.budget,
+              type: value as "fixed" | "hourly"
+            }
+          }));
+        } else if (fieldParts[1] === 'amount') {
+          if (fieldParts[2] === 'min') {
+            setFormData(prev => ({
               ...prev,
-              [parent]: {
-                ...parentValue,
-                [child]: {
-                  ...(parentValue as any)[child],
-                  [grandchild]: value
+              budget: {
+                ...prev.budget,
+                amount: {
+                  ...prev.budget.amount,
+                  min: value
                 }
               }
-            };
-          } else {
-            return {
+            }));
+          } else if (fieldParts[2] === 'max') {
+            setFormData(prev => ({
               ...prev,
-              [parent]: {
-                ...parentValue,
-                [child]: value
+              budget: {
+                ...prev.budget,
+                amount: {
+                  ...prev.budget.amount,
+                  max: value
+                }
               }
-            };
+            }));
           }
+        } else if (fieldParts[1] === 'currency') {
+          setFormData(prev => ({
+            ...prev,
+            budget: {
+              ...prev.budget,
+              currency: value
+            }
+          }));
         }
-        
-        return prev;
-      });
+      }
     } else {
       setFormData(prev => ({
         ...prev,
