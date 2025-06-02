@@ -2,6 +2,7 @@
 const Proposal = require('../models/Proposal');
 const Project = require('../models/Project');
 const User = require('../models/User');
+const emailService = require('../utils/emailService');
 
 // Get proposals for a project
 exports.getProposalsForProject = async (req, res) => {
@@ -66,7 +67,7 @@ exports.submitProposal = async (req, res) => {
       attachments
     } = req.body;
 
-    const project = await Project.findById(projectId);
+    const project = await Project.findById(projectId).populate('client', 'firstName lastName email');
     if (!project) {
       return res.status(404).json({
         success: false,
@@ -112,6 +113,23 @@ exports.submitProposal = async (req, res) => {
     const populatedProposal = await Proposal.findById(proposal._id)
       .populate('freelancer', 'firstName lastName profilePicture rating skills');
 
+    // Send email notification to client
+    try {
+      const freelancerName = `${req.user.firstName} ${req.user.lastName}`;
+      const clientName = `${project.client.firstName} ${project.client.lastName}`;
+      
+      await emailService.sendProposalNotificationToClient(
+        project.client.email,
+        clientName,
+        freelancerName,
+        project.title,
+        proposedBudget.amount
+      );
+    } catch (emailError) {
+      console.error('Email notification failed:', emailError);
+      // Don't fail the proposal submission if email fails
+    }
+
     res.status(201).json({
       success: true,
       data: populatedProposal
@@ -132,7 +150,10 @@ exports.updateProposalStatus = async (req, res) => {
     const { id } = req.params;
     const { status, clientMessage } = req.body;
 
-    const proposal = await Proposal.findById(id).populate('project');
+    const proposal = await Proposal.findById(id)
+      .populate('project')
+      .populate('freelancer', 'firstName lastName email');
+      
     if (!proposal) {
       return res.status(404).json({
         success: false,
@@ -177,6 +198,22 @@ exports.updateProposalStatus = async (req, res) => {
           clientMessage: 'Project assigned to another freelancer'
         }
       );
+    }
+
+    // Send email notification to freelancer
+    try {
+      const freelancerName = `${proposal.freelancer.firstName} ${proposal.freelancer.lastName}`;
+      
+      await emailService.sendProposalStatusToFreelancer(
+        proposal.freelancer.email,
+        freelancerName,
+        proposal.project.title,
+        status,
+        clientMessage
+      );
+    } catch (emailError) {
+      console.error('Email notification failed:', emailError);
+      // Don't fail the status update if email fails
     }
 
     const updatedProposal = await Proposal.findById(id)
