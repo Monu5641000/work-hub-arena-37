@@ -36,81 +36,105 @@ class AuthAPI {
   }
 
   async login(data: LoginData) {
-    const response = await fetch(`${API_BASE_URL}/auth/login`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(data),
-    });
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      });
 
-    const result = await response.json();
-    
-    if (!result.success) {
-      throw new Error(result.message);
+      const result = await response.json();
+      
+      if (!response.ok || !result.success) {
+        throw new Error(result.message || 'Login failed');
+      }
+
+      // Store token in localStorage
+      localStorage.setItem('token', result.token);
+      localStorage.setItem('user', JSON.stringify(result.user));
+
+      return result;
+    } catch (error) {
+      console.error('Login error:', error);
+      throw error;
     }
-
-    // Store token in localStorage
-    localStorage.setItem('token', result.token);
-    localStorage.setItem('user', JSON.stringify(result.user));
-
-    return result;
   }
 
   async register(data: RegisterData) {
-    const response = await fetch(`${API_BASE_URL}/auth/register`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(data),
-    });
+    try {
+      console.log('Registering user with data:', data);
+      
+      const response = await fetch(`${API_BASE_URL}/auth/register`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      });
 
-    const result = await response.json();
-    
-    if (!result.success) {
-      throw new Error(result.message);
+      const result = await response.json();
+      
+      console.log('Registration response:', result);
+      
+      if (!response.ok || !result.success) {
+        throw new Error(result.message || 'Registration failed');
+      }
+
+      // Store token in localStorage
+      localStorage.setItem('token', result.token);
+      localStorage.setItem('user', JSON.stringify(result.user));
+
+      return result;
+    } catch (error) {
+      console.error('Registration error:', error);
+      throw error;
     }
-
-    // Store token in localStorage
-    localStorage.setItem('token', result.token);
-    localStorage.setItem('user', JSON.stringify(result.user));
-
-    return result;
   }
 
   async updateRequirements(requirements: RequirementsData) {
-    const response = await fetch(`${API_BASE_URL}/auth/requirements`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        ...this.getAuthHeader(),
-      },
-      body: JSON.stringify({ requirements }),
-    });
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/requirements`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          ...this.getAuthHeader(),
+        },
+        body: JSON.stringify({ requirements }),
+      });
 
-    const result = await response.json();
-    
-    if (!result.success) {
-      throw new Error(result.message);
+      const result = await response.json();
+      
+      if (!response.ok || !result.success) {
+        throw new Error(result.message || 'Failed to update requirements');
+      }
+
+      localStorage.setItem('user', JSON.stringify(result.user));
+      return result;
+    } catch (error) {
+      console.error('Update requirements error:', error);
+      throw error;
     }
-
-    localStorage.setItem('user', JSON.stringify(result.user));
-    return result;
   }
 
   async getMe() {
-    const response = await fetch(`${API_BASE_URL}/auth/me`, {
-      headers: this.getAuthHeader(),
-    });
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/me`, {
+        headers: this.getAuthHeader(),
+      });
 
-    const result = await response.json();
-    
-    if (!result.success) {
-      throw new Error(result.message);
+      const result = await response.json();
+      
+      if (!response.ok || !result.success) {
+        throw new Error(result.message || 'Failed to get user data');
+      }
+
+      return result;
+    } catch (error) {
+      console.error('Get me error:', error);
+      throw error;
     }
-
-    return result;
   }
 
   logout() {
