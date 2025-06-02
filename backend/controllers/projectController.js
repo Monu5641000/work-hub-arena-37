@@ -1,48 +1,48 @@
 
 const Project = require('../models/Project');
-const User = require('../models/User');
-const Proposal = require('../models/Proposal');
 
-// Get all projects with filters
+// Get all projects
 exports.getAllProjects = async (req, res) => {
   try {
-    const {
-      page = 1,
-      limit = 10,
-      category,
-      skills,
-      budgetMin,
-      budgetMax,
-      experienceLevel,
+    const { 
+      category, 
+      skills, 
+      experienceLevel, 
+      budget,
       duration,
-      search
+      search,
+      page = 1, 
+      limit = 12 
     } = req.query;
 
-    // Build filter object
     const filter = { status: 'open' };
-
+    
     if (category) filter.category = category;
     if (experienceLevel) filter.experienceLevel = experienceLevel;
     if (duration) filter.duration = duration;
+    
     if (skills) {
       filter.skills = { $in: skills.split(',') };
     }
-    if (budgetMin || budgetMax) {
-      filter['budget.amount.min'] = {};
-      if (budgetMin) filter['budget.amount.min'].$gte = Number(budgetMin);
-      if (budgetMax) filter['budget.amount.max'] = { $lte: Number(budgetMax) };
+    
+    if (budget) {
+      const [min, max] = budget.split('-').map(Number);
+      filter['budget.amount.min'] = { $gte: min };
+      if (max) filter['budget.amount.max'] = { $lte: max };
     }
+    
     if (search) {
       filter.$or = [
         { title: { $regex: search, $options: 'i' } },
-        { description: { $regex: search, $options: 'i' } }
+        { description: { $regex: search, $options: 'i' } },
+        { skills: { $in: [new RegExp(search, 'i')] } }
       ];
     }
 
     const skip = (page - 1) * limit;
 
     const projects = await Project.find(filter)
-      .populate('client', 'firstName lastName profilePicture rating location')
+      .populate('client', 'firstName lastName location')
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(Number(limit));
@@ -63,8 +63,7 @@ exports.getAllProjects = async (req, res) => {
     console.error('Get projects error:', error);
     res.status(500).json({
       success: false,
-      message: 'Error fetching projects',
-      error: error.message
+      message: 'Error fetching projects'
     });
   }
 };
@@ -73,13 +72,13 @@ exports.getAllProjects = async (req, res) => {
 exports.getProject = async (req, res) => {
   try {
     const project = await Project.findById(req.params.id)
-      .populate('client', 'firstName lastName profilePicture rating location')
-      .populate('freelancer', 'firstName lastName profilePicture rating skills')
+      .populate('client', 'firstName lastName location rating')
+      .populate('freelancer', 'firstName lastName profilePicture rating')
       .populate({
         path: 'proposals',
         populate: {
           path: 'freelancer',
-          select: 'firstName lastName profilePicture rating skills hourlyRate'
+          select: 'firstName lastName profilePicture rating skills'
         }
       });
 
@@ -95,31 +94,27 @@ exports.getProject = async (req, res) => {
       data: project
     });
   } catch (error) {
-    console.error('Get project error:', error);
     res.status(500).json({
       success: false,
-      message: 'Error fetching project',
-      error: error.message
+      message: 'Error fetching project'
     });
   }
 };
 
-// Create new project
+// Create project
 exports.createProject = async (req, res) => {
   try {
     const projectData = {
       ...req.body,
-      client: req.user.id
+      client: req.user.id,
+      status: 'open'
     };
 
     const project = await Project.create(projectData);
 
-    const populatedProject = await Project.findById(project._id)
-      .populate('client', 'firstName lastName profilePicture');
-
     res.status(201).json({
       success: true,
-      data: populatedProject
+      data: project
     });
   } catch (error) {
     console.error('Create project error:', error);
@@ -143,37 +138,24 @@ exports.updateProject = async (req, res) => {
       });
     }
 
-    // Check if user is the client
     if (project.client.toString() !== req.user.id && req.user.role !== 'admin') {
       return res.status(403).json({
         success: false,
-        message: 'Not authorized to update this project'
-      });
-    }
-
-    // Don't allow updates if project is in progress or completed
-    if (['in-progress', 'completed'].includes(project.status)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Cannot update project that is in progress or completed'
+        message: 'Access denied'
       });
     }
 
     const updatedProject = await Project.findByIdAndUpdate(
       req.params.id,
       req.body,
-      {
-        new: true,
-        runValidators: true
-      }
-    ).populate('client', 'firstName lastName profilePicture');
+      { new: true, runValidators: true }
+    );
 
     res.status(200).json({
       success: true,
       data: updatedProject
     });
   } catch (error) {
-    console.error('Update project error:', error);
     res.status(500).json({
       success: false,
       message: 'Error updating project',
@@ -194,19 +176,10 @@ exports.deleteProject = async (req, res) => {
       });
     }
 
-    // Check if user is the client
     if (project.client.toString() !== req.user.id && req.user.role !== 'admin') {
       return res.status(403).json({
         success: false,
-        message: 'Not authorized to delete this project'
-      });
-    }
-
-    // Don't allow deletion if project has proposals or is in progress
-    if (project.proposals.length > 0 || project.status === 'in-progress') {
-      return res.status(400).json({
-        success: false,
-        message: 'Cannot delete project with proposals or in progress'
+        message: 'Access denied'
       });
     }
 
@@ -217,36 +190,24 @@ exports.deleteProject = async (req, res) => {
       message: 'Project deleted successfully'
     });
   } catch (error) {
-    console.error('Delete project error:', error);
     res.status(500).json({
       success: false,
-      message: 'Error deleting project',
-      error: error.message
+      message: 'Error deleting project'
     });
   }
 };
 
-// Get user's projects (client or freelancer)
+// Get user's projects
 exports.getMyProjects = async (req, res) => {
   try {
-    const { status, page = 1, limit = 10 } = req.query;
+    const { page = 1, limit = 10, status } = req.query;
     const skip = (page - 1) * limit;
 
-    let filter = {};
-    
-    if (req.user.role === 'client') {
-      filter.client = req.user.id;
-    } else if (req.user.role === 'freelancer') {
-      filter.freelancer = req.user.id;
-    }
-
-    if (status) {
-      filter.status = status;
-    }
+    const filter = { client: req.user.id };
+    if (status) filter.status = status;
 
     const projects = await Project.find(filter)
-      .populate('client', 'firstName lastName profilePicture')
-      .populate('freelancer', 'firstName lastName profilePicture')
+      .populate('freelancer', 'firstName lastName profilePicture rating')
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(Number(limit));
@@ -264,11 +225,9 @@ exports.getMyProjects = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Get my projects error:', error);
     res.status(500).json({
       success: false,
-      message: 'Error fetching your projects',
-      error: error.message
+      message: 'Error fetching projects'
     });
   }
 };

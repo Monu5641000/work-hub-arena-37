@@ -43,33 +43,8 @@ exports.validateLogin = [
     .normalizeEmail()
     .withMessage('Please provide a valid email'),
   body('password')
-    .exists()
+    .notEmpty()
     .withMessage('Password is required')
-];
-
-// Service validation
-exports.validateService = [
-  body('title')
-    .trim()
-    .isLength({ min: 5, max: 100 })
-    .withMessage('Service title must be between 5 and 100 characters'),
-  body('description')
-    .trim()
-    .isLength({ min: 50, max: 2000 })
-    .withMessage('Service description must be between 50 and 2000 characters'),
-  body('category')
-    .isIn(['Design', 'Development', 'Marketing', 'Writing', 'Video Editing', 'Data Entry', 'Translation', 'Other'])
-    .withMessage('Please select a valid category'),
-  body('pricingPlans.basic.title')
-    .trim()
-    .isLength({ min: 3, max: 50 })
-    .withMessage('Basic plan title is required'),
-  body('pricingPlans.basic.price')
-    .isFloat({ min: 5 })
-    .withMessage('Basic plan price must be at least $5'),
-  body('pricingPlans.basic.deliveryDays')
-    .isInt({ min: 1, max: 30 })
-    .withMessage('Delivery days must be between 1 and 30')
 ];
 
 // Project validation
@@ -77,49 +52,24 @@ exports.validateProject = [
   body('title')
     .trim()
     .isLength({ min: 10, max: 200 })
-    .withMessage('Project title must be between 10 and 200 characters'),
+    .withMessage('Title must be between 10 and 200 characters'),
   body('description')
     .trim()
-    .isLength({ min: 100, max: 5000 })
-    .withMessage('Project description must be between 100 and 5000 characters'),
+    .isLength({ min: 50, max: 5000 })
+    .withMessage('Description must be between 50 and 5000 characters'),
   body('category')
     .isIn(['web-development', 'mobile-development', 'design', 'writing', 'marketing', 'data-science', 'consulting', 'other'])
-    .withMessage('Please select a valid category'),
-  body('budget.type')
-    .isIn(['fixed', 'hourly'])
-    .withMessage('Budget type must be either fixed or hourly'),
-  body('budget.amount.min')
-    .isFloat({ min: 10 })
-    .withMessage('Minimum budget must be at least $10'),
-  body('experienceLevel')
-    .isIn(['entry', 'intermediate', 'expert'])
-    .withMessage('Please select a valid experience level'),
+    .withMessage('Invalid category'),
   body('skills')
     .isArray({ min: 1 })
-    .withMessage('At least one skill is required')
-];
-
-// Order validation
-exports.validateOrder = [
-  body('serviceId')
-    .isMongoId()
-    .withMessage('Valid service ID is required'),
-  body('packageType')
-    .isIn(['basic', 'standard', 'premium'])
-    .withMessage('Package type must be basic, standard, or premium')
-];
-
-// Message validation
-exports.validateMessage = [
-  body('recipientId')
-    .isMongoId()
-    .withMessage('Valid recipient ID is required'),
-  body('content')
-    .trim()
-    .isLength({ min: 1, max: 2000 })
-    .withMessage('Message content must be between 1 and 2000 characters'),
-  body('messageType')
-    .optional()
-    .isIn(['text', 'file', 'image', 'order', 'system'])
-    .withMessage('Invalid message type')
+    .withMessage('At least one skill is required'),
+  body('budget.type')
+    .isIn(['fixed', 'hourly'])
+    .withMessage('Budget type must be fixed or hourly'),
+  body('duration')
+    .isIn(['less-than-1-month', '1-3-months', '3-6-months', 'more-than-6-months'])
+    .withMessage('Invalid duration'),
+  body('experienceLevel')
+    .isIn(['entry', 'intermediate', 'expert'])
+    .withMessage('Invalid experience level')
 ];

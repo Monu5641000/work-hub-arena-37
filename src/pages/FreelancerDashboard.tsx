@@ -1,9 +1,10 @@
 
 import { useState, useEffect } from "react";
-import { ArrowLeft, Plus, Star, DollarSign, Clock, TrendingUp, Eye, MessageSquare } from "lucide-react";
+import { ArrowLeft, Plus, Star, DollarSign, Clock, TrendingUp, Eye, MessageSquare, FileText, Award } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { orderAPI } from "@/api/orders";
@@ -41,8 +42,13 @@ const FreelancerDashboard = () => {
       }
       setUser(currentUser);
 
-      // Fetch orders
-      const ordersResponse = await orderAPI.getMyOrders();
+      // Fetch data in parallel
+      const [ordersResponse, servicesResponse, proposalsResponse] = await Promise.all([
+        orderAPI.getMyOrders(),
+        serviceAPI.getMyServices(),
+        proposalAPI.getMyProposals()
+      ]);
+
       if (ordersResponse.success) {
         const allOrders = ordersResponse.data;
         const activeOrdersList = allOrders.filter((order: any) => 
@@ -67,8 +73,6 @@ const FreelancerDashboard = () => {
         }));
       }
 
-      // Fetch services
-      const servicesResponse = await serviceAPI.getMyServices();
       if (servicesResponse.success) {
         setServices(servicesResponse.data);
         setStats(prev => ({
@@ -77,8 +81,6 @@ const FreelancerDashboard = () => {
         }));
       }
 
-      // Fetch proposals
-      const proposalsResponse = await proposalAPI.getMyProposals();
       if (proposalsResponse.success) {
         setProposals(proposalsResponse.data);
         const pendingProposals = proposalsResponse.data.filter((proposal: any) => 
@@ -185,7 +187,7 @@ const FreelancerDashboard = () => {
                   <p className="text-2xl font-bold text-gray-900">{stats.completedOrders}</p>
                 </div>
                 <div className="h-12 w-12 bg-purple-100 rounded-lg flex items-center justify-center">
-                  <Star className="h-6 w-6 text-purple-600" />
+                  <Award className="h-6 w-6 text-purple-600" />
                 </div>
               </div>
             </CardContent>
@@ -205,176 +207,232 @@ const FreelancerDashboard = () => {
           </Card>
         </div>
 
-        {/* Quick Actions */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-lg font-medium text-gray-900">My Services</h3>
-                  <p className="text-sm text-gray-600">{stats.totalServices} active services</p>
-                </div>
-                <Button variant="outline" onClick={() => navigate('/my-services')}>
-                  Manage
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-lg font-medium text-gray-900">Proposals</h3>
-                  <p className="text-sm text-gray-600">{stats.pendingProposals} pending responses</p>
-                </div>
-                <Button variant="outline" onClick={() => navigate('/my-proposals')}>
-                  View All
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-lg font-medium text-gray-900">Messages</h3>
-                  <p className="text-sm text-gray-600">Client communications</p>
-                </div>
-                <Button variant="outline" onClick={() => navigate('/messages')}>
-                  Open
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+        <Tabs defaultValue="orders" className="space-y-6">
+          <TabsList>
+            <TabsTrigger value="orders">Active Orders</TabsTrigger>
+            <TabsTrigger value="services">My Services</TabsTrigger>
+            <TabsTrigger value="proposals">Proposals</TabsTrigger>
+            <TabsTrigger value="messages">Messages</TabsTrigger>
+          </TabsList>
 
-        {/* Active Orders */}
-        <div className="mb-8">
-          <h3 className="text-xl font-semibold text-gray-900 mb-4">Active Orders</h3>
-          {activeOrders.length === 0 ? (
+          <TabsContent value="orders" className="space-y-6">
+            <div className="flex justify-between items-center">
+              <h3 className="text-xl font-semibold text-gray-900">Active Orders</h3>
+              <Button variant="outline" onClick={() => navigate('/services')}>
+                Browse Projects
+              </Button>
+            </div>
+            
+            {activeOrders.length === 0 ? (
+              <Card>
+                <CardContent className="p-6 text-center">
+                  <p className="text-gray-500">No active orders at the moment.</p>
+                  <Button variant="outline" className="mt-4" onClick={() => navigate('/create-service')}>
+                    Create a Service
+                  </Button>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="space-y-4">
+                {activeOrders.map((order: any) => (
+                  <Card key={order._id} className="hover:shadow-md transition-shadow">
+                    <CardContent className="p-6">
+                      <div className="flex items-center justify-between mb-4">
+                        <div>
+                          <h4 className="text-lg font-medium text-gray-900">
+                            {order.service?.title || 'Service Order'}
+                          </h4>
+                          <p className="text-gray-600">
+                            Client: {order.client?.firstName} {order.client?.lastName}
+                          </p>
+                        </div>
+                        <Badge 
+                          variant={order.status === "delivered" ? "default" : "secondary"}
+                          className={order.status === "delivered" ? "bg-green-100 text-green-800" : "bg-blue-100 text-blue-800"}
+                        >
+                          {order.status.replace('_', ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())}
+                        </Badge>
+                      </div>
+                      <div className="flex items-center justify-between text-sm text-gray-600 mb-4">
+                        <span>Earnings: ${order.freelancerEarnings}</span>
+                        <span>
+                          {order.daysRemaining > 0 
+                            ? `${order.daysRemaining} days remaining` 
+                            : order.isOverdue 
+                              ? 'Overdue' 
+                              : 'Due today'
+                          }
+                        </span>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-2 mb-4">
+                        <div 
+                          className="bg-blue-600 h-2 rounded-full" 
+                          style={{ width: `${order.progress || 0}%` }}
+                        ></div>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <p className="text-sm text-gray-600">{order.progress || 0}% Complete</p>
+                        <div className="space-x-2">
+                          <Button variant="outline" size="sm" onClick={() => navigate(`/messages?order=${order._id}`)}>
+                            <MessageSquare className="h-4 w-4 mr-1" />
+                            Message
+                          </Button>
+                          <Button size="sm" onClick={() => navigate(`/order/${order._id}`)}>
+                            View Details
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="services" className="space-y-6">
+            <div className="flex justify-between items-center">
+              <h3 className="text-xl font-semibold text-gray-900">My Services</h3>
+              <Button onClick={() => navigate('/create-service')}>
+                <Plus className="h-4 w-4 mr-2" />
+                Create Service
+              </Button>
+            </div>
+            
+            {services.length === 0 ? (
+              <Card>
+                <CardContent className="p-6 text-center">
+                  <p className="text-gray-500">No services created yet.</p>
+                  <Button className="mt-4" onClick={() => navigate('/create-service')}>
+                    Create Your First Service
+                  </Button>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {services.map((service: any) => (
+                  <Card key={service._id} className="hover:shadow-md transition-shadow">
+                    <CardContent className="p-6">
+                      <div className="mb-4">
+                        {service.images?.[0] && (
+                          <img 
+                            src={service.images[0].url} 
+                            alt={service.title}
+                            className="w-full h-32 object-cover rounded-lg mb-3"
+                          />
+                        )}
+                        <h4 className="text-lg font-medium text-gray-900 mb-2">{service.title}</h4>
+                        <p className="text-sm text-gray-600 line-clamp-2">{service.description}</p>
+                      </div>
+                      <div className="flex items-center justify-between text-sm text-gray-600 mb-4">
+                        <span className="flex items-center">
+                          <Star className="h-4 w-4 mr-1 text-yellow-500" />
+                          {service.averageRating || 0} ({service.totalReviews || 0})
+                        </span>
+                        <span>${service.pricingPlans?.basic?.price}</span>
+                      </div>
+                      <div className="flex items-center justify-between text-sm text-gray-600 mb-4">
+                        <span className="flex items-center">
+                          <Eye className="h-4 w-4 mr-1" />
+                          {service.impressions || 0} views
+                        </span>
+                        <Badge variant="outline">
+                          {service.status}
+                        </Badge>
+                      </div>
+                      <div className="flex space-x-2">
+                        <Button variant="outline" size="sm" onClick={() => navigate(`/services/${service._id}`)}>
+                          View
+                        </Button>
+                        <Button size="sm" onClick={() => navigate(`/edit-service/${service._id}`)}>
+                          Edit
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="proposals" className="space-y-6">
+            <div className="flex justify-between items-center">
+              <h3 className="text-xl font-semibold text-gray-900">My Proposals</h3>
+              <Button onClick={() => navigate('/my-proposals')}>
+                View All Proposals
+              </Button>
+            </div>
+            
+            {proposals.length === 0 ? (
+              <Card>
+                <CardContent className="p-6 text-center">
+                  <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-500">No proposals submitted yet.</p>
+                  <Button variant="outline" className="mt-4" onClick={() => navigate('/services')}>
+                    Browse Projects
+                  </Button>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="space-y-4">
+                {proposals.slice(0, 5).map((proposal: any) => (
+                  <Card key={proposal._id} className="hover:shadow-md transition-shadow">
+                    <CardContent className="p-6">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h4 className="text-lg font-medium text-gray-900 mb-2">
+                            {proposal.project?.title}
+                          </h4>
+                          <div className="flex items-center space-x-4 text-sm text-gray-600">
+                            <span>Proposed: ${proposal.proposedBudget?.amount}</span>
+                            <span>Duration: {proposal.estimatedDuration}</span>
+                            <span>Submitted {new Date(proposal.submittedAt).toLocaleDateString()}</span>
+                          </div>
+                        </div>
+                        <div className="flex flex-col space-y-2">
+                          <Badge 
+                            variant={
+                              proposal.status === 'accepted' ? 'default' :
+                              proposal.status === 'rejected' ? 'destructive' : 'secondary'
+                            }
+                            className={
+                              proposal.status === 'accepted' ? 'bg-green-100 text-green-800' :
+                              proposal.status === 'rejected' ? 'bg-red-100 text-red-800' : 
+                              'bg-yellow-100 text-yellow-800'
+                            }
+                          >
+                            {proposal.status.charAt(0).toUpperCase() + proposal.status.slice(1)}
+                          </Badge>
+                          <Button variant="outline" size="sm" onClick={() => navigate(`/proposal/${proposal._id}`)}>
+                            View Details
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="messages" className="space-y-6">
+            <div className="flex justify-between items-center">
+              <h3 className="text-xl font-semibold text-gray-900">Messages</h3>
+              <Button onClick={() => navigate('/messages')}>
+                View All Messages
+              </Button>
+            </div>
+            
             <Card>
               <CardContent className="p-6 text-center">
-                <p className="text-gray-500">No active orders at the moment.</p>
-                <Button variant="outline" className="mt-4" onClick={() => navigate('/create-service')}>
-                  Create a Service
+                <MessageSquare className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <p className="text-gray-500">Communicate with your clients</p>
+                <Button variant="outline" className="mt-4" onClick={() => navigate('/messages')}>
+                  Open Messages
                 </Button>
               </CardContent>
             </Card>
-          ) : (
-            <div className="space-y-4">
-              {activeOrders.map((order: any) => (
-                <Card key={order._id} className="hover:shadow-md transition-shadow">
-                  <CardContent className="p-6">
-                    <div className="flex items-center justify-between mb-4">
-                      <div>
-                        <h4 className="text-lg font-medium text-gray-900">
-                          {order.service?.title || 'Service Order'}
-                        </h4>
-                        <p className="text-gray-600">
-                          Client: {order.client?.firstName} {order.client?.lastName}
-                        </p>
-                      </div>
-                      <Badge 
-                        variant={order.status === "delivered" ? "default" : "secondary"}
-                        className={order.status === "delivered" ? "bg-green-100 text-green-800" : "bg-blue-100 text-blue-800"}
-                      >
-                        {order.status.replace('_', ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())}
-                      </Badge>
-                    </div>
-                    <div className="flex items-center justify-between text-sm text-gray-600 mb-4">
-                      <span>Earnings: ${order.freelancerEarnings}</span>
-                      <span>
-                        {order.daysRemaining > 0 
-                          ? `${order.daysRemaining} days remaining` 
-                          : order.isOverdue 
-                            ? 'Overdue' 
-                            : 'Due today'
-                        }
-                      </span>
-                    </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div 
-                        className="bg-blue-600 h-2 rounded-full" 
-                        style={{ width: `${order.progress || 0}%` }}
-                      ></div>
-                    </div>
-                    <div className="flex justify-between items-center mt-4">
-                      <p className="text-sm text-gray-600">{order.progress || 0}% Complete</p>
-                      <div className="space-x-2">
-                        <Button variant="outline" size="sm" onClick={() => navigate(`/messages?order=${order._id}`)}>
-                          <MessageSquare className="h-4 w-4 mr-1" />
-                          Message
-                        </Button>
-                        <Button size="sm" onClick={() => navigate(`/order/${order._id}`)}>
-                          View Details
-                        </Button>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* My Services */}
-        <div>
-          <h3 className="text-xl font-semibold text-gray-900 mb-4">My Services</h3>
-          {services.length === 0 ? (
-            <Card>
-              <CardContent className="p-6 text-center">
-                <p className="text-gray-500">No services created yet.</p>
-                <Button className="mt-4" onClick={() => navigate('/create-service')}>
-                  Create Your First Service
-                </Button>
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {services.slice(0, 6).map((service: any) => (
-                <Card key={service._id} className="hover:shadow-md transition-shadow">
-                  <CardContent className="p-6">
-                    <div className="mb-4">
-                      {service.images?.[0] && (
-                        <img 
-                          src={service.images[0].url} 
-                          alt={service.title}
-                          className="w-full h-32 object-cover rounded-lg mb-3"
-                        />
-                      )}
-                      <h4 className="text-lg font-medium text-gray-900 mb-2">{service.title}</h4>
-                      <p className="text-sm text-gray-600 line-clamp-2">{service.description}</p>
-                    </div>
-                    <div className="flex items-center justify-between text-sm text-gray-600 mb-4">
-                      <span className="flex items-center">
-                        <Star className="h-4 w-4 mr-1 text-yellow-500" />
-                        {service.averageRating || 0} ({service.totalReviews || 0})
-                      </span>
-                      <span>${service.pricingPlans?.basic?.price}</span>
-                    </div>
-                    <div className="flex items-center justify-between text-sm text-gray-600 mb-4">
-                      <span className="flex items-center">
-                        <Eye className="h-4 w-4 mr-1" />
-                        {service.impressions || 0} views
-                      </span>
-                      <Badge variant="outline">
-                        {service.status}
-                      </Badge>
-                    </div>
-                    <div className="flex space-x-2">
-                      <Button variant="outline" size="sm" onClick={() => navigate(`/services/${service._id}`)}>
-                        View
-                      </Button>
-                      <Button size="sm" onClick={() => navigate(`/edit-service/${service._id}`)}>
-                        Edit
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          )}
-        </div>
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );

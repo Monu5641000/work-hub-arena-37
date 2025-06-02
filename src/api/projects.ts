@@ -1,90 +1,48 @@
 
+import axios from 'axios';
+
 const API_BASE_URL = 'http://localhost:5000/api';
 
-export interface ProjectData {
-  title: string;
-  description: string;
-  category: string;
-  subcategory: string;
-  skills: string[];
-  budget: {
-    type: 'fixed' | 'hourly';
-    amount: {
-      min: number;
-      max: number;
-    };
-    currency: string;
-  };
-  duration: string;
-  experienceLevel: string;
-  attachments?: Array<{
-    name: string;
-    url: string;
-    size: number;
-    type: string;
-  }>;
-}
+const api = axios.create({
+  baseURL: API_BASE_URL,
+});
 
-class ProjectAPI {
-  private getAuthHeader() {
-    const token = localStorage.getItem('token');
-    return token ? { Authorization: `Bearer ${token}` } : {};
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem('token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
   }
+  return config;
+});
 
-  async getAllProjects(filters?: any) {
-    const queryParams = new URLSearchParams(filters || {});
-    const response = await fetch(`${API_BASE_URL}/projects?${queryParams}`, {
-      headers: this.getAuthHeader(),
-    });
-    return response.json();
-  }
+export const projectAPI = {
+  async getAllProjects(params?: any) {
+    const response = await api.get('/projects', { params });
+    return response.data;
+  },
 
   async getProject(id: string) {
-    const response = await fetch(`${API_BASE_URL}/projects/${id}`, {
-      headers: this.getAuthHeader(),
-    });
-    return response.json();
-  }
+    const response = await api.get(`/projects/${id}`);
+    return response.data;
+  },
 
-  async createProject(projectData: ProjectData) {
-    const response = await fetch(`${API_BASE_URL}/projects`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...this.getAuthHeader(),
-      },
-      body: JSON.stringify(projectData),
-    });
-    return response.json();
-  }
+  async createProject(projectData: any) {
+    const response = await api.post('/projects', projectData);
+    return response.data;
+  },
 
-  async getMyProjects(filters?: any) {
-    const queryParams = new URLSearchParams(filters || {});
-    const response = await fetch(`${API_BASE_URL}/projects/my/projects?${queryParams}`, {
-      headers: this.getAuthHeader(),
-    });
-    return response.json();
-  }
-
-  async updateProject(id: string, projectData: Partial<ProjectData>) {
-    const response = await fetch(`${API_BASE_URL}/projects/${id}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        ...this.getAuthHeader(),
-      },
-      body: JSON.stringify(projectData),
-    });
-    return response.json();
-  }
+  async updateProject(id: string, projectData: any) {
+    const response = await api.put(`/projects/${id}`, projectData);
+    return response.data;
+  },
 
   async deleteProject(id: string) {
-    const response = await fetch(`${API_BASE_URL}/projects/${id}`, {
-      method: 'DELETE',
-      headers: this.getAuthHeader(),
-    });
-    return response.json();
-  }
-}
+    const response = await api.delete(`/projects/${id}`);
+    return response.data;
+  },
 
-export const projectAPI = new ProjectAPI();
+  async getMyProjects(params?: any) {
+    const response = await api.get('/projects/my/projects', { params });
+    return response.data;
+  }
+};

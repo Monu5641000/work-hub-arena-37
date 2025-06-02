@@ -1,106 +1,60 @@
 
+import axios from 'axios';
+
 const API_BASE_URL = 'http://localhost:5000/api';
 
-export interface ServiceData {
-  title: string;
-  description: string;
-  category: string;
-  subcategory?: string;
-  tags: string[];
-  pricingPlans: {
-    basic: {
-      title: string;
-      description: string;
-      price: number;
-      deliveryDays: number;
-      revisions: number;
-      features: string[];
-    };
-    standard?: {
-      title: string;
-      description: string;
-      price: number;
-      deliveryDays: number;
-      revisions: number;
-      features: string[];
-    };
-    premium?: {
-      title: string;
-      description: string;
-      price: number;
-      deliveryDays: number;
-      revisions: number;
-      features: string[];
-    };
-  };
-  requirements?: Array<{
-    question: string;
-    type: 'text' | 'file' | 'multiple_choice';
-    required: boolean;
-    options?: string[];
-  }>;
-  faqs?: Array<{
-    question: string;
-    answer: string;
-  }>;
-}
+const api = axios.create({
+  baseURL: API_BASE_URL,
+});
 
-class ServiceAPI {
-  private getAuthHeader() {
-    const token = localStorage.getItem('token');
-    return token ? { Authorization: `Bearer ${token}` } : {};
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem('token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
   }
+  return config;
+});
 
-  async getAllServices(filters?: any) {
-    const queryParams = new URLSearchParams(filters || {});
-    const response = await fetch(`${API_BASE_URL}/services?${queryParams}`);
-    return response.json();
-  }
+export const serviceAPI = {
+  async getAllServices(params?: any) {
+    const response = await api.get('/services', { params });
+    return response.data;
+  },
 
   async getService(id: string) {
-    const response = await fetch(`${API_BASE_URL}/services/${id}`);
-    return response.json();
-  }
+    const response = await api.get(`/services/${id}`);
+    return response.data;
+  },
 
-  async createService(serviceData: ServiceData) {
-    const response = await fetch(`${API_BASE_URL}/services`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...this.getAuthHeader(),
-      },
-      body: JSON.stringify(serviceData),
-    });
-    return response.json();
-  }
+  async createService(serviceData: any) {
+    const response = await api.post('/services', serviceData);
+    return response.data;
+  },
 
-  async getMyServices(filters?: any) {
-    const queryParams = new URLSearchParams(filters || {});
-    const response = await fetch(`${API_BASE_URL}/services/my/services?${queryParams}`, {
-      headers: this.getAuthHeader(),
-    });
-    return response.json();
-  }
-
-  async updateService(id: string, serviceData: Partial<ServiceData>) {
-    const response = await fetch(`${API_BASE_URL}/services/${id}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        ...this.getAuthHeader(),
-      },
-      body: JSON.stringify(serviceData),
-    });
-    return response.json();
-  }
+  async updateService(id: string, serviceData: any) {
+    const response = await api.put(`/services/${id}`, serviceData);
+    return response.data;
+  },
 
   async deleteService(id: string) {
-    const response = await fetch(`${API_BASE_URL}/services/${id}`, {
-      method: 'DELETE',
-      headers: this.getAuthHeader(),
-    });
-    return response.json();
-  }
-}
+    const response = await api.delete(`/services/${id}`);
+    return response.data;
+  },
 
-export const serviceAPI = new ServiceAPI();
+  async getMyServices(params?: any) {
+    const response = await api.get('/services/my/services', { params });
+    return response.data;
+  },
+
+  async uploadServiceImages(id: string, images: FormData) {
+    const response = await api.post(`/services/${id}/images`, images, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+    return response.data;
+  },
+
+  async getServiceAnalytics(id: string) {
+    const response = await api.get(`/services/${id}/analytics`);
+    return response.data;
+  }
+};

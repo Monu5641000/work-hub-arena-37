@@ -5,60 +5,71 @@ const User = require('../models/User');
 // Send message
 exports.sendMessage = async (req, res) => {
   try {
-    const { recipientId, content, messageType = 'text', files } = req.body;
+    const { recipientId, content, attachments = [], orderId } = req.body;
 
-    const recipient = await User.findById(recipientId);
-    if (!recipient) {
-      return res.status(404).json({
-        success: false,
-        message: 'Recipient not found'
-      });
-    }
-
-    const conversationId = Message.createConversationId(req.user.id, recipientId);
+    // Generate conversation ID
+    const conversationId = [req.user.id, recipientId].sort().join('_');
 
     const message = await Message.create({
-      conversationId,
-      participants: [req.user.id, recipientId],
       sender: req.user.id,
       recipient: recipientId,
-      messageType,
       content,
-      files
+      attachments,
+      conversationId,
+      order: orderId || null
     });
 
-    await message.populate('sender', 'firstName lastName profilePicture');
-    await message.populate('recipient', 'firstName lastName profilePicture');
+    const populatedMessage = await Message.findById(message._id)
+      .populate('sender', 'firstName lastName profilePicture')
+      .populate('recipient', 'firstName lastName profilePicture');
+
+    // Emit real-time message via Socket.IO
+    const io = req.app.get('io');
+    if (io) {
+      io.to(`user_${recipientId}`).emit('newMessage', populatedMessage);
+    }
 
     res.status(201).json({
       success: true,
-      data: message
+      data: populatedMessage
     });
   } catch (error) {
     console.error('Send message error:', error);
     res.status(500).json({
       success: false,
-      message: 'Error sending message'
+      message: 'Error sending message',
+      error: error.message
     });
   }
 };
 
-// Get conversation
+// Get conversation between two users
 exports.getConversation = async (req, res) => {
   try {
     const { userId } = req.params;
     const { page = 1, limit = 50 } = req.query;
+    const skip = (page - 1) * limit;
 
-    const messages = await Message.getConversation(
-      req.user.id,
-      userId,
-      parseInt(limit),
-      parseInt(page)
-    );
+    const conversationId = [req.user.id, userId].sort().join('_');
+
+    const messages = await Message.find({ conversationId })
+      .populate('sender', 'firstName lastName profilePicture')
+      .populate('recipient', 'firstName lastName profilePicture')
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(Number(limit));
+
+    const total = await Message.countDocuments({ conversationId });
 
     res.status(200).json({
       success: true,
-      data: messages.reverse() // Reverse to show oldest first
+      data: messages.reverse(), // Reverse to show oldest first
+      pagination: {
+        page: Number(page),
+        limit: Number(limit),
+        total,
+        pages: Math.ceil(total / limit)
+      }
     });
   } catch (error) {
     console.error('Get conversation error:', error);
@@ -72,14 +83,68 @@ exports.getConversation = async (req, res) => {
 // Get conversations list
 exports.getConversationsList = async (req, res) => {
   try {
-    const conversations = await Message.getConversationsList(req.user.id);
+    const { page = 1, limit = 20 } = req.query;
+    const skip = (page - 1) * limit;
+
+    // Get all unique conversation partners
+    const conversations = await Message.aggregate([
+      {
+        $match: {
+          $or: [
+            { sender: req.user._id },
+            { recipient: req.user._id }
+          ]
+        }
+      },
+      {
+        $sort: { createdAt: -1 }
+      },
+      {
+        $group: {
+          _id: '$conversationId',
+          lastMessage: { $first: '$$ROOT' },
+          unreadCount: {
+            $sum: {
+              $cond: [
+                {
+                  $and: [
+                    { $eq: ['$recipient', req.user._id] },
+                    { $eq: ['$isRead', false] }
+                  ]
+                },
+                1,
+                0
+              ]
+            }
+          }
+        }
+      },
+      {
+        $skip: skip
+      },
+      {
+        $limit: Number(limit)
+      }
+    ]);
+
+    // Populate user details
+    const populatedConversations = await Message.populate(conversations, [
+      {
+        path: 'lastMessage.sender',
+        select: 'firstName lastName profilePicture'
+      },
+      {
+        path: 'lastMessage.recipient',
+        select: 'firstName lastName profilePicture'
+      }
+    ]);
 
     res.status(200).json({
       success: true,
-      data: conversations
+      data: populatedConversations
     });
   } catch (error) {
-    console.error('Get conversations list error:', error);
+    console.error('Get conversations error:', error);
     res.status(500).json({
       success: false,
       message: 'Error fetching conversations'
@@ -90,11 +155,11 @@ exports.getConversationsList = async (req, res) => {
 // Mark messages as read
 exports.markAsRead = async (req, res) => {
   try {
-    const { messageIds } = req.body;
+    const { conversationId } = req.body;
 
     await Message.updateMany(
       {
-        _id: { $in: messageIds },
+        conversationId,
         recipient: req.user.id,
         isRead: false
       },
@@ -109,7 +174,6 @@ exports.markAsRead = async (req, res) => {
       message: 'Messages marked as read'
     });
   } catch (error) {
-    console.error('Mark as read error:', error);
     res.status(500).json({
       success: false,
       message: 'Error marking messages as read'
@@ -117,17 +181,19 @@ exports.markAsRead = async (req, res) => {
   }
 };
 
-// Get unread count
+// Get unread messages count
 exports.getUnreadCount = async (req, res) => {
   try {
-    const count = await Message.getUnreadCount(req.user.id);
+    const unreadCount = await Message.countDocuments({
+      recipient: req.user.id,
+      isRead: false
+    });
 
     res.status(200).json({
       success: true,
-      data: { unreadCount: count }
+      data: { unreadCount }
     });
   } catch (error) {
-    console.error('Get unread count error:', error);
     res.status(500).json({
       success: false,
       message: 'Error fetching unread count'

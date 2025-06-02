@@ -1,14 +1,18 @@
 
 const Order = require('../models/Order');
 const Service = require('../models/Service');
-const User = require('../models/User');
 
-// Create new order
+// Create order
 exports.createOrder = async (req, res) => {
   try {
-    const { serviceId, packageType, customRequirements, addOns } = req.body;
-    
-    const service = await Service.findById(serviceId).populate('freelancer');
+    const { 
+      serviceId, 
+      selectedPlan, 
+      requirements, 
+      addOns = [] 
+    } = req.body;
+
+    const service = await Service.findById(serviceId);
     if (!service) {
       return res.status(404).json({
         success: false,
@@ -16,51 +20,45 @@ exports.createOrder = async (req, res) => {
       });
     }
 
-    if (service.freelancer._id.toString() === req.user.id) {
-      return res.status(400).json({
-        success: false,
-        message: 'Cannot order your own service'
-      });
-    }
-
-    const packageDetails = service.pricingPlans[packageType];
-    if (!packageDetails) {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid package type'
-      });
-    }
-
-    let totalAmount = packageDetails.price;
-    
-    // Add add-ons cost
-    if (addOns && addOns.length > 0) {
-      addOns.forEach(addOn => {
-        totalAmount += addOn.price;
-      });
-    }
-
-    const platformFee = Math.round(totalAmount * 0.1);
+    // Calculate pricing
+    const planPrice = service.pricingPlans[selectedPlan].price;
+    const addOnsTotal = addOns.reduce((sum, addOn) => sum + addOn.price, 0);
+    const totalAmount = planPrice + addOnsTotal;
+    const platformFee = totalAmount * 0.1; // 10% platform fee
     const freelancerEarnings = totalAmount - platformFee;
 
+    // Calculate delivery date
+    const deliveryDays = service.pricingPlans[selectedPlan].deliveryTime + 
+      addOns.reduce((sum, addOn) => sum + (addOn.deliveryTime || 0), 0);
+    const deliveryDate = new Date();
+    deliveryDate.setDate(deliveryDate.getDate() + deliveryDays);
+
     const order = await Order.create({
-      service: serviceId,
       client: req.user.id,
-      freelancer: service.freelancer._id,
-      packageType,
-      packageDetails,
-      customRequirements,
+      freelancer: service.freelancer,
+      service: serviceId,
+      selectedPlan,
+      requirements,
       addOns,
       totalAmount,
       platformFee,
-      freelancerEarnings
+      freelancerEarnings,
+      deliveryDate,
+      status: 'in_progress'
     });
 
-    await order.populate(['service', 'client', 'freelancer']);
+    // Update service orders count
+    service.orders += 1;
+    await service.save();
+
+    const populatedOrder = await Order.findById(order._id)
+      .populate('client', 'firstName lastName email')
+      .populate('freelancer', 'firstName lastName email')
+      .populate('service', 'title');
 
     res.status(201).json({
       success: true,
-      data: order
+      data: populatedOrder
     });
   } catch (error) {
     console.error('Create order error:', error);
@@ -72,43 +70,70 @@ exports.createOrder = async (req, res) => {
   }
 };
 
-// Get user orders
+// Get user's orders
 exports.getMyOrders = async (req, res) => {
   try {
-    const { status, page = 1, limit = 10 } = req.query;
+    const { page = 1, limit = 10, status } = req.query;
     const skip = (page - 1) * limit;
 
-    let filter = {};
-    if (req.user.role === 'client') {
-      filter.client = req.user.id;
-    } else if (req.user.role === 'freelancer') {
-      filter.freelancer = req.user.id;
-    }
+    const filter = {
+      $or: [
+        { client: req.user.id },
+        { freelancer: req.user.id }
+      ]
+    };
 
     if (status) filter.status = status;
 
     const orders = await Order.find(filter)
+      .populate('client', 'firstName lastName email')
+      .populate('freelancer', 'firstName lastName email')
       .populate('service', 'title images')
-      .populate('client', 'firstName lastName profilePicture')
-      .populate('freelancer', 'firstName lastName profilePicture')
       .sort({ createdAt: -1 })
       .skip(skip)
-      .limit(parseInt(limit));
+      .limit(Number(limit));
 
     const total = await Order.countDocuments(filter);
 
+    // Add calculated fields
+    const ordersWithCalculations = orders.map(order => {
+      const orderObj = order.toObject();
+      const now = new Date();
+      const daysRemaining = Math.ceil((order.deliveryDate - now) / (1000 * 60 * 60 * 24));
+      
+      orderObj.daysRemaining = daysRemaining;
+      orderObj.isOverdue = daysRemaining < 0;
+      
+      // Calculate progress based on status
+      switch (order.status) {
+        case 'in_progress':
+          orderObj.progress = 25;
+          break;
+        case 'delivered':
+          orderObj.progress = 90;
+          break;
+        case 'completed':
+          orderObj.progress = 100;
+          break;
+        default:
+          orderObj.progress = 0;
+      }
+      
+      return orderObj;
+    });
+
     res.status(200).json({
       success: true,
-      data: orders,
+      data: ordersWithCalculations,
       pagination: {
-        current: parseInt(page),
-        pages: Math.ceil(total / limit),
+        page: Number(page),
+        limit: Number(limit),
         total,
-        limit: parseInt(limit)
+        pages: Math.ceil(total / limit)
       }
     });
   } catch (error) {
-    console.error('Get my orders error:', error);
+    console.error('Get orders error:', error);
     res.status(500).json({
       success: false,
       message: 'Error fetching orders'
@@ -120,9 +145,9 @@ exports.getMyOrders = async (req, res) => {
 exports.getOrder = async (req, res) => {
   try {
     const order = await Order.findById(req.params.id)
-      .populate('service')
-      .populate('client', 'firstName lastName profilePicture')
-      .populate('freelancer', 'firstName lastName profilePicture');
+      .populate('client', 'firstName lastName email profilePicture')
+      .populate('freelancer', 'firstName lastName email profilePicture')
+      .populate('service', 'title description images pricingPlans');
 
     if (!order) {
       return res.status(404).json({
@@ -131,13 +156,15 @@ exports.getOrder = async (req, res) => {
       });
     }
 
-    // Check authorization
-    if (order.client._id.toString() !== req.user.id && 
-        order.freelancer._id.toString() !== req.user.id && 
-        req.user.role !== 'admin') {
+    // Check access
+    if (
+      order.client._id.toString() !== req.user.id &&
+      order.freelancer._id.toString() !== req.user.id &&
+      req.user.role !== 'admin'
+    ) {
       return res.status(403).json({
         success: false,
-        message: 'Not authorized to view this order'
+        message: 'Access denied'
       });
     }
 
@@ -146,7 +173,6 @@ exports.getOrder = async (req, res) => {
       data: order
     });
   } catch (error) {
-    console.error('Get order error:', error);
     res.status(500).json({
       success: false,
       message: 'Error fetching order'
@@ -167,47 +193,30 @@ exports.updateOrderStatus = async (req, res) => {
       });
     }
 
-    // Authorization check
-    const isFreelancer = order.freelancer.toString() === req.user.id;
-    const isClient = order.client.toString() === req.user.id;
-    const isAdmin = req.user.role === 'admin';
-
-    if (!isFreelancer && !isClient && !isAdmin) {
+    // Check permissions
+    if (
+      order.client.toString() !== req.user.id &&
+      order.freelancer.toString() !== req.user.id &&
+      req.user.role !== 'admin'
+    ) {
       return res.status(403).json({
         success: false,
-        message: 'Not authorized to update this order'
+        message: 'Access denied'
       });
     }
 
-    // Status transition rules
-    const allowedTransitions = {
-      'payment_confirmed': ['in_progress'],
-      'in_progress': ['delivered'],
-      'delivered': ['revision_requested', 'completed'],
-      'revision_requested': ['in_progress']
-    };
-
-    if (allowedTransitions[order.status] && allowedTransitions[order.status].includes(status)) {
-      order.status = status;
-      
-      if (status === 'delivered') {
-        order.actualDeliveryDate = new Date();
-      }
-      
-      await order.save();
-
-      res.status(200).json({
-        success: true,
-        data: order
-      });
-    } else {
-      res.status(400).json({
-        success: false,
-        message: 'Invalid status transition'
-      });
+    order.status = status;
+    if (status === 'completed') {
+      order.actualDeliveryDate = new Date();
     }
+
+    await order.save();
+
+    res.status(200).json({
+      success: true,
+      data: order
+    });
   } catch (error) {
-    console.error('Update order status error:', error);
     res.status(500).json({
       success: false,
       message: 'Error updating order status'
@@ -218,7 +227,7 @@ exports.updateOrderStatus = async (req, res) => {
 // Submit deliverables
 exports.submitDeliverables = async (req, res) => {
   try {
-    const { deliverables, message } = req.body;
+    const { files, message } = req.body;
     const order = await Order.findById(req.params.id);
 
     if (!order) {
@@ -231,31 +240,25 @@ exports.submitDeliverables = async (req, res) => {
     if (order.freelancer.toString() !== req.user.id) {
       return res.status(403).json({
         success: false,
-        message: 'Not authorized to submit deliverables for this order'
+        message: 'Access denied'
       });
     }
 
-    order.deliverables = deliverables;
+    order.deliverables.push({
+      fileName: files.map(f => f.name).join(', '),
+      fileUrl: files[0]?.url || '',
+      message,
+      submittedAt: new Date()
+    });
+
     order.status = 'delivered';
-    order.actualDeliveryDate = new Date();
-
-    if (message) {
-      order.messages.push({
-        sender: req.user.id,
-        message,
-        isSystemMessage: false
-      });
-    }
-
     await order.save();
 
     res.status(200).json({
       success: true,
-      data: order,
-      message: 'Deliverables submitted successfully'
+      data: order
     });
   } catch (error) {
-    console.error('Submit deliverables error:', error);
     res.status(500).json({
       success: false,
       message: 'Error submitting deliverables'

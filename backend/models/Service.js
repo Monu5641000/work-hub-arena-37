@@ -1,7 +1,7 @@
 
 const mongoose = require('mongoose');
 
-const ServiceSchema = new mongoose.Schema({
+const serviceSchema = new mongoose.Schema({
   title: {
     type: String,
     required: [true, 'Service title is required'],
@@ -15,85 +15,75 @@ const ServiceSchema = new mongoose.Schema({
   },
   category: {
     type: String,
-    required: [true, 'Category is required'],
-    enum: ['Design', 'Development', 'Marketing', 'Writing', 'Video Editing', 'Data Entry', 'Translation', 'Other']
+    required: [true, 'Service category is required'],
+    enum: [
+      'web-development',
+      'mobile-development',
+      'design',
+      'writing',
+      'marketing',
+      'data-science',
+      'consulting',
+      'other'
+    ]
   },
   subcategory: {
     type: String,
-    trim: true
+    required: true
   },
-  tags: [{
-    type: String,
-    trim: true
-  }],
+  tags: [String],
   freelancer: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
-    required: true
+    required: [true, 'Freelancer is required']
   },
+  images: [{
+    url: String,
+    alt: String,
+    isPrimary: { type: Boolean, default: false }
+  }],
   pricingPlans: {
     basic: {
-      title: { type: String, required: true },
-      description: { type: String, required: true },
-      price: { type: Number, required: true, min: 0 },
-      deliveryDays: { type: Number, required: true, min: 1 },
-      revisions: { type: Number, default: 1 },
+      title: String,
+      description: String,
+      price: { type: Number, required: true },
+      deliveryTime: Number, // in days
+      revisions: Number,
       features: [String]
     },
     standard: {
       title: String,
       description: String,
-      price: { type: Number, min: 0 },
-      deliveryDays: { type: Number, min: 1 },
-      revisions: { type: Number, default: 2 },
+      price: Number,
+      deliveryTime: Number,
+      revisions: Number,
       features: [String]
     },
     premium: {
       title: String,
       description: String,
-      price: { type: Number, min: 0 },
-      deliveryDays: { type: Number, min: 1 },
-      revisions: { type: Number, default: 3 },
+      price: Number,
+      deliveryTime: Number,
+      revisions: Number,
       features: [String]
     }
   },
-  images: [{
-    url: String,
-    publicId: String,
-    alt: String
-  }],
-  video: {
-    url: String,
-    publicId: String,
-    thumbnail: String
-  },
-  requirements: [{
-    question: { type: String, required: true },
-    type: { type: String, enum: ['text', 'file', 'multiple_choice'], default: 'text' },
-    required: { type: Boolean, default: false },
-    options: [String] // For multiple choice questions
-  }],
-  faqs: [{
-    question: { type: String, required: true },
-    answer: { type: String, required: true }
+  addOns: [{
+    title: String,
+    description: String,
+    price: Number,
+    deliveryTime: Number
   }],
   status: {
     type: String,
-    enum: ['draft', 'pending', 'active', 'paused', 'rejected', 'deleted'],
+    enum: ['draft', 'pending', 'active', 'paused', 'rejected'],
     default: 'draft'
   },
   isActive: {
     type: Boolean,
     default: true
   },
-  totalOrders: {
-    type: Number,
-    default: 0
-  },
-  completedOrders: {
-    type: Number,
-    default: 0
-  },
+  rejectionReason: String,
   averageRating: {
     type: Number,
     default: 0,
@@ -112,42 +102,20 @@ const ServiceSchema = new mongoose.Schema({
     type: Number,
     default: 0
   },
-  lastModified: {
-    type: Date,
-    default: Date.now
-  },
-  rejectionReason: String,
-  adminNotes: String
+  orders: {
+    type: Number,
+    default: 0
+  }
 }, {
-  timestamps: true,
-  toJSON: { virtuals: true },
-  toObject: { virtuals: true }
+  timestamps: true
 });
 
-// Indexes for better performance
-ServiceSchema.index({ freelancer: 1, status: 1 });
-ServiceSchema.index({ category: 1, status: 1 });
-ServiceSchema.index({ 'pricingPlans.basic.price': 1 });
-ServiceSchema.index({ averageRating: -1 });
-ServiceSchema.index({ totalOrders: -1 });
-ServiceSchema.index({ createdAt: -1 });
+// Indexes
+serviceSchema.index({ freelancer: 1 });
+serviceSchema.index({ category: 1 });
+serviceSchema.index({ status: 1 });
+serviceSchema.index({ isActive: 1 });
+serviceSchema.index({ averageRating: -1 });
+serviceSchema.index({ createdAt: -1 });
 
-// Virtual for click-through rate
-ServiceSchema.virtual('ctr').get(function() {
-  return this.impressions > 0 ? (this.clicks / this.impressions) * 100 : 0;
-});
-
-// Virtual for conversion rate
-ServiceSchema.virtual('conversionRate').get(function() {
-  return this.clicks > 0 ? (this.totalOrders / this.clicks) * 100 : 0;
-});
-
-// Method to update rating
-ServiceSchema.methods.updateRating = async function(newRating) {
-  const totalRatingPoints = this.averageRating * this.totalReviews + newRating;
-  this.totalReviews += 1;
-  this.averageRating = totalRatingPoints / this.totalReviews;
-  return this.save();
-};
-
-module.exports = mongoose.model('Service', ServiceSchema);
+module.exports = mongoose.model('Service', serviceSchema);

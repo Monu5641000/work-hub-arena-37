@@ -1,37 +1,12 @@
 
-const jwt = require('jsonwebtoken');
-const bcrypt = require('bcryptjs');
-const crypto = require('crypto');
 const User = require('../models/User');
+const jwt = require('jsonwebtoken');
 
 // Generate JWT token
 const generateToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, {
     expiresIn: process.env.JWT_EXPIRE || '7d'
   });
-};
-
-// Send token response
-const sendTokenResponse = (user, statusCode, res) => {
-  const token = generateToken(user._id);
-
-  const options = {
-    expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict'
-  };
-
-  // Remove password from output
-  user.password = undefined;
-
-  res.status(statusCode)
-    .cookie('token', token, options)
-    .json({
-      success: true,
-      token,
-      user
-    });
 };
 
 // Register user
@@ -54,16 +29,25 @@ exports.register = async (req, res) => {
       lastName,
       email,
       password,
-      role,
-      requirementsCompleted: false
+      role
     });
 
-    sendTokenResponse(user, 201, res);
+    // Generate token
+    const token = generateToken(user._id);
+
+    // Remove password from response
+    user.password = undefined;
+
+    res.status(201).json({
+      success: true,
+      token,
+      user
+    });
   } catch (error) {
     console.error('Registration error:', error);
     res.status(500).json({
       success: false,
-      message: 'Error creating user',
+      message: 'Registration failed',
       error: error.message
     });
   }
@@ -74,13 +58,21 @@ exports.login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // Find user and include password
+    // Check if user exists and get password
     const user = await User.findOne({ email }).select('+password');
-
     if (!user) {
       return res.status(401).json({
         success: false,
-        message: 'Invalid email or password'
+        message: 'Invalid credentials'
+      });
+    }
+
+    // Check password
+    const isPasswordValid = await user.comparePassword(password);
+    if (!isPasswordValid) {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid credentials'
       });
     }
 
@@ -92,26 +84,26 @@ exports.login = async (req, res) => {
       });
     }
 
-    // Check password
-    const isPasswordValid = await user.comparePassword(password);
-
-    if (!isPasswordValid) {
-      return res.status(401).json({
-        success: false,
-        message: 'Invalid email or password'
-      });
-    }
-
     // Update last login
     user.lastLogin = new Date();
-    await user.save({ validateBeforeSave: false });
+    await user.save();
 
-    sendTokenResponse(user, 200, res);
+    // Generate token
+    const token = generateToken(user._id);
+
+    // Remove password from response
+    user.password = undefined;
+
+    res.status(200).json({
+      success: true,
+      token,
+      user
+    });
   } catch (error) {
     console.error('Login error:', error);
     res.status(500).json({
       success: false,
-      message: 'Error logging in',
+      message: 'Login failed',
       error: error.message
     });
   }
@@ -119,14 +111,9 @@ exports.login = async (req, res) => {
 
 // Logout user
 exports.logout = (req, res) => {
-  res.cookie('token', 'none', {
-    expires: new Date(Date.now() + 10 * 1000),
-    httpOnly: true
-  });
-
   res.status(200).json({
     success: true,
-    message: 'User logged out successfully'
+    message: 'Logged out successfully'
   });
 };
 
@@ -134,13 +121,11 @@ exports.logout = (req, res) => {
 exports.getMe = async (req, res) => {
   try {
     const user = await User.findById(req.user.id);
-    
     res.status(200).json({
       success: true,
       user
     });
   } catch (error) {
-    console.error('Get me error:', error);
     res.status(500).json({
       success: false,
       message: 'Error fetching user data'
@@ -148,60 +133,24 @@ exports.getMe = async (req, res) => {
   }
 };
 
-// Update user requirements
-exports.updateRequirements = async (req, res) => {
-  try {
-    const { requirements } = req.body;
-
-    const user = await User.findByIdAndUpdate(
-      req.user.id,
-      { 
-        requirements,
-        requirementsCompleted: true
-      },
-      {
-        new: true,
-        runValidators: true
-      }
-    );
-
-    res.status(200).json({
-      success: true,
-      user
-    });
-  } catch (error) {
-    console.error('Update requirements error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error updating requirements',
-      error: error.message
-    });
-  }
-};
-
-// Update user profile
+// Update profile
 exports.updateProfile = async (req, res) => {
   try {
-    const fieldsToUpdate = {
-      firstName: req.body.firstName,
-      lastName: req.body.lastName,
-      phone: req.body.phone,
-      location: req.body.location,
-      bio: req.body.bio,
-      skills: req.body.skills,
-      hourlyRate: req.body.hourlyRate,
-      experience: req.body.experience,
-      education: req.body.education
-    };
+    const allowedFields = [
+      'firstName', 'lastName', 'phone', 'location', 'bio', 
+      'skills', 'hourlyRate', 'experience', 'education', 'portfolio'
+    ];
 
-    // Remove undefined fields
-    Object.keys(fieldsToUpdate).forEach(key => 
-      fieldsToUpdate[key] === undefined && delete fieldsToUpdate[key]
-    );
+    const updateData = {};
+    allowedFields.forEach(field => {
+      if (req.body[field] !== undefined) {
+        updateData[field] = req.body[field];
+      }
+    });
 
     const user = await User.findByIdAndUpdate(
       req.user.id,
-      fieldsToUpdate,
+      updateData,
       {
         new: true,
         runValidators: true
@@ -213,7 +162,6 @@ exports.updateProfile = async (req, res) => {
       user
     });
   } catch (error) {
-    console.error('Update profile error:', error);
     res.status(500).json({
       success: false,
       message: 'Error updating profile',
@@ -228,8 +176,7 @@ exports.changePassword = async (req, res) => {
     const { currentPassword, newPassword } = req.body;
 
     const user = await User.findById(req.user.id).select('+password');
-
-    // Check current password
+    
     const isCurrentPasswordValid = await user.comparePassword(currentPassword);
     if (!isCurrentPasswordValid) {
       return res.status(400).json({
@@ -238,16 +185,45 @@ exports.changePassword = async (req, res) => {
       });
     }
 
-    // Update password
     user.password = newPassword;
     await user.save();
 
-    sendTokenResponse(user, 200, res);
+    res.status(200).json({
+      success: true,
+      message: 'Password changed successfully'
+    });
   } catch (error) {
-    console.error('Change password error:', error);
     res.status(500).json({
       success: false,
       message: 'Error changing password',
+      error: error.message
+    });
+  }
+};
+
+// Update requirements
+exports.updateRequirements = async (req, res) => {
+  try {
+    const user = await User.findByIdAndUpdate(
+      req.user.id,
+      {
+        requirements: req.body.requirements,
+        requirementsCompleted: true
+      },
+      {
+        new: true,
+        runValidators: true
+      }
+    );
+
+    res.status(200).json({
+      success: true,
+      user
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Error updating requirements',
       error: error.message
     });
   }

@@ -5,12 +5,12 @@ const proposalSchema = new mongoose.Schema({
   project: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Project',
-    required: [true, 'Project is required']
+    required: true
   },
   freelancer: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
-    required: [true, 'Freelancer is required']
+    required: true
   },
   coverLetter: {
     type: String,
@@ -18,15 +18,10 @@ const proposalSchema = new mongoose.Schema({
     maxlength: [2000, 'Cover letter cannot exceed 2000 characters']
   },
   proposedBudget: {
-    type: {
-      type: String,
-      enum: ['fixed', 'hourly'],
-      required: true
-    },
     amount: {
       type: Number,
-      required: [true, 'Proposed amount is required'],
-      min: [1, 'Amount must be at least $1']
+      required: [true, 'Proposed budget is required'],
+      min: [1, 'Budget must be at least $1']
     },
     currency: {
       type: String,
@@ -44,22 +39,21 @@ const proposalSchema = new mongoose.Schema({
     dueDate: Date
   }],
   attachments: [{
-    name: String,
-    url: String,
-    size: Number,
-    type: String
+    fileName: String,
+    fileUrl: String,
+    fileSize: Number
   }],
   status: {
     type: String,
     enum: ['pending', 'accepted', 'rejected', 'withdrawn'],
     default: 'pending'
   },
+  clientMessage: String,
   submittedAt: {
     type: Date,
     default: Date.now
   },
-  respondedAt: Date,
-  clientMessage: String
+  respondedAt: Date
 }, {
   timestamps: true
 });
@@ -69,8 +63,5 @@ proposalSchema.index({ project: 1 });
 proposalSchema.index({ freelancer: 1 });
 proposalSchema.index({ status: 1 });
 proposalSchema.index({ submittedAt: -1 });
-
-// Ensure unique proposal per freelancer per project
-proposalSchema.index({ project: 1, freelancer: 1 }, { unique: true });
 
 module.exports = mongoose.model('Proposal', proposalSchema);

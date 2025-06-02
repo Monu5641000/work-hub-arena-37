@@ -1,155 +1,73 @@
 
+import axios from 'axios';
+
 const API_BASE_URL = 'http://localhost:5000/api';
 
-export interface LoginData {
-  email: string;
-  password: string;
-}
+const api = axios.create({
+  baseURL: API_BASE_URL,
+});
 
-export interface RegisterData {
-  firstName: string;
-  lastName: string;
-  email: string;
-  password: string;
-  role: 'client' | 'freelancer';
-}
-
-export interface RequirementsData {
-  projectTypes?: string[];
-  budget?: { min: number; max: number; };
-  timeline?: string;
-  experience?: string;
-  serviceCategories?: string[];
-  skillLevel?: string;
-  availability?: string;
-  preferredProjectSize?: string;
-  workingHours?: {
-    timezone: string;
-    availability: string[];
-  };
-}
-
-class AuthAPI {
-  private getAuthHeader() {
-    const token = localStorage.getItem('token');
-    return token ? { Authorization: `Bearer ${token}` } : {};
+// Add auth token to requests
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem('token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
   }
+  return config;
+});
 
-  async login(data: LoginData) {
-    try {
-      const response = await fetch(`${API_BASE_URL}/auth/login`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data),
-      });
-
-      const result = await response.json();
-      
-      if (!response.ok || !result.success) {
-        throw new Error(result.message || 'Login failed');
-      }
-
-      // Store token in localStorage
-      localStorage.setItem('token', result.token);
-      localStorage.setItem('user', JSON.stringify(result.user));
-
-      return result;
-    } catch (error) {
-      console.error('Login error:', error);
-      throw error;
+export const authAPI = {
+  async register(userData: any) {
+    const response = await api.post('/auth/register', userData);
+    if (response.data.success) {
+      localStorage.setItem('token', response.data.token);
+      localStorage.setItem('user', JSON.stringify(response.data.user));
     }
-  }
+    return response.data;
+  },
 
-  async register(data: RegisterData) {
-    try {
-      console.log('Registering user with data:', data);
-      
-      const response = await fetch(`${API_BASE_URL}/auth/register`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data),
-      });
-
-      const result = await response.json();
-      
-      console.log('Registration response:', result);
-      
-      if (!response.ok || !result.success) {
-        throw new Error(result.message || 'Registration failed');
-      }
-
-      // Store token in localStorage
-      localStorage.setItem('token', result.token);
-      localStorage.setItem('user', JSON.stringify(result.user));
-
-      return result;
-    } catch (error) {
-      console.error('Registration error:', error);
-      throw error;
+  async login(credentials: any) {
+    const response = await api.post('/auth/login', credentials);
+    if (response.data.success) {
+      localStorage.setItem('token', response.data.token);
+      localStorage.setItem('user', JSON.stringify(response.data.user));
     }
-  }
-
-  async updateRequirements(requirements: RequirementsData) {
-    try {
-      const response = await fetch(`${API_BASE_URL}/auth/requirements`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          ...this.getAuthHeader(),
-        },
-        body: JSON.stringify({ requirements }),
-      });
-
-      const result = await response.json();
-      
-      if (!response.ok || !result.success) {
-        throw new Error(result.message || 'Failed to update requirements');
-      }
-
-      localStorage.setItem('user', JSON.stringify(result.user));
-      return result;
-    } catch (error) {
-      console.error('Update requirements error:', error);
-      throw error;
-    }
-  }
-
-  async getMe() {
-    try {
-      const response = await fetch(`${API_BASE_URL}/auth/me`, {
-        headers: this.getAuthHeader(),
-      });
-
-      const result = await response.json();
-      
-      if (!response.ok || !result.success) {
-        throw new Error(result.message || 'Failed to get user data');
-      }
-
-      return result;
-    } catch (error) {
-      console.error('Get me error:', error);
-      throw error;
-    }
-  }
+    return response.data;
+  },
 
   logout() {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
-  }
+  },
 
   getCurrentUser() {
     const user = localStorage.getItem('user');
     return user ? JSON.parse(user) : null;
-  }
+  },
 
-  isAuthenticated() {
-    return !!localStorage.getItem('token');
-  }
-}
+  async getMe() {
+    const response = await api.get('/auth/me');
+    return response.data;
+  },
 
-export const authAPI = new AuthAPI();
+  async updateProfile(profileData: any) {
+    const response = await api.put('/users/profile', profileData);
+    if (response.data.success) {
+      localStorage.setItem('user', JSON.stringify(response.data.data));
+    }
+    return response.data;
+  },
+
+  async changePassword(passwordData: any) {
+    const response = await api.put('/auth/change-password', passwordData);
+    return response.data;
+  },
+
+  async updateRequirements(requirements: any) {
+    const response = await api.put('/auth/requirements', { requirements });
+    if (response.data.success) {
+      localStorage.setItem('user', JSON.stringify(response.data.user));
+    }
+    return response.data;
+  }
+};
