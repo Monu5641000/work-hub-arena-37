@@ -4,6 +4,9 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const dotenv = require('dotenv');
 const path = require('path');
+const http = require('http');
+const socketIo = require('socket.io');
+const { socketAuth, handleConnection } = require('./socket/socketHandler');
 
 // Import routes
 const authRoutes = require('./routes/authRoutes');
@@ -19,6 +22,20 @@ const adminRoutes = require('./routes/adminRoutes');
 dotenv.config();
 
 const app = express();
+const server = http.createServer(app);
+
+// Socket.IO setup
+const io = socketIo(server, {
+  cors: {
+    origin: "http://localhost:5173",
+    methods: ["GET", "POST"],
+    credentials: true
+  }
+});
+
+// Socket authentication and connection handling
+io.use(socketAuth);
+io.on('connection', (socket) => handleConnection(io, socket));
 
 // Middleware
 app.use(cors());
@@ -27,6 +44,9 @@ app.use(express.urlencoded({ extended: true }));
 
 // Serve static files
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+// Make io accessible to routes
+app.set('io', io);
 
 // Database connection
 mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/servpe', {
@@ -68,8 +88,9 @@ app.use('*', (req, res) => {
 
 const PORT = process.env.PORT || 5000;
 
-app.listen(PORT, () => {
+server.listen(PORT, () => {
   console.log(`Servpe server is running on port ${PORT}`);
+  console.log(`Socket.IO server is ready`);
 });
 
 module.exports = app;
