@@ -1,74 +1,76 @@
-
-import { ArrowRight, Users, Briefcase, Shield, Star, CheckCircle, TrendingUp, Search } from "lucide-react";
+import { useState } from "react";
+import { Search, Star, Users, CheckCircle, ArrowRight, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
 
 const Index = () => {
   const navigate = useNavigate();
+  const [searchQuery, setSearchQuery] = useState("");
 
   const categories = [
-    { name: "Design", count: "1,200+ services" },
-    { name: "Marketing", count: "800+ services" },
-    { name: "Video Editing", count: "650+ services" },
-    { name: "Web Development", count: "2,100+ services" },
-    { name: "Content Writing", count: "900+ services" },
-    { name: "Mobile Apps", count: "450+ services" }
+    { name: "Web Development", count: 1250, icon: "💻" },
+    { name: "Graphic Design", count: 890, icon: "🎨" },
+    { name: "Digital Marketing", count: 675, icon: "📱" },
+    { name: "Writing & Translation", count: 534, icon: "✍️" },
+    { name: "Video & Animation", count: 423, icon: "🎬" },
+    { name: "Music & Audio", count: 298, icon: "🎵" }
   ];
 
   const testimonials = [
     {
-      name: "Priya Sharma",
+      name: "Sarah Johnson",
       role: "Startup Founder",
-      content: "Found amazing developers from India who delivered exactly what I needed.",
+      content: "Found an amazing developer within 24 hours. The quality of work exceeded my expectations!",
       rating: 5
     },
     {
-      name: "Rajesh Kumar",
-      role: "Freelance Designer",
-      content: "This platform helped me connect with international clients easily.",
+      name: "Mike Chen",
+      role: "Marketing Director",
+      content: "Servpe has been a game-changer for our agency. Top-tier talent at competitive rates.",
+      rating: 5
+    },
+    {
+      name: "Elena Rodriguez",
+      role: "E-commerce Owner",
+      content: "The platform made it so easy to find the right freelancer for my project. Highly recommended!",
       rating: 5
     }
   ];
 
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    navigate(`/services?search=${encodeURIComponent(searchQuery)}`);
+  };
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50">
+    <div className="min-h-screen bg-white">
       {/* Navigation */}
-      <nav className="bg-white/80 backdrop-blur-md border-b border-gray-200 sticky top-0 z-50">
+      <nav className="bg-white border-b border-gray-200 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center">
-              <div className="flex items-center space-x-2">
-                <div className="w-8 h-8 bg-gradient-to-r from-orange-500 to-red-600 rounded-lg flex items-center justify-center">
-                  <Briefcase className="h-5 w-5 text-white" />
-                </div>
-                <span className="text-xl font-bold bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent">
-                  Servpe
-                </span>
+              <div className="text-2xl font-bold bg-gradient-to-r from-orange-500 to-red-600 bg-clip-text text-transparent">
+                Servpe
               </div>
             </div>
-            <div className="flex items-center space-x-4">
-              <Button 
-                variant="ghost" 
-                onClick={() => navigate('/services')}
-                className="hover:bg-orange-50"
-              >
-                Explore Services
-              </Button>
-              <Button 
-                variant="ghost" 
-                onClick={() => navigate('/login')}
-                className="hover:bg-orange-50"
-              >
+            
+            <div className="hidden md:flex items-center space-x-8">
+              <a href="/services" className="text-gray-700 hover:text-gray-900">Browse Services</a>
+              <a href="/create-project" className="text-gray-700 hover:text-gray-900">Post Project</a>
+              <Button variant="ghost" onClick={() => navigate('/login')}>
                 Sign In
               </Button>
-              <Button 
-                onClick={() => navigate('/signup')}
-                className="bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white"
-              >
+              <Button onClick={() => navigate('/login')} className="bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700">
                 Get Started
+              </Button>
+            </div>
+            
+            <div className="md:hidden">
+              <Button variant="ghost" size="sm">
+                <Menu className="h-5 w-5" />
               </Button>
             </div>
           </div>
@@ -76,49 +78,38 @@ const Index = () => {
       </nav>
 
       {/* Hero Section */}
-      <section className="relative overflow-hidden py-20 px-4">
-        <div className="max-w-7xl mx-auto">
+      <section className="bg-gradient-to-br from-orange-50 to-red-50 py-20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
-            <h1 className="text-5xl md:text-7xl font-bold mb-6">
-              <span className="bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent">
-                Hire top Indian freelancers
-              </span>
-              <br />
-              <span className="text-gray-900">in minutes</span>
+            <h1 className="text-4xl md:text-6xl font-bold text-gray-900 mb-6">
+              Hire top <span className="bg-gradient-to-r from-orange-500 to-red-600 bg-clip-text text-transparent">Indian freelancers</span> in minutes
             </h1>
             <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
-              Connect with skilled Indian professionals for your projects. Get quality work done at competitive prices with our trusted freelancing platform.
+              Connect with skilled professionals for your projects. From web development to design, find the perfect match for your needs.
             </p>
             
-            {/* Search Bar */}
-            <div className="max-w-2xl mx-auto mb-8">
-              <div className="relative">
-                <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
-                <Input 
-                  placeholder="What do you need help with?" 
-                  className="pl-12 h-14 text-lg border-2 border-orange-200 focus:border-orange-500"
+            <form onSubmit={handleSearch} className="max-w-2xl mx-auto mb-8">
+              <div className="flex">
+                <Input
+                  type="text"
+                  placeholder="What do you need help with?"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="flex-1 h-12 text-lg"
                 />
-                <Button className="absolute right-2 top-2 bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700">
+                <Button type="submit" className="ml-2 h-12 px-8 bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700">
+                  <Search className="h-5 w-5 mr-2" />
                   Search
                 </Button>
               </div>
-            </div>
-
-            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-              <Button 
-                size="lg" 
-                className="bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white px-8 py-3 text-lg group"
-                onClick={() => navigate('/signup')}
-              >
+            </form>
+            
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Button size="lg" onClick={() => navigate('/login')} className="bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700">
                 Get Started
-                <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
+                <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
-              <Button 
-                size="lg" 
-                variant="outline" 
-                className="border-2 border-gray-300 hover:border-orange-400 px-8 py-3 text-lg"
-                onClick={() => navigate('/services')}
-              >
+              <Button size="lg" variant="outline" onClick={() => navigate('/services')}>
                 Explore Services
               </Button>
             </div>
@@ -126,52 +117,85 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Featured Categories */}
-      <section className="py-16 bg-white/50 backdrop-blur-sm">
-        <div className="max-w-7xl mx-auto px-4">
+      {/* Categories */}
+      <section className="py-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-gray-900 mb-4">
-              Popular Categories
-            </h2>
-            <p className="text-gray-600">Find the perfect freelancer for your project</p>
+            <h2 className="text-3xl font-bold text-gray-900 mb-4">Popular Categories</h2>
+            <p className="text-gray-600">Discover services across various categories</p>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-            {categories.map((category, index) => (
-              <Card key={index} className="hover:shadow-lg transition-shadow cursor-pointer">
+          
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
+            {categories.map((category) => (
+              <Card key={category.name} className="hover:shadow-lg transition-shadow cursor-pointer">
                 <CardContent className="p-6 text-center">
-                  <h3 className="font-semibold text-gray-900 mb-1">{category.name}</h3>
-                  <p className="text-sm text-gray-600">{category.count}</p>
+                  <div className="text-3xl mb-3">{category.icon}</div>
+                  <h3 className="font-semibold text-gray-900 mb-2">{category.name}</h3>
+                  <p className="text-sm text-gray-500">{category.count} services</p>
                 </CardContent>
               </Card>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Features */}
+      <section className="py-16 bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold text-gray-900 mb-4">Why Choose Servpe?</h2>
+            <p className="text-gray-600">The best platform to connect with talented freelancers</p>
+          </div>
+          
+          <div className="grid md:grid-cols-3 gap-8">
+            <div className="text-center">
+              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Users className="h-8 w-8 text-blue-600" />
+              </div>
+              <h3 className="text-xl font-semibold mb-2">Verified Professionals</h3>
+              <p className="text-gray-600">All freelancers are verified and have proven track records</p>
+            </div>
+            
+            <div className="text-center">
+              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <CheckCircle className="h-8 w-8 text-green-600" />
+              </div>
+              <h3 className="text-xl font-semibold mb-2">Quality Guaranteed</h3>
+              <p className="text-gray-600">Get your money back if you're not satisfied with the work</p>
+            </div>
+            
+            <div className="text-center">
+              <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Star className="h-8 w-8 text-purple-600" />
+              </div>
+              <h3 className="text-xl font-semibold mb-2">Top Rated</h3>
+              <p className="text-gray-600">Work with freelancers rated 4.9/5 on average</p>
+            </div>
           </div>
         </div>
       </section>
 
       {/* Testimonials */}
-      <section className="py-20 px-4">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">
-              What Our Users Say
-            </h2>
-            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-              Join thousands of satisfied clients and freelancers
-            </p>
+      <section className="py-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold text-gray-900 mb-4">What Our Clients Say</h2>
+            <p className="text-gray-600">Join thousands of satisfied customers</p>
           </div>
-          <div className="grid md:grid-cols-2 gap-8">
+          
+          <div className="grid md:grid-cols-3 gap-8">
             {testimonials.map((testimonial, index) => (
-              <Card key={index} className="border-0 shadow-lg">
-                <CardContent className="p-8">
-                  <div className="flex mb-4">
+              <Card key={index} className="hover:shadow-lg transition-shadow">
+                <CardContent className="p-6">
+                  <div className="flex items-center mb-4">
                     {[...Array(testimonial.rating)].map((_, i) => (
                       <Star key={i} className="h-5 w-5 text-yellow-400 fill-current" />
                     ))}
                   </div>
-                  <p className="text-gray-700 mb-4 italic">"{testimonial.content}"</p>
+                  <p className="text-gray-600 mb-4">"{testimonial.content}"</p>
                   <div>
                     <p className="font-semibold text-gray-900">{testimonial.name}</p>
-                    <p className="text-gray-600">{testimonial.role}</p>
+                    <p className="text-sm text-gray-500">{testimonial.role}</p>
                   </div>
                 </CardContent>
               </Card>
@@ -180,134 +204,57 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Role Selection Section */}
-      <section className="py-20 px-4 bg-gradient-to-r from-orange-500 to-red-600">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-white mb-4">
-              Join Servpe Today
-            </h2>
-            <p className="text-xl text-orange-100 max-w-2xl mx-auto">
-              Whether you're looking to hire or get hired, we've got you covered
-            </p>
-          </div>
-          <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-            <Card className="bg-white/95 backdrop-blur-sm border-0 shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 cursor-pointer group" onClick={() => navigate('/signup')}>
-              <CardHeader className="text-center pb-4">
-                <div className="mx-auto mb-4 p-4 bg-gradient-to-r from-blue-500 to-blue-600 rounded-full w-fit group-hover:scale-110 transition-transform duration-300">
-                  <Briefcase className="h-8 w-8 text-white" />
-                </div>
-                <CardTitle className="text-2xl font-bold text-gray-900">
-                  I'm a Client
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="text-center space-y-4">
-                <CardDescription className="text-gray-600 text-base mb-4">
-                  Hire skilled Indian freelancers for your projects
-                </CardDescription>
-                <div className="space-y-2">
-                  <div className="flex items-center justify-center text-sm text-gray-700">
-                    <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
-                    Access to top Indian talent
-                  </div>
-                  <div className="flex items-center justify-center text-sm text-gray-700">
-                    <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
-                    Competitive pricing
-                  </div>
-                  <div className="flex items-center justify-center text-sm text-gray-700">
-                    <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
-                    Secure payments
-                  </div>
-                </div>
-                <Button className="w-full bg-blue-500 hover:bg-blue-600 text-white group-hover:bg-blue-600 transition-colors">
-                  Start Hiring
-                </Button>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-white/95 backdrop-blur-sm border-0 shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 cursor-pointer group" onClick={() => navigate('/signup')}>
-              <CardHeader className="text-center pb-4">
-                <div className="mx-auto mb-4 p-4 bg-gradient-to-r from-purple-500 to-purple-600 rounded-full w-fit group-hover:scale-110 transition-transform duration-300">
-                  <Users className="h-8 w-8 text-white" />
-                </div>
-                <CardTitle className="text-2xl font-bold text-gray-900">
-                  I'm a Freelancer
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="text-center space-y-4">
-                <CardDescription className="text-gray-600 text-base mb-4">
-                  Showcase your skills and get hired
-                </CardDescription>
-                <div className="space-y-2">
-                  <div className="flex items-center justify-center text-sm text-gray-700">
-                    <Star className="h-4 w-4 text-yellow-500 mr-2" />
-                    Global client access
-                  </div>
-                  <div className="flex items-center justify-center text-sm text-gray-700">
-                    <Star className="h-4 w-4 text-yellow-500 mr-2" />
-                    Build your reputation
-                  </div>
-                  <div className="flex items-center justify-center text-sm text-gray-700">
-                    <Star className="h-4 w-4 text-yellow-500 mr-2" />
-                    Secure payments
-                  </div>
-                </div>
-                <Button className="w-full bg-purple-500 hover:bg-purple-600 text-white group-hover:bg-purple-600 transition-colors">
-                  Start Freelancing
-                </Button>
-              </CardContent>
-            </Card>
-          </div>
+      {/* CTA Section */}
+      <section className="py-16 bg-gradient-to-r from-orange-500 to-red-600">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <h2 className="text-3xl font-bold text-white mb-4">Ready to Get Started?</h2>
+          <p className="text-xl text-orange-100 mb-8">Join Servpe today and connect with top freelancers</p>
+          <Button size="lg" onClick={() => navigate('/login')} className="bg-white text-orange-600 hover:bg-gray-100">
+            Sign Up Now
+            <ArrowRight className="ml-2 h-5 w-5" />
+          </Button>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="bg-gray-900 text-white py-12 px-4">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid md:grid-cols-4 gap-8 mb-8">
+      <footer className="bg-gray-900 text-white py-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid md:grid-cols-4 gap-8">
             <div>
-              <div className="flex items-center space-x-2 mb-4">
-                <div className="w-8 h-8 bg-gradient-to-r from-orange-500 to-red-600 rounded-lg flex items-center justify-center">
-                  <Briefcase className="h-5 w-5 text-white" />
-                </div>
-                <span className="text-xl font-bold">Servpe</span>
-              </div>
-              <p className="text-gray-400">
-                Connecting Indian talent with global opportunities.
-              </p>
+              <div className="text-2xl font-bold mb-4">Servpe</div>
+              <p className="text-gray-300">Connecting talented freelancers with amazing projects.</p>
             </div>
+            
             <div>
               <h3 className="font-semibold mb-4">For Clients</h3>
-              <ul className="space-y-2 text-gray-400">
-                <li>How to Hire</li>
-                <li>Talent Marketplace</li>
-                <li>Project Catalog</li>
-                <li>Enterprise</li>
+              <ul className="space-y-2 text-gray-300">
+                <li><a href="#" className="hover:text-white">How to Hire</a></li>
+                <li><a href="#" className="hover:text-white">Talent Marketplace</a></li>
+                <li><a href="#" className="hover:text-white">Project Catalog</a></li>
               </ul>
             </div>
+            
             <div>
               <h3 className="font-semibold mb-4">For Freelancers</h3>
-              <ul className="space-y-2 text-gray-400">
-                <li>How to Find Work</li>
-                <li>Direct Contracts</li>
-                <li>Find Freelance Jobs</li>
-                <li>Resources</li>
+              <ul className="space-y-2 text-gray-300">
+                <li><a href="#" className="hover:text-white">How to Find Work</a></li>
+                <li><a href="#" className="hover:text-white">Direct Contracts</a></li>
+                <li><a href="#" className="hover:text-white">Find Freelance Jobs</a></li>
               </ul>
             </div>
+            
             <div>
               <h3 className="font-semibold mb-4">Resources</h3>
-              <ul className="space-y-2 text-gray-400">
-                <li>Help & Support</li>
-                <li>Success Stories</li>
-                <li>Reviews</li>
-                <li>Terms of Service</li>
+              <ul className="space-y-2 text-gray-300">
+                <li><a href="#" className="hover:text-white">Help & Support</a></li>
+                <li><a href="#" className="hover:text-white">Success Stories</a></li>
+                <li><a href="#" className="hover:text-white">Community</a></li>
               </ul>
             </div>
           </div>
-          <div className="border-t border-gray-800 pt-8 text-center">
-            <p className="text-gray-500">
-              © 2024 Servpe. All rights reserved.
-            </p>
+          
+          <div className="border-t border-gray-800 mt-8 pt-8 text-center text-gray-300">
+            <p>&copy; 2024 Servpe. All rights reserved.</p>
           </div>
         </div>
       </footer>
