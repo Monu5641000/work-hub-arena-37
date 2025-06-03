@@ -1,125 +1,109 @@
-import { useState } from "react";
-import { ArrowLeft, Plus, X } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useNavigate } from "react-router-dom";
-import { useToast } from "@/hooks/use-toast";
-import { projectAPI, ProjectData } from "@/api/projects";
+
+import React, { useState } from 'react';
+import { ArrowLeft, Plus, X } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Badge } from '@/components/ui/badge';
+import { useNavigate } from 'react-router-dom';
+import { useToast } from '@/hooks/use-toast';
+import { projectAPI } from '@/api/projects';
+import { authAPI } from '@/api/auth';
 
 const CreateProject = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [isLoading, setIsLoading] = useState(false);
-  const [skills, setSkills] = useState<string[]>([]);
-  const [currentSkill, setCurrentSkill] = useState("");
-
-  const [formData, setFormData] = useState<ProjectData>({
-    title: "",
-    description: "",
-    category: "",
-    subcategory: "",
-    skills: [],
+  const [loading, setLoading] = useState(false);
+  const [formData, setFormData] = useState({
+    title: '',
+    description: '',
+    category: '',
+    skills: [] as string[],
     budget: {
-      type: "fixed",
+      type: 'fixed',
       amount: {
         min: 0,
         max: 0
-      },
-      currency: "USD"
-    },
-    duration: "",
-    experienceLevel: ""
-  });
-
-  const handleInputChange = (field: string, value: any) => {
-    if (field.includes('.')) {
-      const fieldParts = field.split('.');
-      
-      if (fieldParts[0] === 'budget') {
-        if (fieldParts[1] === 'type') {
-          setFormData(prev => ({
-            ...prev,
-            budget: {
-              ...prev.budget,
-              type: value as "fixed" | "hourly"
-            }
-          }));
-        } else if (fieldParts[1] === 'amount') {
-          if (fieldParts[2] === 'min') {
-            setFormData(prev => ({
-              ...prev,
-              budget: {
-                ...prev.budget,
-                amount: {
-                  ...prev.budget.amount,
-                  min: value
-                }
-              }
-            }));
-          } else if (fieldParts[2] === 'max') {
-            setFormData(prev => ({
-              ...prev,
-              budget: {
-                ...prev.budget,
-                amount: {
-                  ...prev.budget.amount,
-                  max: value
-                }
-              }
-            }));
-          }
-        } else if (fieldParts[1] === 'currency') {
-          setFormData(prev => ({
-            ...prev,
-            budget: {
-              ...prev.budget,
-              currency: value
-            }
-          }));
-        }
       }
+    },
+    duration: '',
+    experienceLevel: 'intermediate'
+  });
+  const [newSkill, setNewSkill] = useState('');
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    
+    if (name === 'budgetMin' || name === 'budgetMax') {
+      setFormData(prev => ({
+        ...prev,
+        budget: {
+          ...prev.budget,
+          amount: {
+            ...prev.budget.amount,
+            [name === 'budgetMin' ? 'min' : 'max']: Number(value)
+          }
+        }
+      }));
+    } else if (name === 'budgetType') {
+      setFormData(prev => ({
+        ...prev,
+        budget: {
+          ...prev.budget,
+          type: value
+        }
+      }));
     } else {
       setFormData(prev => ({
         ...prev,
-        [field]: value
+        [name]: value
       }));
     }
   };
 
   const addSkill = () => {
-    if (currentSkill.trim() && !skills.includes(currentSkill.trim())) {
-      const newSkills = [...skills, currentSkill.trim()];
-      setSkills(newSkills);
-      setFormData(prev => ({ ...prev, skills: newSkills }));
-      setCurrentSkill("");
+    if (newSkill.trim() && !formData.skills.includes(newSkill.trim())) {
+      setFormData(prev => ({
+        ...prev,
+        skills: [...prev.skills, newSkill.trim()]
+      }));
+      setNewSkill('');
     }
   };
 
-  const removeSkill = (skillToRemove: string) => {
-    const newSkills = skills.filter(skill => skill !== skillToRemove);
-    setSkills(newSkills);
-    setFormData(prev => ({ ...prev, skills: newSkills }));
+  const removeSkill = (skill: string) => {
+    setFormData(prev => ({
+      ...prev,
+      skills: prev.skills.filter(s => s !== skill)
+    }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
+    
+    const user = authAPI.getCurrentUser();
+    if (!user || user.role !== 'client') {
+      toast({
+        title: "Access Denied",
+        description: "Only clients can create projects",
+        variant: "destructive",
+      });
+      navigate('/login');
+      return;
+    }
+
+    setLoading(true);
 
     try {
-      const result = await projectAPI.createProject(formData);
-      
-      if (result.success) {
+      const response = await projectAPI.createProject(formData);
+      if (response.success) {
         toast({
           title: "Project Created",
           description: "Your project has been posted successfully!",
         });
         navigate('/dashboard/client');
-      } else {
-        throw new Error(result.message);
       }
     } catch (error: any) {
       toast({
@@ -128,186 +112,203 @@ const CreateProject = () => {
         variant: "destructive",
       });
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Navigation */}
       <nav className="bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
-            <Button 
-              variant="ghost" 
-              onClick={() => navigate('/dashboard/client')}
-              className="flex items-center space-x-2"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              <span>Back to Dashboard</span>
-            </Button>
+            <div className="flex items-center space-x-4">
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => navigate('/dashboard/client')}
+                className="flex items-center space-x-2"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                <span>Back to Dashboard</span>
+              </Button>
+              <div className="h-6 w-px bg-gray-300" />
+              <h1 className="text-xl font-semibold text-gray-900">Create New Project</h1>
+            </div>
           </div>
         </div>
       </nav>
 
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Card>
           <CardHeader>
-            <CardTitle>Post a New Project</CardTitle>
+            <CardTitle>Project Details</CardTitle>
             <CardDescription>
-              Describe your project to attract the best freelancers
+              Provide detailed information about your project to attract the right freelancers
             </CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
-              <div>
-                <Label htmlFor="title">Project Title</Label>
+              <div className="space-y-2">
+                <Label htmlFor="title">Project Title *</Label>
                 <Input
                   id="title"
+                  name="title"
                   value={formData.title}
-                  onChange={(e) => handleInputChange('title', e.target.value)}
+                  onChange={handleInputChange}
                   placeholder="e.g., Build a responsive e-commerce website"
                   required
                 />
               </div>
 
-              <div>
-                <Label htmlFor="description">Project Description</Label>
+              <div className="space-y-2">
+                <Label htmlFor="description">Project Description *</Label>
                 <Textarea
                   id="description"
+                  name="description"
                   value={formData.description}
-                  onChange={(e) => handleInputChange('description', e.target.value)}
+                  onChange={handleInputChange}
                   placeholder="Describe your project in detail..."
-                  rows={6}
+                  rows={5}
                   required
                 />
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="category">Category</Label>
-                  <Select onValueChange={(value) => handleInputChange('category', value)}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select category" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="web-development">Web Development</SelectItem>
-                      <SelectItem value="mobile-development">Mobile Development</SelectItem>
-                      <SelectItem value="design">Design</SelectItem>
-                      <SelectItem value="writing">Writing</SelectItem>
-                      <SelectItem value="marketing">Marketing</SelectItem>
-                      <SelectItem value="data-science">Data Science</SelectItem>
-                      <SelectItem value="consulting">Consulting</SelectItem>
-                      <SelectItem value="other">Other</SelectItem>
-                    </SelectContent>
-                  </Select>
+                <div className="space-y-2">
+                  <Label htmlFor="category">Category *</Label>
+                  <Input
+                    id="category"
+                    name="category"
+                    value={formData.category}
+                    onChange={handleInputChange}
+                    placeholder="e.g., Web Development"
+                    required
+                  />
                 </div>
-
-                <div>
-                  <Label htmlFor="experienceLevel">Experience Level</Label>
-                  <Select onValueChange={(value) => handleInputChange('experienceLevel', value)}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select experience level" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="entry">Entry Level</SelectItem>
-                      <SelectItem value="intermediate">Intermediate</SelectItem>
-                      <SelectItem value="expert">Expert</SelectItem>
-                    </SelectContent>
-                  </Select>
+                <div className="space-y-2">
+                  <Label htmlFor="duration">Project Duration *</Label>
+                  <select
+                    id="duration"
+                    name="duration"
+                    value={formData.duration}
+                    onChange={handleInputChange}
+                    className="w-full p-2 border border-gray-300 rounded-md"
+                    required
+                  >
+                    <option value="">Select duration</option>
+                    <option value="less-than-1-month">Less than 1 month</option>
+                    <option value="1-3-months">1-3 months</option>
+                    <option value="3-6-months">3-6 months</option>
+                    <option value="more-than-6-months">More than 6 months</option>
+                  </select>
                 </div>
               </div>
 
-              <div>
-                <Label>Skills Required</Label>
-                <div className="flex space-x-2 mt-2">
+              <div className="space-y-2">
+                <Label>Required Skills</Label>
+                <div className="flex space-x-2">
                   <Input
-                    value={currentSkill}
-                    onChange={(e) => setCurrentSkill(e.target.value)}
-                    placeholder="Type a skill and press Add"
+                    value={newSkill}
+                    onChange={(e) => setNewSkill(e.target.value)}
+                    placeholder="Add a skill"
                     onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addSkill())}
                   />
-                  <Button type="button" variant="outline" onClick={addSkill}>
+                  <Button type="button" onClick={addSkill} variant="outline">
                     <Plus className="h-4 w-4" />
                   </Button>
                 </div>
                 <div className="flex flex-wrap gap-2 mt-2">
-                  {skills.map((skill) => (
-                    <div key={skill} className="flex items-center space-x-1 bg-blue-100 text-blue-800 px-2 py-1 rounded">
-                      <span className="text-sm">{skill}</span>
-                      <button
+                  {formData.skills.map((skill) => (
+                    <Badge key={skill} variant="secondary" className="pr-1">
+                      {skill}
+                      <Button
                         type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="ml-1 p-0 h-4 w-4"
                         onClick={() => removeSkill(skill)}
-                        className="text-blue-600 hover:text-blue-800"
                       >
                         <X className="h-3 w-3" />
-                      </button>
-                    </div>
+                      </Button>
+                    </Badge>
                   ))}
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <Label>Budget Type</Label>
-                  <Select onValueChange={(value) => handleInputChange('budget.type', value)}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Budget type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="fixed">Fixed Price</SelectItem>
-                      <SelectItem value="hourly">Hourly Rate</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div>
-                  <Label htmlFor="budgetMin">Min Budget ($)</Label>
-                  <Input
-                    id="budgetMin"
-                    type="number"
-                    value={formData.budget.amount.min}
-                    onChange={(e) => handleInputChange('budget.amount.min', Number(e.target.value))}
-                    required
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="budgetMax">Max Budget ($)</Label>
-                  <Input
-                    id="budgetMax"
-                    type="number"
-                    value={formData.budget.amount.max}
-                    onChange={(e) => handleInputChange('budget.amount.max', Number(e.target.value))}
-                    required
-                  />
+              <div className="space-y-4">
+                <Label>Budget</Label>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="budgetType">Budget Type</Label>
+                    <select
+                      id="budgetType"
+                      name="budgetType"
+                      value={formData.budget.type}
+                      onChange={handleInputChange}
+                      className="w-full p-2 border border-gray-300 rounded-md"
+                    >
+                      <option value="fixed">Fixed Price</option>
+                      <option value="hourly">Hourly Rate</option>
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="budgetMin">Min Budget ($)</Label>
+                    <Input
+                      id="budgetMin"
+                      name="budgetMin"
+                      type="number"
+                      value={formData.budget.amount.min}
+                      onChange={handleInputChange}
+                      placeholder="500"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="budgetMax">Max Budget ($)</Label>
+                    <Input
+                      id="budgetMax"
+                      name="budgetMax"
+                      type="number"
+                      value={formData.budget.amount.max}
+                      onChange={handleInputChange}
+                      placeholder="1500"
+                      required
+                    />
+                  </div>
                 </div>
               </div>
 
-              <div>
-                <Label>Project Duration</Label>
-                <Select onValueChange={(value) => handleInputChange('duration', value)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Expected duration" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="less-than-1-month">Less than 1 month</SelectItem>
-                    <SelectItem value="1-3-months">1-3 months</SelectItem>
-                    <SelectItem value="3-6-months">3-6 months</SelectItem>
-                    <SelectItem value="more-than-6-months">More than 6 months</SelectItem>
-                  </SelectContent>
-                </Select>
+              <div className="space-y-2">
+                <Label htmlFor="experienceLevel">Experience Level</Label>
+                <select
+                  id="experienceLevel"
+                  name="experienceLevel"
+                  value={formData.experienceLevel}
+                  onChange={handleInputChange}
+                  className="w-full p-2 border border-gray-300 rounded-md"
+                >
+                  <option value="entry">Entry Level</option>
+                  <option value="intermediate">Intermediate</option>
+                  <option value="expert">Expert</option>
+                </select>
               </div>
 
-              <div className="flex justify-end space-x-4">
+              <div className="flex space-x-4 pt-6">
+                <Button 
+                  type="submit" 
+                  className="flex-1"
+                  disabled={loading}
+                >
+                  {loading ? "Creating..." : "Post Project"}
+                </Button>
                 <Button 
                   type="button" 
                   variant="outline" 
                   onClick={() => navigate('/dashboard/client')}
+                  disabled={loading}
                 >
                   Cancel
-                </Button>
-                <Button type="submit" disabled={isLoading}>
-                  {isLoading ? "Publishing..." : "Publish Project"}
                 </Button>
               </div>
             </form>
