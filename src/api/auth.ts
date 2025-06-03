@@ -1,5 +1,6 @@
 
 import axios from 'axios';
+import { ApiResponse, User } from '@/types/api';
 
 const API_BASE_URL = 'http://localhost:5000/api';
 
@@ -17,22 +18,24 @@ api.interceptors.request.use((config) => {
 });
 
 export const authAPI = {
-  async register(userData: any) {
+  async register(userData: any): Promise<ApiResponse<User>> {
     const response = await api.post('/auth/register', userData);
-    if (response.data.success) {
-      localStorage.setItem('token', response.data.token);
-      localStorage.setItem('user', JSON.stringify(response.data.user));
+    const data = response.data as ApiResponse<User>;
+    if (data.success) {
+      localStorage.setItem('token', data.token!);
+      localStorage.setItem('user', JSON.stringify(data.user!));
     }
-    return response.data;
+    return data;
   },
 
-  async login(credentials: any) {
+  async login(credentials: any): Promise<ApiResponse<User>> {
     const response = await api.post('/auth/login', credentials);
-    if (response.data.success) {
-      localStorage.setItem('token', response.data.token);
-      localStorage.setItem('user', JSON.stringify(response.data.user));
+    const data = response.data as ApiResponse<User>;
+    if (data.success) {
+      localStorage.setItem('token', data.token!);
+      localStorage.setItem('user', JSON.stringify(data.user!));
     }
-    return response.data;
+    return data;
   },
 
   logout() {
@@ -40,34 +43,36 @@ export const authAPI = {
     localStorage.removeItem('user');
   },
 
-  getCurrentUser() {
+  getCurrentUser(): User | null {
     const user = localStorage.getItem('user');
     return user ? JSON.parse(user) : null;
   },
 
-  async getMe() {
+  async getMe(): Promise<ApiResponse<User>> {
     const response = await api.get('/auth/me');
-    return response.data;
+    return response.data as ApiResponse<User>;
   },
 
-  async updateProfile(profileData: any) {
+  async updateProfile(profileData: any): Promise<ApiResponse<User>> {
     const response = await api.put('/users/profile', profileData);
-    if (response.data.success) {
-      localStorage.setItem('user', JSON.stringify(response.data.data));
+    const data = response.data as ApiResponse<User>;
+    if (data.success) {
+      localStorage.setItem('user', JSON.stringify(data.data!));
     }
-    return response.data;
+    return data;
   },
 
-  async changePassword(passwordData: any) {
+  async changePassword(passwordData: any): Promise<ApiResponse> {
     const response = await api.put('/auth/change-password', passwordData);
-    return response.data;
+    return response.data as ApiResponse;
   },
 
-  async updateRequirements(requirements: any) {
+  async updateRequirements(requirements: any): Promise<ApiResponse<User>> {
     const response = await api.put('/auth/requirements', { requirements });
-    if (response.data.success) {
-      localStorage.setItem('user', JSON.stringify(response.data.user));
+    const data = response.data as ApiResponse<User>;
+    if (data.success) {
+      localStorage.setItem('user', JSON.stringify(data.user!));
     }
-    return response.data;
+    return data;
   }
 };

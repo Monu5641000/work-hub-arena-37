@@ -1,5 +1,6 @@
 
 import axios from 'axios';
+import { ApiResponse, Project } from '@/types/api';
 
 const API_BASE_URL = 'http://localhost:5000/api';
 
@@ -16,33 +17,33 @@ api.interceptors.request.use((config) => {
 });
 
 export const projectAPI = {
-  async getAllProjects(params?: any) {
+  async getAllProjects(params?: any): Promise<ApiResponse<Project[]>> {
     const response = await api.get('/projects', { params });
-    return response.data;
+    return response.data as ApiResponse<Project[]>;
   },
 
-  async getProject(id: string) {
+  async getProject(id: string): Promise<ApiResponse<Project>> {
     const response = await api.get(`/projects/${id}`);
-    return response.data;
+    return response.data as ApiResponse<Project>;
   },
 
-  async createProject(projectData: any) {
+  async createProject(projectData: any): Promise<ApiResponse<Project>> {
     const response = await api.post('/projects', projectData);
-    return response.data;
+    return response.data as ApiResponse<Project>;
   },
 
-  async updateProject(id: string, projectData: any) {
+  async updateProject(id: string, projectData: any): Promise<ApiResponse<Project>> {
     const response = await api.put(`/projects/${id}`, projectData);
-    return response.data;
+    return response.data as ApiResponse<Project>;
   },
 
-  async deleteProject(id: string) {
+  async deleteProject(id: string): Promise<ApiResponse> {
     const response = await api.delete(`/projects/${id}`);
-    return response.data;
+    return response.data as ApiResponse;
   },
 
-  async getMyProjects(params?: any) {
+  async getMyProjects(params?: any): Promise<ApiResponse<Project[]>> {
     const response = await api.get('/projects/my/projects', { params });
-    return response.data;
+    return response.data as ApiResponse<Project[]>;
   }
 };
