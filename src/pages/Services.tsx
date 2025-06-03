@@ -1,426 +1,370 @@
-
-import { useState, useEffect } from "react";
-import { ArrowLeft, Search, Filter, Star, Heart, MapPin, Loader2 } from "lucide-react";
+import { useState } from "react";
+import { Search, Star, Heart, MapPin, Filter, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
+import { Label } from "@/components/ui/label";
+import { Slider } from "@/components/ui/slider";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useNavigate } from "react-router-dom";
-import { serviceAPI } from "@/api/services";
-import { useToast } from "@/hooks/use-toast";
-import { ApiResponse } from "@/types/api";
-
-interface Service {
-  _id: string;
-  title: string;
-  description: string;
-  category: string;
-  tags: string[];
-  freelancer: {
-    _id: string;
-    name: string;
-    profilePicture: string;
-    location: string;
-    averageRating: number;
-    totalReviews: number;
-    isVerified: boolean;
-  };
-  pricingPlans: {
-    basic: {
-      title: string;
-      price: number;
-      deliveryDays: number;
-      revisions: number;
-    };
-  };
-  images: Array<{
-    url: string;
-    alt: string;
-  }>;
-  averageRating: number;
-  totalReviews: number;
-  totalOrders: number;
-  status: string;
-}
+import { formatCurrency } from "@/utils/currency";
 
 const Services = () => {
   const navigate = useNavigate();
-  const { toast } = useToast();
-  
-  const [services, setServices] = useState<Service[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [filters, setFilters] = useState({
-    category: '',
-    minPrice: '',
-    maxPrice: '',
-    rating: '',
-    search: '',
-    sortBy: 'createdAt',
-    sortOrder: 'desc',
-    page: 1,
-    limit: 12
-  });
-  const [pagination, setPagination] = useState({
-    current: 1,
-    pages: 1,
-    total: 0,
-    limit: 12
-  });
+  const [searchQuery, setSearchQuery] = useState("");
+  const [sortOrder, setSortOrder] = useState("relevance");
+  const [minPrice, setMinPrice] = useState(0);
+  const [maxPrice, setMaxPrice] = useState(10000);
+  const [categoryFilters, setCategoryFilters] = useState<string[]>([]);
+  const [loading, setLoading] = useState(false);
 
-  const categories = ['Design', 'Development', 'Marketing', 'Writing', 'Video Editing', 'Data Entry', 'Translation', 'Other'];
-  const priceRanges = [
-    { label: 'Under ₹5,000', min: '', max: '5000' },
-    { label: '₹5,000 - ₹15,000', min: '5000', max: '15000' },
-    { label: '₹15,000 - ₹50,000', min: '15000', max: '50000' },
-    { label: 'Above ₹50,000', min: '50000', max: '' }
+  const services = [
+    {
+      id: "1",
+      title: "Build a responsive website with React",
+      thumbnail: "/mock-service-image.webp",
+      startingPrice: 50,
+      rating: 4.8,
+      reviews: 62,
+      category: "Web Development",
+      freelancer: {
+        name: "John Doe",
+        avatar: "/avatar-1.png",
+        level: 2,
+        location: "Bangalore, India"
+      }
+    },
+    {
+      id: "2",
+      title: "Design a stunning logo for your brand",
+      thumbnail: "/mock-service-image-2.webp",
+      startingPrice: 30,
+      rating: 4.9,
+      reviews: 125,
+      category: "Graphic Design",
+      freelancer: {
+        name: "Alice Smith",
+        avatar: "/avatar-2.png",
+        level: 3,
+        location: "Mumbai, India"
+      }
+    },
+    {
+      id: "3",
+      title: "Manage your social media marketing",
+      thumbnail: "/mock-service-image-3.webp",
+      startingPrice: 40,
+      rating: 4.7,
+      reviews: 88,
+      category: "Digital Marketing",
+      freelancer: {
+        name: "Bob Johnson",
+        avatar: "/avatar-3.png",
+        level: 1,
+        location: "Delhi, India"
+      }
+    },
+    {
+      id: "4",
+      title: "Write engaging blog posts for your website",
+      thumbnail: "/mock-service-image-4.webp",
+      startingPrice: 25,
+      rating: 4.6,
+      reviews: 45,
+      category: "Writing & Translation",
+      freelancer: {
+        name: "Priya Sharma",
+        avatar: "/avatar-4.png",
+        level: 2,
+        location: "Chennai, India"
+      }
+    },
+    {
+      id: "5",
+      title: "Create a professional explainer video",
+      thumbnail: "/mock-service-image-5.webp",
+      startingPrice: 60,
+      rating: 4.9,
+      reviews: 150,
+      category: "Video & Animation",
+      freelancer: {
+        name: "Rajesh Kumar",
+        avatar: "/avatar-5.png",
+        level: 3,
+        location: "Kolkata, India"
+      }
+    },
+    {
+      id: "6",
+      title: "Produce a catchy jingle for your business",
+      thumbnail: "/mock-service-image-6.webp",
+      startingPrice: 35,
+      rating: 4.5,
+      reviews: 32,
+      category: "Music & Audio",
+      freelancer: {
+        name: "Neha Patel",
+        avatar: "/avatar-6.png",
+        level: 1,
+        location: "Hyderabad, India"
+      }
+    }
   ];
 
-  const fetchServices = async () => {
-    try {
-      setLoading(true);
-      const response = await serviceAPI.getAllServices(filters) as ApiResponse;
-      
-      if (response.success) {
-        setServices(response.data);
-        // Map the API pagination response to match our component's expected structure
-        const paginationData = response.pagination || { page: 1, pages: 1, total: 0, limit: 12 };
-        setPagination({
-          current: paginationData.page || 1,
-          pages: paginationData.pages || 1,
-          total: paginationData.total || 0,
-          limit: paginationData.limit || 12
-        });
-      } else {
-        toast({
-          title: "Error",
-          description: "Failed to fetch services",
-          variant: "destructive",
-        });
-      }
-    } catch (error) {
-      console.error('Error fetching services:', error);
-      toast({
-        title: "Error",
-        description: "Failed to fetch services",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
+  const categories = [
+    "Web Development",
+    "Graphic Design",
+    "Digital Marketing",
+    "Writing & Translation",
+    "Video & Animation",
+    "Music & Audio"
+  ];
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    // Implement search logic here
+  };
+
+  const handleCategoryFilterChange = (category: string) => {
+    if (categoryFilters.includes(category)) {
+      setCategoryFilters(categoryFilters.filter((c) => c !== category));
+    } else {
+      setCategoryFilters([...categoryFilters, category]);
     }
-  };
-
-  useEffect(() => {
-    fetchServices();
-  }, [filters]);
-
-  const handleFilterChange = (key: string, value: string) => {
-    setFilters(prev => ({
-      ...prev,
-      [key]: value,
-      page: 1 // Reset to first page when filters change
-    }));
-  };
-
-  const handlePriceRangeChange = (min: string, max: string) => {
-    setFilters(prev => ({
-      ...prev,
-      minPrice: min,
-      maxPrice: max,
-      page: 1
-    }));
-  };
-
-  const handlePageChange = (page: number) => {
-    setFilters(prev => ({
-      ...prev,
-      page
-    }));
-  };
-
-  const handleServiceClick = (serviceId: string) => {
-    navigate(`/services/${serviceId}`);
   };
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white border-b">
-        <div className="max-w-7xl mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <Button 
-              variant="ghost" 
-              onClick={() => navigate('/')}
-              className="flex items-center space-x-2"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              <span>Back to Home</span>
-            </Button>
-            <div className="flex items-center space-x-4">
-              <div className="relative flex-1 max-w-xl">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                <Input 
-                  placeholder="Search services..." 
-                  className="pl-10"
-                  value={filters.search}
-                  onChange={(e) => handleFilterChange('search', e.target.value)}
-                />
+      {/* Navigation */}
+      <nav className="bg-white border-b border-gray-200 sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            <div className="flex items-center">
+              <div className="text-2xl font-bold bg-gradient-to-r from-orange-500 to-red-600 bg-clip-text text-transparent">
+                Servpe
               </div>
-              <Button variant="outline">
-                <Filter className="h-4 w-4 mr-2" />
-                Filters
+            </div>
+            
+            <div className="hidden md:flex items-center space-x-8">
+              <a href="/services" className="text-gray-700 hover:text-gray-900">Browse Services</a>
+              <a href="/create-project" className="text-gray-700 hover:text-gray-900">Post Project</a>
+              <Button variant="ghost" onClick={() => navigate('/login')}>
+                Sign In
+              </Button>
+              <Button onClick={() => navigate('/login')} className="bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700">
+                Get Started
+              </Button>
+            </div>
+            
+            <div className="md:hidden">
+              <Button variant="ghost" size="sm">
+                <Filter className="h-5 w-5" />
               </Button>
             </div>
           </div>
         </div>
-      </div>
+      </nav>
 
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        <div className="flex gap-8">
+      {/* Hero Section */}
+      <section className="bg-gradient-to-br from-orange-50 to-red-50 py-20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center">
+            <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
+              Find the perfect service for your needs
+            </h1>
+            <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
+              Browse a wide range of services offered by talented freelancers.
+            </p>
+            
+            <form onSubmit={handleSearch} className="max-w-2xl mx-auto mb-8">
+              <div className="flex">
+                <Input
+                  type="text"
+                  placeholder="Search for services"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="flex-1 h-12 text-lg"
+                />
+                <Button type="submit" className="ml-2 h-12 px-8 bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700">
+                  <Search className="h-5 w-5 mr-2" />
+                  Search
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </section>
+
+      {/* Main Content */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="flex flex-col lg:flex-row gap-8">
           {/* Filters Sidebar */}
-          <div className="w-64 space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Categories</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                <label className="flex items-center space-x-2">
-                  <input 
-                    type="radio" 
-                    name="category" 
-                    value=""
-                    checked={filters.category === ''}
-                    onChange={(e) => handleFilterChange('category', e.target.value)}
-                  />
-                  <span className="text-sm">All Categories</span>
-                </label>
-                {categories.map((category) => (
-                  <label key={category} className="flex items-center space-x-2">
-                    <input 
-                      type="radio" 
-                      name="category" 
-                      value={category}
-                      checked={filters.category === category}
-                      onChange={(e) => handleFilterChange('category', e.target.value)}
-                    />
-                    <span className="text-sm">{category}</span>
-                  </label>
-                ))}
-              </CardContent>
-            </Card>
+          <div className="lg:w-1/4">
+            <div className="bg-white rounded-lg shadow p-6 sticky top-20">
+              <h2 className="text-xl font-semibold mb-4">Filters</h2>
 
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Price Range</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                <label className="flex items-center space-x-2">
-                  <input 
-                    type="radio" 
-                    name="price" 
-                    checked={!filters.minPrice && !filters.maxPrice}
-                    onChange={() => handlePriceRangeChange('', '')}
+              {/* Price Range */}
+              <div className="mb-6">
+                <Label htmlFor="price-range" className="block text-sm font-medium text-gray-700 mb-2">
+                  Price Range (₹)
+                </Label>
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="number"
+                    id="min-price"
+                    placeholder="Min"
+                    value={minPrice}
+                    onChange={(e) => setMinPrice(Number(e.target.value))}
+                    className="w-24"
                   />
-                  <span className="text-sm">Any Price</span>
-                </label>
-                {priceRanges.map((range) => (
-                  <label key={range.label} className="flex items-center space-x-2">
-                    <input 
-                      type="radio" 
-                      name="price" 
-                      checked={filters.minPrice === range.min && filters.maxPrice === range.max}
-                      onChange={() => handlePriceRangeChange(range.min, range.max)}
-                    />
-                    <span className="text-sm">{range.label}</span>
-                  </label>
-                ))}
-              </CardContent>
-            </Card>
+                  <span className="text-gray-500">-</span>
+                  <Input
+                    type="number"
+                    id="max-price"
+                    placeholder="Max"
+                    value={maxPrice}
+                    onChange={(e) => setMaxPrice(Number(e.target.value))}
+                    className="w-24"
+                  />
+                </div>
+                <Slider
+                  defaultValue={[minPrice, maxPrice]}
+                  max={10000}
+                  step={100}
+                  onValueChange={(value) => {
+                    setMinPrice(value[0]);
+                    setMaxPrice(value[1]);
+                  }}
+                  className="mt-4"
+                />
+              </div>
 
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Rating</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                {[4, 3, 2, 1].map((rating) => (
-                  <label key={rating} className="flex items-center space-x-2">
-                    <input 
-                      type="radio" 
-                      name="rating" 
-                      value={rating.toString()}
-                      checked={filters.rating === rating.toString()}
-                      onChange={(e) => handleFilterChange('rating', e.target.value)}
-                    />
-                    <div className="flex items-center">
-                      <Star className="h-4 w-4 text-yellow-400 fill-current" />
-                      <span className="text-sm ml-1">{rating}+ stars</span>
+              {/* Categories */}
+              <div>
+                <Label className="block text-sm font-medium text-gray-700 mb-2">
+                  Categories
+                </Label>
+                <div className="space-y-2">
+                  {categories.map((category) => (
+                    <div key={category} className="flex items-center">
+                      <Checkbox
+                        id={`category-${category}`}
+                        checked={categoryFilters.includes(category)}
+                        onCheckedChange={() => handleCategoryFilterChange(category)}
+                      />
+                      <Label htmlFor={`category-${category}`} className="ml-2 text-sm font-medium text-gray-900">
+                        {category}
+                      </Label>
                     </div>
-                  </label>
-                ))}
-              </CardContent>
-            </Card>
+                  ))}
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* Services Grid */}
           <div className="flex-1">
-            <div className="flex items-center justify-between mb-6">
-              <h1 className="text-2xl font-bold">
-                Browse Services ({pagination.total} results)
-              </h1>
-              <select 
-                className="border rounded-md px-3 py-2"
-                value={`${filters.sortBy}-${filters.sortOrder}`}
-                onChange={(e) => {
-                  const [sortBy, sortOrder] = e.target.value.split('-');
-                  setFilters(prev => ({ ...prev, sortBy, sortOrder, page: 1 }));
-                }}
-              >
-                <option value="createdAt-desc">Newest</option>
-                <option value="pricingPlans.basic.price-asc">Price: Low to High</option>
-                <option value="pricingPlans.basic.price-desc">Price: High to Low</option>
-                <option value="averageRating-desc">Top Rated</option>
-                <option value="totalOrders-desc">Most Popular</option>
-              </select>
+            {/* Search and Sort Controls */}
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-2xl font-semibold">
+                {searchQuery ? `Results for "${searchQuery}"` : "All Services"}
+              </h2>
+              <div className="flex items-center gap-4">
+                <Label htmlFor="sort-by" className="text-sm font-medium text-gray-700">
+                  Sort by:
+                </Label>
+                <div className="relative">
+                  <select
+                    id="sort-by"
+                    className="block appearance-none w-full bg-white border border-gray-300 hover:border-gray-400 px-4 py-2 pr-8 rounded leading-tight focus:outline-none focus:shadow-outline text-sm"
+                    value={sortOrder}
+                    onChange={(e) => setSortOrder(e.target.value)}
+                  >
+                    <option value="relevance">Relevance</option>
+                    <option value="price-asc">Price: Low to High</option>
+                    <option value="price-desc">Price: High to Low</option>
+                    <option value="rating">Rating</option>
+                  </select>
+                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
+                    <ChevronDown className="h-4 w-4" />
+                  </div>
+                </div>
+              </div>
             </div>
 
-            {loading ? (
-              <div className="flex items-center justify-center py-12">
-                <Loader2 className="h-8 w-8 animate-spin" />
-                <span className="ml-2">Loading services...</span>
+            {/* Loading State */}
+            {loading && (
+              <div className="text-center py-8">
+                Loading services...
               </div>
-            ) : services.length === 0 ? (
-              <div className="text-center py-12">
-                <p className="text-gray-500">No services found matching your criteria.</p>
-              </div>
-            ) : (
-              <>
-                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {services.map((service) => (
-                    <Card 
-                      key={service._id} 
-                      className="hover:shadow-lg transition-shadow cursor-pointer"
-                      onClick={() => handleServiceClick(service._id)}
-                    >
-                      <div className="relative">
-                        <img 
-                          src={service.images?.[0]?.url || "/placeholder.svg"} 
-                          alt={service.images?.[0]?.alt || service.title}
-                          className="w-full h-48 object-cover rounded-t-lg"
-                        />
-                        <Button 
-                          variant="ghost" 
-                          size="sm"
-                          className="absolute top-2 right-2 bg-white/80 hover:bg-white"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            // TODO: Implement wishlist functionality
-                          }}
-                        >
-                          <Heart className="h-4 w-4" />
-                        </Button>
-                        <Badge 
-                          variant="secondary" 
-                          className="absolute top-2 left-2 bg-white/90"
-                        >
-                          {service.category}
-                        </Badge>
-                      </div>
-                      <CardContent className="p-4">
-                        <div className="flex items-center space-x-2 mb-2">
-                          <img 
-                            src={service.freelancer.profilePicture || "/placeholder.svg"} 
-                            alt={service.freelancer.name}
-                            className="w-6 h-6 rounded-full"
-                          />
-                          <span className="text-sm text-gray-600">{service.freelancer.name}</span>
-                          {service.freelancer.isVerified && (
-                            <Badge variant="outline" className="text-xs">Verified</Badge>
-                          )}
-                        </div>
-                        <h3 className="font-medium text-gray-900 mb-2 line-clamp-2">
-                          {service.title}
-                        </h3>
-                        <div className="flex items-center space-x-1 mb-2">
-                          <Star className="h-4 w-4 text-yellow-400 fill-current" />
-                          <span className="text-sm font-medium">{service.averageRating.toFixed(1)}</span>
-                          <span className="text-sm text-gray-500">({service.totalReviews})</span>
-                        </div>
-                        {service.freelancer.location && (
-                          <div className="flex items-center text-sm text-gray-500 mb-3">
-                            <MapPin className="h-3 w-3 mr-1" />
-                            <span>{service.freelancer.location}</span>
-                          </div>
-                        )}
-                        <div className="flex items-center justify-between">
-                          <span className="font-semibold text-lg">
-                            ₹{service.pricingPlans.basic.price.toLocaleString()}
-                          </span>
-                          <Badge variant="secondary">
-                            {service.pricingPlans.basic.deliveryDays} days
-                          </Badge>
-                        </div>
-                        <div className="flex flex-wrap gap-1 mt-2">
-                          {service.tags.slice(0, 2).map((tag, index) => (
-                            <Badge key={index} variant="outline" className="text-xs">
-                              {tag}
-                            </Badge>
-                          ))}
-                          {service.tags.length > 2 && (
-                            <Badge variant="outline" className="text-xs">
-                              +{service.tags.length - 2} more
-                            </Badge>
-                          )}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-
-                {/* Pagination */}
-                {pagination.pages > 1 && (
-                  <div className="mt-8 flex justify-center">
-                    <Pagination>
-                      <PaginationContent>
-                        {pagination.current > 1 && (
-                          <PaginationItem>
-                            <PaginationPrevious 
-                              onClick={() => handlePageChange(pagination.current - 1)}
-                              className="cursor-pointer"
-                            />
-                          </PaginationItem>
-                        )}
-                        
-                        {Array.from({ length: Math.min(5, pagination.pages) }, (_, i) => {
-                          const page = Math.max(1, pagination.current - 2) + i;
-                          if (page > pagination.pages) return null;
-                          
-                          return (
-                            <PaginationItem key={page}>
-                              <PaginationLink
-                                onClick={() => handlePageChange(page)}
-                                isActive={page === pagination.current}
-                                className="cursor-pointer"
-                              >
-                                {page}
-                              </PaginationLink>
-                            </PaginationItem>
-                          );
-                        })}
-                        
-                        {pagination.current < pagination.pages && (
-                          <PaginationItem>
-                            <PaginationNext 
-                              onClick={() => handlePageChange(pagination.current + 1)}
-                              className="cursor-pointer"
-                            />
-                          </PaginationItem>
-                        )}
-                      </PaginationContent>
-                    </Pagination>
-                  </div>
-                )}
-              </>
             )}
+
+            {/* Services Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {services.map((service) => (
+                <Card key={service.id} className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => navigate(`/services/${service.id}`)}>
+                  <div className="aspect-video relative">
+                    <img 
+                      src={service.thumbnail || "/placeholder.svg"} 
+                      alt={service.title}
+                      className="w-full h-full object-cover rounded-t-lg"
+                    />
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="absolute top-2 right-2 bg-white/80 hover:bg-white"
+                    >
+                      <Heart className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <img 
+                        src={service.freelancer?.avatar || "/placeholder.svg"} 
+                        alt={service.freelancer?.name}
+                        className="w-6 h-6 rounded-full"
+                      />
+                      <span className="text-sm text-gray-600">{service.freelancer?.name}</span>
+                      <Badge variant="secondary" className="text-xs">
+                        Level {service.freelancer?.level || 1}
+                      </Badge>
+                    </div>
+                    
+                    <h3 className="font-semibold text-gray-900 mb-2 line-clamp-2">{service.title}</h3>
+                    
+                    <div className="flex items-center gap-1 mb-3">
+                      <Star className="h-4 w-4 text-yellow-400 fill-current" />
+                      <span className="text-sm font-medium">{service.rating || 4.9}</span>
+                      <span className="text-sm text-gray-500">({service.reviews || 125})</span>
+                    </div>
+                    
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1 text-sm text-gray-500">
+                        <MapPin className="h-3 w-3" />
+                        {service.freelancer?.location || 'India'}
+                      </div>
+                      <div className="text-right">
+                        <div className="text-sm text-gray-500">Starting at</div>
+                        <div className="font-semibold text-lg">
+                          {formatCurrency(service.startingPrice * 83)}
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+
+            {/* Pagination */}
+            <div className="flex justify-center mt-8">
+              <Button variant="outline" disabled>
+                Previous
+              </Button>
+              <Button className="ml-2 bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700">
+                Next
+              </Button>
+            </div>
           </div>
         </div>
       </div>

@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
+import { formatCurrency } from "@/utils/currency";
 
 const Index = () => {
   const navigate = useNavigate();
@@ -27,13 +28,13 @@ const Index = () => {
       rating: 5
     },
     {
-      name: "Mike Chen",
+      name: "Rajesh Kumar",
       role: "Marketing Director",
       content: "Servpe has been a game-changer for our agency. Top-tier talent at competitive rates.",
       rating: 5
     },
     {
-      name: "Elena Rodriguez",
+      name: "Priya Sharma",
       role: "E-commerce Owner",
       content: "The platform made it so easy to find the right freelancer for my project. Highly recommended!",
       rating: 5
@@ -85,7 +86,7 @@ const Index = () => {
               Hire top <span className="bg-gradient-to-r from-orange-500 to-red-600 bg-clip-text text-transparent">Indian freelancers</span> in minutes
             </h1>
             <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
-              Connect with skilled professionals for your projects. From web development to design, find the perfect match for your needs.
+              Connect with skilled professionals for your projects. From web development to design, find the perfect match for your needs at affordable Indian rates.
             </p>
             
             <form onSubmit={handleSearch} className="max-w-2xl mx-auto mb-8">

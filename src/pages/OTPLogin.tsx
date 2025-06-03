@@ -14,12 +14,34 @@ const OTPLogin = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [step, setStep] = useState<'phone' | 'otp'>('phone');
-  const [phoneNumber, setPhoneNumber] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState('+91 ');
   const [otp, setOtp] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    // Ensure +91 prefix is always present
+    if (!value.startsWith('+91 ')) {
+      setPhoneNumber('+91 ');
+    } else {
+      setPhoneNumber(value);
+    }
+  };
+
   const handleSendOTP = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate Indian phone number (10 digits after +91)
+    const phoneRegex = /^\+91 [6-9]\d{9}$/;
+    if (!phoneRegex.test(phoneNumber)) {
+      toast({
+        title: "Invalid Phone Number",
+        description: "Please enter a valid Indian mobile number (10 digits starting with 6-9)",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsLoading(true);
 
     try {
@@ -122,7 +144,7 @@ const OTPLogin = () => {
           </CardTitle>
           <CardDescription>
             {step === 'phone' 
-              ? 'Enter your phone number to receive a verification code'
+              ? 'Enter your Indian mobile number to receive a verification code'
               : `Enter the 6-digit code sent to ${phoneNumber}`
             }
           </CardDescription>
@@ -131,26 +153,29 @@ const OTPLogin = () => {
           {step === 'phone' ? (
             <form onSubmit={handleSendOTP} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="phone">Phone Number</Label>
+                <Label htmlFor="phone">Mobile Number</Label>
                 <div className="relative">
                   <Phone className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                   <Input
                     id="phone"
                     type="tel"
-                    placeholder="+1 (555) 123-4567"
+                    placeholder="+91 98765 43210"
                     value={phoneNumber}
-                    onChange={(e) => setPhoneNumber(e.target.value)}
+                    onChange={handlePhoneChange}
                     className="pl-10"
                     required
                     disabled={isLoading}
                   />
                 </div>
+                <p className="text-xs text-gray-500">
+                  Enter 10-digit mobile number (e.g., +91 98765 43210)
+                </p>
               </div>
               
               <Button 
                 type="submit" 
                 className="w-full bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700"
-                disabled={isLoading || !phoneNumber}
+                disabled={isLoading || phoneNumber.length < 14}
               >
                 {isLoading ? "Sending..." : "Send OTP"}
               </Button>
