@@ -82,7 +82,14 @@ const Services = () => {
       
       if (response.success) {
         setServices(response.data);
-        setPagination(response.pagination || { current: 1, pages: 1, total: 0, limit: 12 });
+        // Map the API pagination response to match our component's expected structure
+        const paginationData = response.pagination || { page: 1, pages: 1, total: 0, limit: 12 };
+        setPagination({
+          current: paginationData.page || paginationData.current || 1,
+          pages: paginationData.pages || 1,
+          total: paginationData.total || 0,
+          limit: paginationData.limit || 12
+        });
       } else {
         toast({
           title: "Error",
