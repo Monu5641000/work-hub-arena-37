@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { ArrowLeft, Search, Filter, Star, Heart, MapPin, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -85,7 +86,7 @@ const Services = () => {
         // Map the API pagination response to match our component's expected structure
         const paginationData = response.pagination || { page: 1, pages: 1, total: 0, limit: 12 };
         setPagination({
-          current: paginationData.page || paginationData.current || 1,
+          current: paginationData.page || 1,
           pages: paginationData.pages || 1,
           total: paginationData.total || 0,
           limit: paginationData.limit || 12
