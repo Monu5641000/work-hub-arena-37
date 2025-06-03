@@ -12,6 +12,7 @@ const { socketAuth, handleConnection } = require('./socket/socketHandler');
 const authRoutes = require('./routes/authRoutes');
 const userRoutes = require('./routes/userRoutes');
 const projectRoutes = require('./routes/projectRoutes');
+const freelancerProjectRoutes = require('./routes/freelancerProjectRoutes');
 const proposalRoutes = require('./routes/proposalRoutes');
 const serviceRoutes = require('./routes/serviceRoutes');
 const orderRoutes = require('./routes/orderRoutes');
@@ -56,10 +57,20 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/servpe', 
 .then(() => console.log('Connected to MongoDB'))
 .catch((error) => console.error('MongoDB connection error:', error));
 
+// Create upload directories if they don't exist
+const fs = require('fs');
+const uploadDirs = ['uploads', 'uploads/freelancer-projects'];
+uploadDirs.forEach(dir => {
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
+});
+
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/projects', projectRoutes);
+app.use('/api/freelancer-projects', freelancerProjectRoutes);
 app.use('/api/proposals', proposalRoutes);
 app.use('/api/services', serviceRoutes);
 app.use('/api/orders', orderRoutes);
