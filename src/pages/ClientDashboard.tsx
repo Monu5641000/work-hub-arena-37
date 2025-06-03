@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { ArrowLeft, Plus, Search, Filter, Star, MapPin, Clock, DollarSign, Eye, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -11,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { orderAPI } from "@/api/orders";
 import { projectAPI } from "@/api/projects";
 import { authAPI } from "@/api/auth";
+import { ApiResponse } from "@/types/api";
 
 const ClientDashboard = () => {
   const navigate = useNavigate();
@@ -41,8 +41,8 @@ const ClientDashboard = () => {
 
       // Fetch orders and projects in parallel
       const [ordersResponse, projectsResponse] = await Promise.all([
-        orderAPI.getMyOrders(),
-        projectAPI.getMyProjects()
+        orderAPI.getMyOrders() as Promise<ApiResponse>,
+        projectAPI.getMyProjects() as Promise<ApiResponse>
       ]);
 
       if (ordersResponse.success) {

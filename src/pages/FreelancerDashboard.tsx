@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { ArrowLeft, Plus, Star, DollarSign, Clock, TrendingUp, Eye, MessageSquare, FileText, Award } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -11,6 +10,7 @@ import { orderAPI } from "@/api/orders";
 import { serviceAPI } from "@/api/services";
 import { proposalAPI } from "@/api/proposals";
 import { authAPI } from "@/api/auth";
+import { ApiResponse } from "@/types/api";
 
 const FreelancerDashboard = () => {
   const navigate = useNavigate();
@@ -44,9 +44,9 @@ const FreelancerDashboard = () => {
 
       // Fetch data in parallel
       const [ordersResponse, servicesResponse, proposalsResponse] = await Promise.all([
-        orderAPI.getMyOrders(),
-        serviceAPI.getMyServices(),
-        proposalAPI.getMyProposals()
+        orderAPI.getMyOrders() as Promise<ApiResponse>,
+        serviceAPI.getMyServices() as Promise<ApiResponse>,
+        proposalAPI.getMyProposals() as Promise<ApiResponse>
       ]);
 
       if (ordersResponse.success) {

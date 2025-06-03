@@ -89,7 +89,7 @@ const Chat: React.FC<ChatProps> = ({ recipientId, recipientName, onClose }) => {
       if (response.success) {
         socketService.sendMessage({
           ...messageData,
-          conversationId: `conv_${currentUser.id}_${recipientId}`
+          conversationId: `conv_${currentUser?._id}_${recipientId}`
         });
         setNewMessage('');
       } else {
@@ -156,12 +156,12 @@ const Chat: React.FC<ChatProps> = ({ recipientId, recipientName, onClose }) => {
               <div
                 key={message._id}
                 className={`flex ${
-                  message.sender._id === currentUser.id ? 'justify-end' : 'justify-start'
+                  message.sender._id === currentUser?._id ? 'justify-end' : 'justify-start'
                 }`}
               >
                 <div
                   className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
-                    message.sender._id === currentUser.id
+                    message.sender._id === currentUser?._id
                       ? 'bg-blue-600 text-white'
                       : 'bg-gray-100 text-gray-900'
                   }`}

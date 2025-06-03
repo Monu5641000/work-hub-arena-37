@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { ArrowLeft, Search, Filter, Star, Heart, MapPin, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -9,6 +8,7 @@ import { Pagination, PaginationContent, PaginationItem, PaginationLink, Paginati
 import { useNavigate } from "react-router-dom";
 import { serviceAPI } from "@/api/services";
 import { useToast } from "@/hooks/use-toast";
+import { ApiResponse } from "@/types/api";
 
 interface Service {
   _id: string;
@@ -78,11 +78,11 @@ const Services = () => {
   const fetchServices = async () => {
     try {
       setLoading(true);
-      const response = await serviceAPI.getAllServices(filters);
+      const response = await serviceAPI.getAllServices(filters) as ApiResponse;
       
       if (response.success) {
         setServices(response.data);
-        setPagination(response.pagination);
+        setPagination(response.pagination || { current: 1, pages: 1, total: 0, limit: 12 });
       } else {
         toast({
           title: "Error",
