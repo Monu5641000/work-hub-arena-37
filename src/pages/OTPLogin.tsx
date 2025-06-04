@@ -129,14 +129,6 @@ const OTPLogin = () => {
           description: `Verification code sent to ${phoneNumber}`,
         });
         setStep('otp');
-      } else if (response.success && response.orderId) {
-        // Handle case where orderId is directly in response
-        setOrderId(response.orderId);
-        toast({
-          title: "OTP Sent",
-          description: `Verification code sent to ${phoneNumber}`,
-        });
-        setStep('otp');
       } else {
         throw new Error(response.message || 'Failed to send OTP');
       }
