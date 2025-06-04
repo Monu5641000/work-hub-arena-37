@@ -79,6 +79,8 @@ exports.verifyOTP = async (req, res) => {
 
     const cleanPhone = phoneNumber.replace(/\s/g, '');
 
+    console.log('Verifying OTP:', { phoneNumber: cleanPhone, otp, orderId });
+
     // Verify OTP using OTPless API
     const verifyResponse = await axios.post('https://auth.otpless.app/auth/otp/v1/verify', {
       orderId,
@@ -92,10 +94,19 @@ exports.verifyOTP = async (req, res) => {
       }
     });
 
-    if (!verifyResponse.data.isOTPVerified) {
+    console.log('OTPless Verify Response:', verifyResponse.data);
+
+    // Check if OTP is verified - the response structure might vary
+    const isVerified = verifyResponse.data.isOTPVerified || 
+                      verifyResponse.data.verified || 
+                      verifyResponse.data.success ||
+                      (verifyResponse.data.status && verifyResponse.data.status === 'SUCCESS');
+
+    if (!isVerified) {
+      console.log('OTP verification failed:', verifyResponse.data);
       return res.status(400).json({
         success: false,
-        message: 'Invalid OTP'
+        message: 'Invalid OTP or OTP has expired'
       });
     }
 
@@ -131,6 +142,12 @@ exports.verifyOTP = async (req, res) => {
     });
   } catch (error) {
     console.error('OTP verification error:', error);
+    
+    // If it's an axios error, log the full response
+    if (error.response) {
+      console.error('OTPless Verify API Error Response:', error.response.data);
+    }
+    
     res.status(500).json({
       success: false,
       message: 'OTP verification failed',
