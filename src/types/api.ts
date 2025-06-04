@@ -1,4 +1,3 @@
-
 export interface ApiResponse<T = any> {
   success: boolean;
   message?: string;
@@ -22,6 +21,8 @@ export interface User {
   role: 'client' | 'freelancer' | 'admin';
   avatar?: string;
   isVerified: boolean;
+  needsRoleSelection?: boolean;
+  roleSelected?: boolean;
   createdAt: string;
   updatedAt: string;
 }
