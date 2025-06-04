@@ -232,6 +232,7 @@ const OTPLogin = () => {
                     value={phoneNumber}
                     onChange={handlePhoneChange}
                     className="pl-10"
+                    autoComplete="tel"
                     required
                     disabled={isLoading}
                   />
@@ -258,6 +259,7 @@ const OTPLogin = () => {
                   value={otp}
                   onChange={setOtp}
                   disabled={isLoading}
+                  autoComplete="one-time-code"
                 >
                   <InputOTPGroup className="w-full justify-center">
                     <InputOTPSlot index={0} />
