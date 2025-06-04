@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ArrowLeft, Phone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,6 +10,16 @@ import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { authAPI } from "@/api/auth";
 
+// Google OAuth configuration
+const GOOGLE_CLIENT_ID = "YOUR_GOOGLE_WEB_CLIENT_ID"; // You need to set this
+
+declare global {
+  interface Window {
+    google: any;
+    googleLoginCallback: (response: any) => void;
+  }
+}
+
 const OTPLogin = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -18,6 +28,69 @@ const OTPLogin = () => {
   const [otp, setOtp] = useState('');
   const [orderId, setOrderId] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    // Load Google OAuth script
+    const script = document.createElement('script');
+    script.src = 'https://accounts.google.com/gsi/client';
+    script.async = true;
+    script.onload = initializeGoogleAuth;
+    document.body.appendChild(script);
+
+    return () => {
+      document.body.removeChild(script);
+    };
+  }, []);
+
+  const initializeGoogleAuth = () => {
+    if (window.google) {
+      window.google.accounts.id.initialize({
+        client_id: GOOGLE_CLIENT_ID,
+        callback: handleGoogleResponse,
+        auto_select: false,
+        cancel_on_tap_outside: true
+      });
+    }
+  };
+
+  const handleGoogleResponse = async (response: any) => {
+    setIsLoading(true);
+    
+    try {
+      const result = await authAPI.googleLogin(response.credential);
+      
+      if (result.success && result.user) {
+        toast({
+          title: "Login Successful",
+          description: "Welcome to Servpe!",
+        });
+        
+        // Check if user needs to select role
+        if (result.user.needsRoleSelection) {
+          navigate('/role-selection');
+        } else {
+          // Navigate to appropriate dashboard
+          if (result.user.role === 'client') {
+            navigate('/dashboard/client');
+          } else if (result.user.role === 'freelancer') {
+            navigate('/dashboard/freelancer');
+          } else {
+            navigate('/role-selection');
+          }
+        }
+      } else {
+        throw new Error(result.message || 'Google login failed');
+      }
+    } catch (error: any) {
+      toast({
+        title: "Google Login Failed",
+        description: error.response?.data?.message || "Failed to login with Google",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -111,25 +184,15 @@ const OTPLogin = () => {
     }
   };
 
-  const handleGoogleLogin = async () => {
-    setIsLoading(true);
-    
-    try {
-      // Initialize Google OAuth (you'll need to implement Google OAuth flow)
-      // For now, this is a placeholder - you'll need to integrate with Google OAuth
+  const handleGoogleLogin = () => {
+    if (window.google) {
+      window.google.accounts.id.prompt();
+    } else {
       toast({
-        title: "Google Login",
-        description: "Google login integration coming soon. Please use phone login for now.",
+        title: "Google Login Error",
+        description: "Google authentication is not loaded. Please refresh the page.",
         variant: "destructive",
       });
-    } catch (error: any) {
-      toast({
-        title: "Google Login Failed",
-        description: error.message || "Failed to login with Google",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
     }
   };
 

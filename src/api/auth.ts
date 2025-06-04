@@ -34,8 +34,8 @@ export const authAPI = {
     return data;
   },
 
-  async googleLogin(token: string): Promise<ApiResponse<User>> {
-    const response = await api.post('/auth/google-login', { token });
+  async googleLogin(idToken: string): Promise<ApiResponse<User>> {
+    const response = await api.post('/auth/google-login', { idToken });
     const data = response.data as ApiResponse<User>;
     if (data.success) {
       localStorage.setItem('token', data.token!);

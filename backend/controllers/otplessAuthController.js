@@ -2,6 +2,10 @@
 const User = require('../models/User');
 const jwt = require('jsonwebtoken');
 const axios = require('axios');
+const { OAuth2Client } = require('google-auth-library');
+
+// Initialize Google OAuth client
+const googleClient = new OAuth2Client(process.env.GOOGLE_WEB_CLIENT_ID);
 
 // Generate JWT token
 const generateToken = (id) => {
@@ -124,21 +128,42 @@ exports.verifyOTP = async (req, res) => {
   }
 };
 
-// Google login
+// Google OAuth login
 exports.googleLogin = async (req, res) => {
   try {
-    const { token } = req.body;
+    const { idToken } = req.body;
 
-    // Verify Google token
-    const googleResponse = await axios.get(`https://www.googleapis.com/oauth2/v1/userinfo?access_token=${token}`);
-    const googleUser = googleResponse.data;
+    if (!idToken) {
+      return res.status(400).json({
+        success: false,
+        message: 'Google ID token is required'
+      });
+    }
 
-    if (!googleUser.id) {
+    // Verify Google ID token
+    const ticket = await googleClient.verifyIdToken({
+      idToken: idToken,
+      audience: process.env.GOOGLE_WEB_CLIENT_ID
+    });
+
+    const payload = ticket.getPayload();
+    
+    if (!payload || !payload.sub) {
       return res.status(400).json({
         success: false,
         message: 'Invalid Google token'
       });
     }
+
+    // Extract user info from Google payload
+    const googleUser = {
+      id: payload.sub,
+      email: payload.email,
+      given_name: payload.given_name || 'User',
+      family_name: payload.family_name || 'Name',
+      picture: payload.picture,
+      email_verified: payload.email_verified
+    };
 
     // Find or create user
     let user = await User.findOne({ 
@@ -151,13 +176,13 @@ exports.googleLogin = async (req, res) => {
     if (!user) {
       // Create new user
       user = await User.create({
-        firstName: googleUser.given_name || 'User',
-        lastName: googleUser.family_name || 'Name',
+        firstName: googleUser.given_name,
+        lastName: googleUser.family_name,
         email: googleUser.email,
         profilePicture: googleUser.picture,
         authProvider: 'google',
         googleId: googleUser.id,
-        isVerified: true
+        isVerified: googleUser.email_verified || true
       });
     } else {
       // Update user info if needed
@@ -167,16 +192,19 @@ exports.googleLogin = async (req, res) => {
       if (!user.profilePicture && googleUser.picture) {
         user.profilePicture = googleUser.picture;
       }
+      if (!user.email && googleUser.email) {
+        user.email = googleUser.email;
+      }
       user.lastLogin = new Date();
       await user.save();
     }
 
     // Generate token
-    const token_jwt = generateToken(user._id);
+    const token = generateToken(user._id);
 
     res.status(200).json({
       success: true,
-      token: token_jwt,
+      token,
       user: {
         ...user.toJSON(),
         needsRoleSelection: !user.roleSelected
@@ -219,7 +247,10 @@ exports.selectRole = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      user
+      user: {
+        ...user.toJSON(),
+        needsRoleSelection: false
+      }
     });
   } catch (error) {
     console.error('Role selection error:', error);
