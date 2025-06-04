@@ -44,7 +44,8 @@ exports.sendOTP = async (req, res) => {
 
     console.log('OTPless API Response:', otplessResponse.data);
 
-    if (otplessResponse.data.success) {
+    // Check if response contains orderId (which indicates success)
+    if (otplessResponse.data && otplessResponse.data.orderId) {
       res.status(200).json({
         success: true,
         message: 'OTP sent successfully',
@@ -53,7 +54,7 @@ exports.sendOTP = async (req, res) => {
         }
       });
     } else {
-      throw new Error(otplessResponse.data.errorMessage || 'Failed to send OTP');
+      throw new Error('OTPless API did not return orderId');
     }
   } catch (error) {
     console.error('OTP sending error:', error);
