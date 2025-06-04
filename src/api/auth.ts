@@ -18,6 +18,42 @@ api.interceptors.request.use((config) => {
 });
 
 export const authAPI = {
+  // OTPless authentication
+  async sendOTP(phoneNumber: string): Promise<ApiResponse<{ orderId: string }>> {
+    const response = await api.post('/auth/send-otp', { phoneNumber });
+    return response.data as ApiResponse<{ orderId: string }>;
+  },
+
+  async verifyOTP(phoneNumber: string, otp: string, orderId: string): Promise<ApiResponse<User>> {
+    const response = await api.post('/auth/verify-otp', { phoneNumber, otp, orderId });
+    const data = response.data as ApiResponse<User>;
+    if (data.success) {
+      localStorage.setItem('token', data.token!);
+      localStorage.setItem('user', JSON.stringify(data.user!));
+    }
+    return data;
+  },
+
+  async googleLogin(token: string): Promise<ApiResponse<User>> {
+    const response = await api.post('/auth/google-login', { token });
+    const data = response.data as ApiResponse<User>;
+    if (data.success) {
+      localStorage.setItem('token', data.token!);
+      localStorage.setItem('user', JSON.stringify(data.user!));
+    }
+    return data;
+  },
+
+  async selectRole(role: 'client' | 'freelancer'): Promise<ApiResponse<User>> {
+    const response = await api.post('/auth/select-role', { role });
+    const data = response.data as ApiResponse<User>;
+    if (data.success) {
+      localStorage.setItem('user', JSON.stringify(data.user!));
+    }
+    return data;
+  },
+
+  // Traditional authentication
   async register(userData: any): Promise<ApiResponse<User>> {
     const response = await api.post('/auth/register', userData);
     const data = response.data as ApiResponse<User>;

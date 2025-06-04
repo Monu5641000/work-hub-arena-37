@@ -16,6 +16,7 @@ const OTPLogin = () => {
   const [step, setStep] = useState<'phone' | 'otp'>('phone');
   const [phoneNumber, setPhoneNumber] = useState('+91 ');
   const [otp, setOtp] = useState('');
+  const [orderId, setOrderId] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -45,19 +46,22 @@ const OTPLogin = () => {
     setIsLoading(true);
 
     try {
-      // Simulate OTP sending - in production, this would call your backend
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const response = await authAPI.sendOTP(phoneNumber);
       
-      toast({
-        title: "OTP Sent",
-        description: `Verification code sent to ${phoneNumber}`,
-      });
-      
-      setStep('otp');
-    } catch (error) {
+      if (response.success) {
+        setOrderId(response.data!.orderId);
+        toast({
+          title: "OTP Sent",
+          description: `Verification code sent to ${phoneNumber}`,
+        });
+        setStep('otp');
+      } else {
+        throw new Error(response.message || 'Failed to send OTP');
+      }
+    } catch (error: any) {
       toast({
         title: "Error",
-        description: "Failed to send OTP. Please try again.",
+        description: error.response?.data?.message || "Failed to send OTP. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -72,33 +76,34 @@ const OTPLogin = () => {
     setIsLoading(true);
 
     try {
-      // Simulate OTP verification - in production, this would verify with backend
-      if (otp === '123456') { // Demo OTP
-        // Mock successful login
-        const mockUser = {
-          id: 'user_' + Date.now(),
-          phoneNumber,
-          firstName: 'User',
-          lastName: 'Demo',
-          isFirstTime: true
-        };
-        
-        localStorage.setItem('user', JSON.stringify(mockUser));
-        localStorage.setItem('token', 'demo_token_' + Date.now());
-        
+      const response = await authAPI.verifyOTP(phoneNumber, otp, orderId);
+      
+      if (response.success && response.user) {
         toast({
           title: "Login Successful",
           description: "Welcome to Servpe!",
         });
         
-        navigate('/role-selection');
+        // Check if user needs to select role
+        if (response.user.needsRoleSelection) {
+          navigate('/role-selection');
+        } else {
+          // Navigate to appropriate dashboard
+          if (response.user.role === 'client') {
+            navigate('/dashboard/client');
+          } else if (response.user.role === 'freelancer') {
+            navigate('/dashboard/freelancer');
+          } else {
+            navigate('/role-selection');
+          }
+        }
       } else {
-        throw new Error('Invalid OTP');
+        throw new Error(response.message || 'Invalid OTP');
       }
-    } catch (error) {
+    } catch (error: any) {
       toast({
         title: "Invalid OTP",
-        description: "Please check your code and try again.",
+        description: error.response?.data?.message || "Please check your code and try again.",
         variant: "destructive",
       });
     } finally {
@@ -106,25 +111,26 @@ const OTPLogin = () => {
     }
   };
 
-  const handleGoogleLogin = () => {
-    // Mock Google login - in production, implement Google OAuth
-    const mockUser = {
-      id: 'google_user_' + Date.now(),
-      email: 'user@gmail.com',
-      firstName: 'Google',
-      lastName: 'User',
-      isFirstTime: true
-    };
+  const handleGoogleLogin = async () => {
+    setIsLoading(true);
     
-    localStorage.setItem('user', JSON.stringify(mockUser));
-    localStorage.setItem('token', 'google_token_' + Date.now());
-    
-    toast({
-      title: "Login Successful",
-      description: "Welcome to Servpe!",
-    });
-    
-    navigate('/role-selection');
+    try {
+      // Initialize Google OAuth (you'll need to implement Google OAuth flow)
+      // For now, this is a placeholder - you'll need to integrate with Google OAuth
+      toast({
+        title: "Google Login",
+        description: "Google login integration coming soon. Please use phone login for now.",
+        variant: "destructive",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Google Login Failed",
+        description: error.message || "Failed to login with Google",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -199,9 +205,6 @@ const OTPLogin = () => {
                     <InputOTPSlot index={5} />
                   </InputOTPGroup>
                 </InputOTP>
-                <p className="text-sm text-gray-500 text-center">
-                  Demo: Use 123456 as OTP
-                </p>
               </div>
               
               <Button 

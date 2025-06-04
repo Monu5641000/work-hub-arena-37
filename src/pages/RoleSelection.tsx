@@ -23,27 +23,27 @@ const RoleSelection = () => {
     setIsLoading(true);
 
     try {
-      // Update user role in localStorage for demo
-      const user = JSON.parse(localStorage.getItem('user') || '{}');
-      user.role = selectedRole;
-      user.isFirstTime = false;
-      localStorage.setItem('user', JSON.stringify(user));
+      const response = await authAPI.selectRole(selectedRole);
+      
+      if (response.success) {
+        toast({
+          title: "Role Selected",
+          description: `Welcome to Servpe as a ${selectedRole}!`,
+        });
 
-      toast({
-        title: "Role Selected",
-        description: `Welcome to Servpe as a ${selectedRole}!`,
-      });
-
-      // Navigate to appropriate dashboard or onboarding
-      if (selectedRole === 'client') {
-        navigate('/dashboard/client');
+        // Navigate to appropriate dashboard
+        if (selectedRole === 'client') {
+          navigate('/dashboard/client');
+        } else {
+          navigate('/dashboard/freelancer');
+        }
       } else {
-        navigate('/dashboard/freelancer');
+        throw new Error(response.message || 'Failed to select role');
       }
-    } catch (error) {
+    } catch (error: any) {
       toast({
         title: "Error",
-        description: "Failed to set role. Please try again.",
+        description: error.response?.data?.message || "Failed to set role. Please try again.",
         variant: "destructive",
       });
     } finally {

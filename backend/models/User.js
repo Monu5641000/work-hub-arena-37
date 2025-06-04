@@ -18,42 +18,76 @@ const userSchema = new mongoose.Schema({
   },
   email: {
     type: String,
-    required: [true, 'Email is required'],
+    required: function() {
+      return !this.phoneNumber;
+    },
     unique: true,
+    sparse: true,
     lowercase: true,
     validate: [validator.isEmail, 'Please provide a valid email']
   },
+  phoneNumber: {
+    type: String,
+    required: function() {
+      return !this.email;
+    },
+    unique: true,
+    sparse: true,
+    validate: {
+      validator: function(v) {
+        return !v || /^\+91[6-9]\d{9}$/.test(v.replace(/\s/g, ''));
+      },
+      message: 'Please provide a valid Indian phone number'
+    }
+  },
   password: {
     type: String,
-    required: [true, 'Password is required'],
-    minlength: [6, 'Password must be at least 6 characters'],
     select: false
   },
   role: {
     type: String,
     enum: ['client', 'freelancer', 'admin'],
-    required: [true, 'User role is required']
+    default: null
+  },
+  roleSelected: {
+    type: Boolean,
+    default: false
+  },
+  authProvider: {
+    type: String,
+    enum: ['otpless', 'google', 'email'],
+    required: true
+  },
+  otplessUserId: {
+    type: String,
+    unique: true,
+    sparse: true
+  },
+  googleId: {
+    type: String,
+    unique: true,
+    sparse: true
   },
   // Requirements based on user role
   requirements: {
     // Client requirements
-    projectTypes: [String], // ['web-development', 'mobile-app', 'design', 'marketing']
+    projectTypes: [String],
     budget: {
       min: Number,
       max: Number,
-      currency: { type: String, default: 'USD' }
+      currency: { type: String, default: 'INR' }
     },
-    timeline: String, // 'urgent', 'within-week', 'within-month', 'flexible'
-    experience: String, // 'beginner', 'intermediate', 'expert'
+    timeline: String,
+    experience: String,
     
     // Freelancer requirements
-    serviceCategories: [String], // ['web-development', 'design', 'writing', 'marketing']
-    skillLevel: String, // 'beginner', 'intermediate', 'expert'
-    availability: String, // 'full-time', 'part-time', 'project-based'
-    preferredProjectSize: String, // 'small', 'medium', 'large'
+    serviceCategories: [String],
+    skillLevel: String,
+    availability: String,
+    preferredProjectSize: String,
     workingHours: {
       timezone: String,
-      availability: [String] // ['morning', 'afternoon', 'evening', 'night']
+      availability: [String]
     }
   },
   requirementsCompleted: {
@@ -63,15 +97,6 @@ const userSchema = new mongoose.Schema({
   profilePicture: {
     type: String,
     default: null
-  },
-  phone: {
-    type: String,
-    validate: {
-      validator: function(v) {
-        return !v || validator.isMobilePhone(v);
-      },
-      message: 'Please provide a valid phone number'
-    }
   },
   location: {
     country: String,
@@ -88,7 +113,7 @@ const userSchema = new mongoose.Schema({
   }],
   hourlyRate: {
     type: Number,
-    min: [1, 'Hourly rate must be at least $1']
+    min: [1, 'Hourly rate must be at least ₹1']
   },
   portfolio: [{
     title: String,
@@ -125,9 +150,6 @@ const userSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
-  verificationToken: String,
-  passwordResetToken: String,
-  passwordResetExpires: Date,
   lastLogin: Date
 }, {
   timestamps: true
@@ -135,13 +157,16 @@ const userSchema = new mongoose.Schema({
 
 // Indexes for better performance
 userSchema.index({ email: 1 });
+userSchema.index({ phoneNumber: 1 });
+userSchema.index({ otplessUserId: 1 });
+userSchema.index({ googleId: 1 });
 userSchema.index({ role: 1 });
 userSchema.index({ 'skills.name': 1 });
 userSchema.index({ 'rating.average': -1 });
 
-// Hash password before saving
+// Hash password before saving (only for email auth)
 userSchema.pre('save', async function(next) {
-  if (!this.isModified('password')) return next();
+  if (!this.isModified('password') || !this.password) return next();
   
   this.password = await bcrypt.hash(this.password, 12);
   next();
@@ -149,6 +174,7 @@ userSchema.pre('save', async function(next) {
 
 // Compare password method
 userSchema.methods.comparePassword = async function(candidatePassword) {
+  if (!this.password) return false;
   return await bcrypt.compare(candidatePassword, this.password);
 };
 
