@@ -42,17 +42,27 @@ exports.sendOTP = async (req, res) => {
       }
     });
 
+    console.log('OTPless API Response:', otplessResponse.data);
+
     if (otplessResponse.data.success) {
       res.status(200).json({
         success: true,
         message: 'OTP sent successfully',
-        orderId: otplessResponse.data.orderId
+        data: {
+          orderId: otplessResponse.data.orderId
+        }
       });
     } else {
       throw new Error(otplessResponse.data.errorMessage || 'Failed to send OTP');
     }
   } catch (error) {
     console.error('OTP sending error:', error);
+    
+    // If it's an axios error, log the full response
+    if (error.response) {
+      console.error('OTPless API Error Response:', error.response.data);
+    }
+    
     res.status(500).json({
       success: false,
       message: 'Failed to send OTP',

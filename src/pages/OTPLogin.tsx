@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { ArrowLeft, Phone } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -119,10 +118,20 @@ const OTPLogin = () => {
     setIsLoading(true);
 
     try {
+      console.log('Sending OTP to:', phoneNumber);
       const response = await authAPI.sendOTP(phoneNumber);
+      console.log('OTP Response:', response);
       
-      if (response.success) {
-        setOrderId(response.data!.orderId);
+      if (response.success && response.data?.orderId) {
+        setOrderId(response.data.orderId);
+        toast({
+          title: "OTP Sent",
+          description: `Verification code sent to ${phoneNumber}`,
+        });
+        setStep('otp');
+      } else if (response.success && response.orderId) {
+        // Handle case where orderId is directly in response
+        setOrderId(response.orderId);
         toast({
           title: "OTP Sent",
           description: `Verification code sent to ${phoneNumber}`,
@@ -132,9 +141,10 @@ const OTPLogin = () => {
         throw new Error(response.message || 'Failed to send OTP');
       }
     } catch (error: any) {
+      console.error('OTP sending error:', error);
       toast({
         title: "Error",
-        description: error.response?.data?.message || "Failed to send OTP. Please try again.",
+        description: error.response?.data?.message || error.message || "Failed to send OTP. Please try again.",
         variant: "destructive",
       });
     } finally {
