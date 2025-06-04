@@ -1,4 +1,3 @@
-
 const User = require('../models/User');
 const jwt = require('jsonwebtoken');
 const axios = require('axios');
@@ -114,14 +113,15 @@ exports.verifyOTP = async (req, res) => {
     let user = await User.findOne({ phoneNumber: cleanPhone });
     
     if (!user) {
-      // Create new user
+      // Create new user without role (user will select role later)
       user = await User.create({
         firstName: 'User',
         lastName: 'Name',
         phoneNumber: cleanPhone,
         authProvider: 'otpless',
         otplessUserId: verifyResponse.data.userId || cleanPhone,
-        isVerified: true
+        isVerified: true,
+        roleSelected: false
       });
     } else {
       // Update last login
@@ -202,7 +202,7 @@ exports.googleLogin = async (req, res) => {
     });
 
     if (!user) {
-      // Create new user
+      // Create new user without role (user will select role later)
       user = await User.create({
         firstName: googleUser.given_name,
         lastName: googleUser.family_name,
@@ -210,7 +210,8 @@ exports.googleLogin = async (req, res) => {
         profilePicture: googleUser.picture,
         authProvider: 'google',
         googleId: googleUser.id,
-        isVerified: googleUser.email_verified || true
+        isVerified: googleUser.email_verified || true,
+        roleSelected: false
       });
     } else {
       // Update user info if needed
