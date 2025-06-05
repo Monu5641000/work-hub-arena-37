@@ -1,4 +1,3 @@
-
 const express = require('express');
 const { protect, restrictTo } = require('../middleware/auth');
 const User = require('../models/User');
@@ -22,9 +21,13 @@ router.get('/stats', async (req, res) => {
     const totalOrders = await Order.countDocuments();
     const pendingServices = await Service.countDocuments({ status: 'pending' });
     
-    // Calculate total revenue (platform fee from completed orders)
+    // Get category count
+    const Category = require('../models/Category');
+    const totalCategories = await Category.countDocuments({ isActive: true });
+    
+    // Calculate total revenue in INR (platform fee from completed orders)
     const completedOrders = await Order.find({ status: 'completed' });
-    const totalRevenue = completedOrders.reduce((sum, order) => sum + order.platformFee, 0);
+    const totalRevenue = completedOrders.reduce((sum, order) => sum + (order.platformFee || 0), 0);
     
     const activeDisputes = await Order.countDocuments({ 'dispute.isDisputed': true, 'dispute.status': 'open' });
 
@@ -38,7 +41,8 @@ router.get('/stats', async (req, res) => {
         totalOrders,
         totalRevenue,
         pendingServices,
-        activeDisputes
+        activeDisputes,
+        totalCategories
       }
     });
   } catch (error) {
@@ -46,6 +50,124 @@ router.get('/stats', async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Error fetching admin stats'
+    });
+  }
+});
+
+// Add route for managing categories
+router.get('/categories', async (req, res) => {
+  try {
+    const Category = require('../models/Category');
+    const { page = 1, limit = 20 } = req.query;
+    const skip = (page - 1) * limit;
+
+    const categories = await Category.find()
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(Number(limit));
+
+    const total = await Category.countDocuments();
+
+    res.status(200).json({
+      success: true,
+      data: categories,
+      pagination: {
+        page: Number(page),
+        limit: Number(limit),
+        total,
+        pages: Math.ceil(total / limit)
+      }
+    });
+  } catch (error) {
+    console.error('Admin get categories error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching categories'
+    });
+  }
+});
+
+router.post('/categories', async (req, res) => {
+  try {
+    const Category = require('../models/Category');
+    const { name, description } = req.body;
+    
+    const category = await Category.create({
+      name,
+      description
+    });
+
+    res.status(201).json({
+      success: true,
+      data: category
+    });
+  } catch (error) {
+    console.error('Admin create category error:', error);
+    if (error.code === 11000) {
+      return res.status(400).json({
+        success: false,
+        message: 'Category with this name already exists'
+      });
+    }
+    res.status(500).json({
+      success: false,
+      message: 'Error creating category'
+    });
+  }
+});
+
+router.put('/categories/:id', async (req, res) => {
+  try {
+    const Category = require('../models/Category');
+    const { name, description, isActive } = req.body;
+    
+    const category = await Category.findByIdAndUpdate(
+      req.params.id,
+      { name, description, isActive },
+      { new: true, runValidators: true }
+    );
+
+    if (!category) {
+      return res.status(404).json({
+        success: false,
+        message: 'Category not found'
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: category
+    });
+  } catch (error) {
+    console.error('Admin update category error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error updating category'
+    });
+  }
+});
+
+router.delete('/categories/:id', async (req, res) => {
+  try {
+    const Category = require('../models/Category');
+    const category = await Category.findByIdAndDelete(req.params.id);
+    
+    if (!category) {
+      return res.status(404).json({
+        success: false,
+        message: 'Category not found'
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Category deleted successfully'
+    });
+  } catch (error) {
+    console.error('Admin delete category error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error deleting category'
     });
   }
 });
