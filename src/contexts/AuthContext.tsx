@@ -8,7 +8,7 @@ interface User {
   lastName: string;
   email?: string;
   phoneNumber?: string;
-  role?: 'client' | 'freelancer';
+  role?: 'client' | 'freelancer' | 'admin';
   profilePicture?: string;
   needsRoleSelection?: boolean;
   roleSelected?: boolean;

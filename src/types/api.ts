@@ -1,3 +1,4 @@
+
 export interface ApiResponse<T = any> {
   success: boolean;
   message?: string;
@@ -18,7 +19,7 @@ export interface User {
   lastName: string;
   email?: string;
   phoneNumber?: string;
-  role?: 'client' | 'freelancer';
+  role?: 'client' | 'freelancer' | 'admin';
   profilePicture?: string;
   needsRoleSelection?: boolean;
   roleSelected?: boolean;
