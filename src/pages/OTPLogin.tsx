@@ -8,6 +8,7 @@ import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { authAPI } from "@/api/auth";
+import { useAuth } from "@/contexts/AuthContext";
 
 // Google OAuth configuration
 const GOOGLE_CLIENT_ID = "YOUR_GOOGLE_WEB_CLIENT_ID"; // You need to set this
@@ -22,12 +23,25 @@ declare global {
 const OTPLogin = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { login, user } = useAuth();
   const [step, setStep] = useState<'phone' | 'otp'>('phone');
   const [phoneNumber, setPhoneNumber] = useState('+91 ');
   const [otp, setOtp] = useState('');
   const [orderId, setOrderId] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
+  // Redirect if already logged in
+  useEffect(() => {
+    if (user) {
+      if (user.needsRoleSelection || !user.roleSelected) {
+        navigate('/role-selection');
+      } else {
+        navigate(user.role === 'client' ? '/dashboard/client' : '/dashboard/freelancer');
+      }
+    }
+  }, [user, navigate]);
+
+  // ... keep existing code (useEffect for Google OAuth, initializeGoogleAuth, handleGoogleResponse)
   useEffect(() => {
     // Load Google OAuth script
     const script = document.createElement('script');
@@ -58,7 +72,9 @@ const OTPLogin = () => {
     try {
       const result = await authAPI.googleLogin(response.credential);
       
-      if (result.success && result.user) {
+      if (result.success && result.user && result.token) {
+        login(result.token, result.user);
+        
         toast({
           title: "Login Successful",
           description: "Welcome to Servpe!",
@@ -153,7 +169,9 @@ const OTPLogin = () => {
     try {
       const response = await authAPI.verifyOTP(phoneNumber, otp, orderId);
       
-      if (response.success && response.user) {
+      if (response.success && response.user && response.token) {
+        login(response.token, response.user);
+        
         toast({
           title: "Login Successful",
           description: "Welcome to Servpe!",
@@ -200,27 +218,27 @@ const OTPLogin = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 to-red-50 flex items-center justify-center p-4">
-      <Card className="w-full max-w-md">
+      <Card className="w-full max-w-md animate-scale-in shadow-2xl">
         <CardHeader className="text-center">
           <Button 
             variant="ghost" 
             onClick={() => step === 'otp' ? setStep('phone') : navigate('/')}
-            className="mb-4 self-start"
+            className="mb-4 self-start hover:bg-gray-100 transition-colors"
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back
           </Button>
-          <CardTitle className="text-2xl font-bold">
+          <CardTitle className="text-2xl font-bold animate-fade-in">
             {step === 'phone' ? 'Login with Phone' : 'Verify OTP'}
           </CardTitle>
-          <CardDescription>
+          <CardDescription className="animate-fade-in" style={{animationDelay: '0.1s'}}>
             {step === 'phone' 
               ? 'Enter your Indian mobile number to receive a verification code'
               : `Enter the 6-digit code sent to ${phoneNumber}`
             }
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="animate-fade-in" style={{animationDelay: '0.2s'}}>
           {step === 'phone' ? (
             <form onSubmit={handleSendOTP} className="space-y-4">
               <div className="space-y-2">
@@ -233,7 +251,7 @@ const OTPLogin = () => {
                     placeholder="+91 98765 43210"
                     value={phoneNumber}
                     onChange={handlePhoneChange}
-                    className="pl-10"
+                    className="pl-10 transition-all duration-200 focus:ring-2 focus:ring-orange-500"
                     autoComplete="tel"
                     required
                     disabled={isLoading}
@@ -246,7 +264,7 @@ const OTPLogin = () => {
               
               <Button 
                 type="submit" 
-                className="w-full bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700"
+                className="w-full bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 hover:scale-105 transition-all duration-200"
                 disabled={isLoading || phoneNumber.length < 14}
               >
                 {isLoading ? "Sending..." : "Send OTP"}
@@ -262,21 +280,22 @@ const OTPLogin = () => {
                   onChange={setOtp}
                   disabled={isLoading}
                   autoComplete="one-time-code"
+                  className="w-full"
                 >
                   <InputOTPGroup className="w-full justify-center">
-                    <InputOTPSlot index={0} />
-                    <InputOTPSlot index={1} />
-                    <InputOTPSlot index={2} />
-                    <InputOTPSlot index={3} />
-                    <InputOTPSlot index={4} />
-                    <InputOTPSlot index={5} />
+                    <InputOTPSlot index={0} className="transition-all duration-200" />
+                    <InputOTPSlot index={1} className="transition-all duration-200" />
+                    <InputOTPSlot index={2} className="transition-all duration-200" />
+                    <InputOTPSlot index={3} className="transition-all duration-200" />
+                    <InputOTPSlot index={4} className="transition-all duration-200" />
+                    <InputOTPSlot index={5} className="transition-all duration-200" />
                   </InputOTPGroup>
                 </InputOTP>
               </div>
               
               <Button 
                 type="submit" 
-                className="w-full bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700"
+                className="w-full bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 hover:scale-105 transition-all duration-200"
                 disabled={isLoading || otp.length !== 6}
               >
                 {isLoading ? "Verifying..." : "Verify OTP"}
@@ -285,7 +304,7 @@ const OTPLogin = () => {
               <Button 
                 type="button" 
                 variant="outline" 
-                className="w-full"
+                className="w-full hover:bg-gray-50 transition-colors duration-200"
                 onClick={() => setStep('phone')}
                 disabled={isLoading}
               >
@@ -305,7 +324,7 @@ const OTPLogin = () => {
             </div>
             <Button 
               variant="outline" 
-              className="w-full mt-4"
+              className="w-full mt-4 hover:bg-gray-50 hover:scale-105 transition-all duration-200"
               onClick={handleGoogleLogin}
               disabled={isLoading}
             >

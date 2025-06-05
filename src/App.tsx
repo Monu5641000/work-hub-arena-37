@@ -4,6 +4,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { AuthProvider } from "@/contexts/AuthContext";
 import Index from "./pages/Index";
 import OTPLogin from "./pages/OTPLogin";
 import RoleSelection from "./pages/RoleSelection";
@@ -26,29 +27,30 @@ const queryClient = new QueryClient();
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/login" element={<OTPLogin />} />
-          <Route path="/role-selection" element={<RoleSelection />} />
-          <Route path="/onboarding" element={<Onboarding />} />
-          <Route path="/services" element={<Services />} />
-          <Route path="/services/:serviceId" element={<ServiceDetail />} />
-          <Route path="/create-service" element={<CreateService />} />
-          <Route path="/create-project" element={<CreateProject />} />
-          <Route path="/post-project" element={<PostProject />} />
-          <Route path="/messages" element={<Messages />} />
-          <Route path="/dashboard/client" element={<ClientDashboard />} />
-          <Route path="/dashboard/freelancer" element={<FreelancerDashboard />} />
-          <Route path="/admin" element={<AdminDashboard />} />
-          <Route path="/my-proposals" element={<MyProposals />} />
-          <Route path="/profile" element={<UserProfile />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
+      <AuthProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<Index />} />
+            <Route path="/login" element={<OTPLogin />} />
+            <Route path="/role-selection" element={<RoleSelection />} />
+            <Route path="/onboarding" element={<Onboarding />} />
+            <Route path="/services" element={<Services />} />
+            <Route path="/services/:serviceId" element={<ServiceDetail />} />
+            <Route path="/create-service" element={<CreateService />} />
+            <Route path="/create-project" element={<CreateProject />} />
+            <Route path="/post-project" element={<PostProject />} />
+            <Route path="/messages" element={<Messages />} />
+            <Route path="/dashboard/client" element={<ClientDashboard />} />
+            <Route path="/dashboard/freelancer" element={<FreelancerDashboard />} />
+            <Route path="/admin" element={<AdminDashboard />} />
+            <Route path="/my-proposals" element={<MyProposals />} />
+            <Route path="/profile" element={<UserProfile />} />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </BrowserRouter>
+      </AuthProvider>
     </TooltipProvider>
   </QueryClientProvider>
 );

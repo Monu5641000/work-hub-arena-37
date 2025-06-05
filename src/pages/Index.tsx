@@ -6,9 +6,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
 import { formatCurrency } from "@/utils/currency";
+import { useAuth } from "@/contexts/AuthContext";
+import UserMenu from "@/components/UserMenu";
 
 const Index = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
 
   const categories = [
@@ -49,24 +52,31 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-white">
       {/* Navigation */}
-      <nav className="bg-white border-b border-gray-200 sticky top-0 z-50">
+      <nav className="bg-white border-b border-gray-200 sticky top-0 z-50 backdrop-blur-sm bg-white/95">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center">
-              <div className="text-2xl font-bold bg-gradient-to-r from-orange-500 to-red-600 bg-clip-text text-transparent">
+              <div className="text-2xl font-bold bg-gradient-to-r from-orange-500 to-red-600 bg-clip-text text-transparent hover:scale-105 transition-transform duration-200 cursor-pointer" onClick={() => navigate('/')}>
                 Servpe
               </div>
             </div>
             
             <div className="hidden md:flex items-center space-x-8">
-              <a href="/services" className="text-gray-700 hover:text-gray-900">Browse Services</a>
-              <a href="/create-project" className="text-gray-700 hover:text-gray-900">Post Project</a>
-              <Button variant="ghost" onClick={() => navigate('/login')}>
-                Sign In
-              </Button>
-              <Button onClick={() => navigate('/login')} className="bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700">
-                Get Started
-              </Button>
+              <a href="/services" className="text-gray-700 hover:text-gray-900 transition-colors duration-200">Browse Services</a>
+              <a href="/create-project" className="text-gray-700 hover:text-gray-900 transition-colors duration-200">Post Project</a>
+              
+              {user ? (
+                <UserMenu />
+              ) : (
+                <>
+                  <Button variant="ghost" onClick={() => navigate('/login')} className="hover:bg-gray-100 transition-colors duration-200">
+                    Sign In
+                  </Button>
+                  <Button onClick={() => navigate('/login')} className="bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 hover:scale-105 transition-all duration-200">
+                    Get Started
+                  </Button>
+                </>
+              )}
             </div>
             
             <div className="md:hidden">
@@ -79,38 +89,45 @@ const Index = () => {
       </nav>
 
       {/* Hero Section */}
-      <section className="bg-gradient-to-br from-orange-50 to-red-50 py-20">
+      <section className="bg-gradient-to-br from-orange-50 to-red-50 py-20 animate-fade-in">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
-            <h1 className="text-4xl md:text-6xl font-bold text-gray-900 mb-6">
+            <h1 className="text-4xl md:text-6xl font-bold text-gray-900 mb-6 animate-scale-in">
               Hire top <span className="bg-gradient-to-r from-orange-500 to-red-600 bg-clip-text text-transparent">Indian freelancers</span> in minutes
             </h1>
-            <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
+            <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto animate-fade-in" style={{animationDelay: '0.2s'}}>
               Connect with skilled professionals for your projects. From web development to design, find the perfect match for your needs at affordable Indian rates.
             </p>
             
-            <form onSubmit={handleSearch} className="max-w-2xl mx-auto mb-8">
-              <div className="flex">
+            <form onSubmit={handleSearch} className="max-w-2xl mx-auto mb-8 animate-fade-in" style={{animationDelay: '0.4s'}}>
+              <div className="flex shadow-lg rounded-lg overflow-hidden">
                 <Input
                   type="text"
                   placeholder="What do you need help with?"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="flex-1 h-12 text-lg"
+                  className="flex-1 h-12 text-lg border-0 focus:ring-0"
                 />
-                <Button type="submit" className="ml-2 h-12 px-8 bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700">
+                <Button type="submit" className="h-12 px-8 bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 hover:scale-105 transition-all duration-200">
                   <Search className="h-5 w-5 mr-2" />
                   Search
                 </Button>
               </div>
             </form>
             
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button size="lg" onClick={() => navigate('/login')} className="bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700">
-                Get Started
-                <ArrowRight className="ml-2 h-5 w-5" />
-              </Button>
-              <Button size="lg" variant="outline" onClick={() => navigate('/services')}>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center animate-fade-in" style={{animationDelay: '0.6s'}}>
+              {user ? (
+                <Button size="lg" onClick={() => navigate(user.role === 'client' ? '/dashboard/client' : '/dashboard/freelancer')} className="bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 hover:scale-105 transition-all duration-200">
+                  Go to Dashboard
+                  <ArrowRight className="ml-2 h-5 w-5" />
+                </Button>
+              ) : (
+                <Button size="lg" onClick={() => navigate('/login')} className="bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 hover:scale-105 transition-all duration-200">
+                  Get Started
+                  <ArrowRight className="ml-2 h-5 w-5" />
+                </Button>
+              )}
+              <Button size="lg" variant="outline" onClick={() => navigate('/services')} className="hover:bg-gray-50 hover:scale-105 transition-all duration-200">
                 Explore Services
               </Button>
             </div>
@@ -127,8 +144,8 @@ const Index = () => {
           </div>
           
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
-            {categories.map((category) => (
-              <Card key={category.name} className="hover:shadow-lg transition-shadow cursor-pointer">
+            {categories.map((category, index) => (
+              <Card key={category.name} className="hover:shadow-lg transition-all duration-300 cursor-pointer hover:-translate-y-1 animate-fade-in hover-scale" style={{animationDelay: `${index * 0.1}s`}}>
                 <CardContent className="p-6 text-center">
                   <div className="text-3xl mb-3">{category.icon}</div>
                   <h3 className="font-semibold text-gray-900 mb-2">{category.name}</h3>
@@ -149,24 +166,24 @@ const Index = () => {
           </div>
           
           <div className="grid md:grid-cols-3 gap-8">
-            <div className="text-center">
-              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <div className="text-center animate-fade-in" style={{animationDelay: '0.1s'}}>
+              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4 hover:scale-110 transition-transform duration-200">
                 <Users className="h-8 w-8 text-blue-600" />
               </div>
               <h3 className="text-xl font-semibold mb-2">Verified Professionals</h3>
               <p className="text-gray-600">All freelancers are verified and have proven track records</p>
             </div>
             
-            <div className="text-center">
-              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <div className="text-center animate-fade-in" style={{animationDelay: '0.2s'}}>
+              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4 hover:scale-110 transition-transform duration-200">
                 <CheckCircle className="h-8 w-8 text-green-600" />
               </div>
               <h3 className="text-xl font-semibold mb-2">Quality Guaranteed</h3>
               <p className="text-gray-600">Get your money back if you're not satisfied with the work</p>
             </div>
             
-            <div className="text-center">
-              <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <div className="text-center animate-fade-in" style={{animationDelay: '0.3s'}}>
+              <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4 hover:scale-110 transition-transform duration-200">
                 <Star className="h-8 w-8 text-purple-600" />
               </div>
               <h3 className="text-xl font-semibold mb-2">Top Rated</h3>
@@ -186,7 +203,7 @@ const Index = () => {
           
           <div className="grid md:grid-cols-3 gap-8">
             {testimonials.map((testimonial, index) => (
-              <Card key={index} className="hover:shadow-lg transition-shadow">
+              <Card key={index} className="hover:shadow-lg transition-all duration-300 hover:-translate-y-1 animate-fade-in" style={{animationDelay: `${index * 0.2}s`}}>
                 <CardContent className="p-6">
                   <div className="flex items-center mb-4">
                     {[...Array(testimonial.rating)].map((_, i) => (
@@ -210,7 +227,7 @@ const Index = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="text-3xl font-bold text-white mb-4">Ready to Get Started?</h2>
           <p className="text-xl text-orange-100 mb-8">Join Servpe today and connect with top freelancers</p>
-          <Button size="lg" onClick={() => navigate('/login')} className="bg-white text-orange-600 hover:bg-gray-100">
+          <Button size="lg" onClick={() => navigate('/login')} className="bg-white text-orange-600 hover:bg-gray-100 hover:scale-105 transition-all duration-200">
             Sign Up Now
             <ArrowRight className="ml-2 h-5 w-5" />
           </Button>
@@ -229,27 +246,27 @@ const Index = () => {
             <div>
               <h3 className="font-semibold mb-4">For Clients</h3>
               <ul className="space-y-2 text-gray-300">
-                <li><a href="#" className="hover:text-white">How to Hire</a></li>
-                <li><a href="#" className="hover:text-white">Talent Marketplace</a></li>
-                <li><a href="#" className="hover:text-white">Project Catalog</a></li>
+                <li><a href="#" className="hover:text-white transition-colors">How to Hire</a></li>
+                <li><a href="#" className="hover:text-white transition-colors">Talent Marketplace</a></li>
+                <li><a href="#" className="hover:text-white transition-colors">Project Catalog</a></li>
               </ul>
             </div>
             
             <div>
               <h3 className="font-semibold mb-4">For Freelancers</h3>
               <ul className="space-y-2 text-gray-300">
-                <li><a href="#" className="hover:text-white">How to Find Work</a></li>
-                <li><a href="#" className="hover:text-white">Direct Contracts</a></li>
-                <li><a href="#" className="hover:text-white">Find Freelance Jobs</a></li>
+                <li><a href="#" className="hover:text-white transition-colors">How to Find Work</a></li>
+                <li><a href="#" className="hover:text-white transition-colors">Direct Contracts</a></li>
+                <li><a href="#" className="hover:text-white transition-colors">Find Freelance Jobs</a></li>
               </ul>
             </div>
             
             <div>
               <h3 className="font-semibold mb-4">Resources</h3>
               <ul className="space-y-2 text-gray-300">
-                <li><a href="#" className="hover:text-white">Help & Support</a></li>
-                <li><a href="#" className="hover:text-white">Success Stories</a></li>
-                <li><a href="#" className="hover:text-white">Community</a></li>
+                <li><a href="#" className="hover:text-white transition-colors">Help & Support</a></li>
+                <li><a href="#" className="hover:text-white transition-colors">Success Stories</a></li>
+                <li><a href="#" className="hover:text-white transition-colors">Community</a></li>
               </ul>
             </div>
           </div>

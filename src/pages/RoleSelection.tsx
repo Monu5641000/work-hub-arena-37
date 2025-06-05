@@ -6,10 +6,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { authAPI } from "@/api/auth";
+import { useAuth } from "@/contexts/AuthContext";
 
 const RoleSelection = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { updateUser } = useAuth();
   const [selectedRole, setSelectedRole] = useState<'client' | 'freelancer' | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -26,6 +28,8 @@ const RoleSelection = () => {
       const response = await authAPI.selectRole(selectedRole);
       
       if (response.success) {
+        updateUser({ role: selectedRole, roleSelected: true, needsRoleSelection: false });
+        
         toast({
           title: "Role Selected",
           description: `Welcome to Servpe as a ${selectedRole}!`,
@@ -53,8 +57,8 @@ const RoleSelection = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 to-red-50 flex items-center justify-center p-4">
-      <div className="w-full max-w-4xl">
-        <div className="text-center mb-8">
+      <div className="w-full max-w-4xl animate-fade-in">
+        <div className="text-center mb-8 animate-scale-in">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
             Welcome to Servpe!
           </h1>
@@ -65,15 +69,16 @@ const RoleSelection = () => {
 
         <div className="grid md:grid-cols-2 gap-6 mb-8">
           <Card 
-            className={`cursor-pointer transition-all hover:shadow-lg ${
+            className={`cursor-pointer transition-all duration-300 hover:shadow-lg hover:-translate-y-1 animate-fade-in ${
               selectedRole === 'client' 
-                ? 'ring-2 ring-blue-500 border-blue-500' 
+                ? 'ring-2 ring-blue-500 border-blue-500 scale-105' 
                 : 'hover:border-gray-300'
             }`}
+            style={{animationDelay: '0.1s'}}
             onClick={() => handleRoleSelect('client')}
           >
             <CardHeader className="text-center">
-              <div className="mx-auto mb-4 p-4 bg-blue-100 rounded-full w-16 h-16 flex items-center justify-center">
+              <div className="mx-auto mb-4 p-4 bg-blue-100 rounded-full w-16 h-16 flex items-center justify-center hover:scale-110 transition-transform duration-200">
                 <Briefcase className="h-8 w-8 text-blue-600" />
               </div>
               <CardTitle className="text-xl">I'm a Client</CardTitle>
@@ -92,15 +97,16 @@ const RoleSelection = () => {
           </Card>
 
           <Card 
-            className={`cursor-pointer transition-all hover:shadow-lg ${
+            className={`cursor-pointer transition-all duration-300 hover:shadow-lg hover:-translate-y-1 animate-fade-in ${
               selectedRole === 'freelancer' 
-                ? 'ring-2 ring-green-500 border-green-500' 
+                ? 'ring-2 ring-green-500 border-green-500 scale-105' 
                 : 'hover:border-gray-300'
             }`}
+            style={{animationDelay: '0.2s'}}
             onClick={() => handleRoleSelect('freelancer')}
           >
             <CardHeader className="text-center">
-              <div className="mx-auto mb-4 p-4 bg-green-100 rounded-full w-16 h-16 flex items-center justify-center">
+              <div className="mx-auto mb-4 p-4 bg-green-100 rounded-full w-16 h-16 flex items-center justify-center hover:scale-110 transition-transform duration-200">
                 <Users className="h-8 w-8 text-green-600" />
               </div>
               <CardTitle className="text-xl">I'm a Freelancer</CardTitle>
@@ -119,11 +125,11 @@ const RoleSelection = () => {
           </Card>
         </div>
 
-        <div className="text-center">
+        <div className="text-center animate-fade-in" style={{animationDelay: '0.3s'}}>
           <Button 
             onClick={handleContinue}
             disabled={!selectedRole || isLoading}
-            className="bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 px-8"
+            className="bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 hover:scale-105 transition-all duration-200 px-8"
           >
             {isLoading ? "Setting up..." : "Continue"}
             <ArrowRight className="ml-2 h-4 w-4" />
