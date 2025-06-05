@@ -18,27 +18,27 @@ api.interceptors.request.use((config) => {
 
 export const orderAPI = {
   async createOrder(orderData: any): Promise<ApiResponse> {
-    const response = await api.post('/orders', orderData);
+    const response = await api.post<ApiResponse>('/orders', orderData);
     return response.data;
   },
 
   async getMyOrders(params?: any): Promise<ApiResponse> {
-    const response = await api.get('/orders/my-orders', { params });
+    const response = await api.get<ApiResponse>('/orders/my-orders', { params });
     return response.data;
   },
 
   async getOrder(id: string): Promise<ApiResponse> {
-    const response = await api.get(`/orders/${id}`);
+    const response = await api.get<ApiResponse>(`/orders/${id}`);
     return response.data;
   },
 
   async updateOrderStatus(id: string, statusData: any): Promise<ApiResponse> {
-    const response = await api.put(`/orders/${id}/status`, statusData);
+    const response = await api.put<ApiResponse>(`/orders/${id}/status`, statusData);
     return response.data;
   },
 
   async submitDeliverables(id: string, deliverables: any): Promise<ApiResponse> {
-    const response = await api.put(`/orders/${id}/deliverables`, deliverables);
+    const response = await api.put<ApiResponse>(`/orders/${id}/deliverables`, deliverables);
     return response.data;
   }
 };
