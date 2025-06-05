@@ -6,14 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-
-interface Category {
-  _id: string;
-  name: string;
-  description: string;
-  isActive: boolean;
-  createdAt: string;
-}
+import { categoryAPI, Category } from "@/api/categories";
 
 const AdminCategories = () => {
   const [categories, setCategories] = useState<Category[]>([]);
@@ -21,6 +14,7 @@ const AdminCategories = () => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [newCategory, setNewCategory] = useState({ name: '', description: '' });
   const [editData, setEditData] = useState({ name: '', description: '' });
+  const [submitting, setSubmitting] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -29,19 +23,18 @@ const AdminCategories = () => {
 
   const fetchCategories = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/admin/categories', {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-      const data = await response.json();
-      if (data.success) {
-        setCategories(data.data);
+      setLoading(true);
+      const response = await categoryAPI.getAdminCategories();
+      if (response.success) {
+        setCategories(response.data || []);
+      } else {
+        throw new Error(response.message || 'Failed to fetch categories');
       }
-    } catch (error) {
+    } catch (error: any) {
+      console.error('Fetch categories error:', error);
       toast({
         title: "Error",
-        description: "Failed to fetch categories",
+        description: error.message || "Failed to fetch categories",
         variant: "destructive",
       });
     } finally {
@@ -50,95 +43,114 @@ const AdminCategories = () => {
   };
 
   const handleCreateCategory = async () => {
-    if (!newCategory.name.trim()) return;
+    if (!newCategory.name.trim() || !newCategory.description.trim()) {
+      toast({
+        title: "Validation Error",
+        description: "Please fill in both name and description",
+        variant: "destructive",
+      });
+      return;
+    }
 
     try {
-      const response = await fetch('http://localhost:5000/api/admin/categories', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify(newCategory)
-      });
-
-      const data = await response.json();
-      if (data.success) {
-        setCategories([...categories, data.data]);
+      setSubmitting(true);
+      const response = await categoryAPI.createCategory(newCategory);
+      if (response.success) {
+        setCategories([...categories, response.data!]);
         setNewCategory({ name: '', description: '' });
         toast({
           title: "Success",
           description: "Category created successfully",
         });
+      } else {
+        throw new Error(response.message || 'Failed to create category');
       }
-    } catch (error) {
+    } catch (error: any) {
+      console.error('Create category error:', error);
       toast({
         title: "Error",
-        description: "Failed to create category",
+        description: error.message || "Failed to create category",
         variant: "destructive",
       });
+    } finally {
+      setSubmitting(false);
     }
   };
 
   const handleUpdateCategory = async (id: string) => {
-    try {
-      const response = await fetch(`http://localhost:5000/api/admin/categories/${id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify(editData)
+    if (!editData.name.trim() || !editData.description.trim()) {
+      toast({
+        title: "Validation Error",
+        description: "Please fill in both name and description",
+        variant: "destructive",
       });
+      return;
+    }
 
-      const data = await response.json();
-      if (data.success) {
+    try {
+      setSubmitting(true);
+      const response = await categoryAPI.updateCategory(id, editData);
+      if (response.success) {
         setCategories(categories.map(cat => 
-          cat._id === id ? data.data : cat
+          cat._id === id ? response.data! : cat
         ));
         setEditingId(null);
         toast({
           title: "Success",
           description: "Category updated successfully",
         });
+      } else {
+        throw new Error(response.message || 'Failed to update category');
       }
-    } catch (error) {
+    } catch (error: any) {
+      console.error('Update category error:', error);
       toast({
         title: "Error",
-        description: "Failed to update category",
+        description: error.message || "Failed to update category",
         variant: "destructive",
       });
+    } finally {
+      setSubmitting(false);
     }
   };
 
   const handleDeleteCategory = async (id: string) => {
-    try {
-      const response = await fetch(`http://localhost:5000/api/admin/categories/${id}`, {
-        method: 'DELETE',
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`
-        }
-      });
+    if (!confirm('Are you sure you want to delete this category? This action cannot be undone.')) {
+      return;
+    }
 
-      if (response.ok) {
+    try {
+      setSubmitting(true);
+      const response = await categoryAPI.deleteCategory(id);
+      if (response.success) {
         setCategories(categories.filter(cat => cat._id !== id));
         toast({
           title: "Success",
           description: "Category deleted successfully",
         });
+      } else {
+        throw new Error(response.message || 'Failed to delete category');
       }
-    } catch (error) {
+    } catch (error: any) {
+      console.error('Delete category error:', error);
       toast({
         title: "Error",
-        description: "Failed to delete category",
+        description: error.message || "Failed to delete category",
         variant: "destructive",
       });
+    } finally {
+      setSubmitting(false);
     }
   };
 
   const startEdit = (category: Category) => {
     setEditingId(category._id);
     setEditData({ name: category.name, description: category.description });
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+    setEditData({ name: '', description: '' });
   };
 
   if (loading) {
@@ -153,6 +165,7 @@ const AdminCategories = () => {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold">Manage Categories</h1>
+        <Badge variant="outline">{categories.length} Categories</Badge>
       </div>
 
       {/* Add New Category */}
@@ -167,15 +180,20 @@ const AdminCategories = () => {
               placeholder="Category name (e.g., Video Editing, App Development)"
               value={newCategory.name}
               onChange={(e) => setNewCategory({ ...newCategory, name: e.target.value })}
+              disabled={submitting}
             />
             <Input
               placeholder="Description"
               value={newCategory.description}
               onChange={(e) => setNewCategory({ ...newCategory, description: e.target.value })}
+              disabled={submitting}
             />
-            <Button onClick={handleCreateCategory} disabled={!newCategory.name.trim()}>
+            <Button 
+              onClick={handleCreateCategory} 
+              disabled={!newCategory.name.trim() || !newCategory.description.trim() || submitting}
+            >
               <Plus className="h-4 w-4 mr-2" />
-              Add
+              {submitting ? 'Adding...' : 'Add'}
             </Button>
           </div>
         </CardContent>
@@ -185,45 +203,72 @@ const AdminCategories = () => {
       <Card>
         <CardHeader>
           <CardTitle>Categories ({categories.length})</CardTitle>
+          <CardDescription>Manage your service categories</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
             {categories.map((category) => (
-              <div key={category._id} className="flex items-center justify-between p-4 border rounded-lg">
+              <div key={category._id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 transition-colors">
                 {editingId === category._id ? (
                   <div className="flex gap-2 flex-1">
                     <Input
                       value={editData.name}
                       onChange={(e) => setEditData({ ...editData, name: e.target.value })}
+                      disabled={submitting}
                     />
                     <Input
                       value={editData.description}
                       onChange={(e) => setEditData({ ...editData, description: e.target.value })}
+                      disabled={submitting}
                     />
-                    <Button size="sm" onClick={() => handleUpdateCategory(category._id)}>
+                    <Button 
+                      size="sm" 
+                      onClick={() => handleUpdateCategory(category._id)}
+                      disabled={submitting}
+                    >
                       <Save className="h-4 w-4" />
                     </Button>
-                    <Button size="sm" variant="outline" onClick={() => setEditingId(null)}>
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      onClick={cancelEdit}
+                      disabled={submitting}
+                    >
                       <X className="h-4 w-4" />
                     </Button>
                   </div>
                 ) : (
                   <>
-                    <div>
+                    <div className="flex-1">
                       <h3 className="font-medium">{category.name}</h3>
                       <p className="text-sm text-gray-600">{category.description}</p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="text-xs text-gray-500">
+                          {category.servicesCount} services
+                        </span>
+                        <span className="text-xs text-gray-400">•</span>
+                        <span className="text-xs text-gray-500">
+                          Created {new Date(category.createdAt).toLocaleDateString()}
+                        </span>
+                      </div>
                     </div>
                     <div className="flex items-center gap-2">
                       <Badge variant={category.isActive ? "default" : "secondary"}>
                         {category.isActive ? "Active" : "Inactive"}
                       </Badge>
-                      <Button size="sm" variant="outline" onClick={() => startEdit(category)}>
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        onClick={() => startEdit(category)}
+                        disabled={submitting}
+                      >
                         <Edit className="h-4 w-4" />
                       </Button>
                       <Button 
                         size="sm" 
                         variant="destructive" 
                         onClick={() => handleDeleteCategory(category._id)}
+                        disabled={submitting}
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -233,7 +278,10 @@ const AdminCategories = () => {
               </div>
             ))}
             {categories.length === 0 && (
-              <p className="text-center text-gray-500 py-8">No categories yet. Create your first category above.</p>
+              <div className="text-center py-8">
+                <p className="text-gray-500 mb-4">No categories yet. Create your first category above.</p>
+                <p className="text-sm text-gray-400">Categories help organize services and make them easier to find.</p>
+              </div>
             )}
           </div>
         </CardContent>

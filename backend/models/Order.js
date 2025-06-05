@@ -33,7 +33,8 @@ const orderSchema = new mongoose.Schema({
   },
   addOns: [{
     title: String,
-    price: Number
+    price: Number,
+    deliveryTime: Number
   }],
   totalAmount: {
     type: Number,
@@ -62,10 +63,12 @@ const orderSchema = new mongoose.Schema({
   },
   actualDeliveryDate: Date,
   deliverables: [{
-    fileName: String,
-    fileUrl: String,
-    fileSize: Number,
-    fileType: String,
+    files: [{
+      fileName: String,
+      fileUrl: String,
+      fileSize: Number,
+      fileType: String
+    }],
     message: String,
     submittedAt: { type: Date, default: Date.now }
   }],
@@ -114,7 +117,21 @@ const orderSchema = new mongoose.Schema({
     type: Boolean,
     default: true
   },
-  lastMessageAt: Date
+  lastMessageAt: Date,
+  priority: {
+    type: String,
+    enum: ['low', 'normal', 'high', 'urgent'],
+    default: 'normal'
+  },
+  tags: [String],
+  notes: [{
+    content: String,
+    addedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
+    },
+    addedAt: { type: Date, default: Date.now }
+  }]
 }, {
   timestamps: true
 });
@@ -124,17 +141,6 @@ orderSchema.pre('save', async function(next) {
   if (!this.orderNumber) {
     const count = await mongoose.model('Order').countDocuments();
     this.orderNumber = `ORD${Date.now()}${count.toString().padStart(4, '0')}`;
-  }
-  next();
-});
-
-// Pre-save middleware to update status history
-orderSchema.pre('save', function(next) {
-  if (this.isModified('status') && !this.isNew) {
-    this.statusHistory.push({
-      status: this.status,
-      updatedAt: new Date()
-    });
   }
   next();
 });
@@ -150,22 +156,32 @@ orderSchema.virtual('daysRemaining').get(function() {
 // Virtual for progress percentage
 orderSchema.virtual('progress').get(function() {
   switch (this.status) {
-    case 'pending': return 0;
-    case 'accepted': return 10;
-    case 'in_progress': return 50;
+    case 'pending': return 5;
+    case 'accepted': return 15;
+    case 'in_progress': return this.deliverables.length > 0 ? 75 : 25;
     case 'delivered': return 90;
+    case 'revision_requested': return 60;
     case 'completed': return 100;
     case 'cancelled': return 0;
     default: return 0;
   }
 });
 
-// Indexes
+// Virtual for overdue status
+orderSchema.virtual('isOverdue').get(function() {
+  if (['completed', 'cancelled'].includes(this.status)) return false;
+  const now = new Date();
+  return this.deliveryDate < now;
+});
+
+// Indexes for better performance
 orderSchema.index({ client: 1 });
 orderSchema.index({ freelancer: 1 });
 orderSchema.index({ service: 1 });
 orderSchema.index({ status: 1 });
 orderSchema.index({ createdAt: -1 });
 orderSchema.index({ orderNumber: 1 });
+orderSchema.index({ deliveryDate: 1 });
+orderSchema.index({ 'dispute.isDisputed': 1 });
 
 module.exports = mongoose.model('Order', orderSchema);

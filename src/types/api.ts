@@ -24,6 +24,17 @@ export interface User {
   needsRoleSelection?: boolean;
   roleSelected?: boolean;
   isVerified: boolean;
+  location?: string;
+  bio?: string;
+  skills?: Array<{
+    name: string;
+    level: 'beginner' | 'intermediate' | 'expert';
+  }>;
+  hourlyRate?: number;
+  rating?: {
+    average: number;
+    count: number;
+  };
   createdAt: string;
   updatedAt: string;
 }
@@ -64,6 +75,7 @@ export interface Service {
   averageRating: number;
   totalReviews: number;
   impressions: number;
+  orders: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -108,16 +120,96 @@ export interface Proposal {
 
 export interface Order {
   _id: string;
+  orderNumber: string;
   service?: Service;
   project?: Project;
   client: User;
   freelancer: User;
-  status: 'pending' | 'in_progress' | 'delivered' | 'completed' | 'cancelled';
+  selectedPlan: 'basic' | 'standard' | 'premium';
+  requirements: string;
+  addOns: Array<{
+    title: string;
+    price: number;
+    deliveryTime?: number;
+  }>;
+  status: 'pending' | 'accepted' | 'in_progress' | 'delivered' | 'revision_requested' | 'completed' | 'cancelled' | 'disputed';
   totalAmount: number;
+  platformFee: number;
   freelancerEarnings: number;
+  deliveryDate: string;
+  actualDeliveryDate?: string;
   progress: number;
   daysRemaining: number;
   isOverdue: boolean;
+  userRole?: 'client' | 'freelancer';
+  deliverables: Array<{
+    files: Array<{
+      fileName: string;
+      fileUrl: string;
+      fileSize: number;
+      fileType: string;
+    }>;
+    message: string;
+    submittedAt: string;
+  }>;
+  revisions: Array<{
+    reason: string;
+    requestedAt: string;
+    resolvedAt?: string;
+  }>;
+  statusHistory: Array<{
+    status: string;
+    updatedBy: string;
+    updatedAt: string;
+    note?: string;
+  }>;
+  rating?: {
+    clientRating?: {
+      score: number;
+      comment: string;
+      ratedAt: string;
+    };
+    freelancerRating?: {
+      score: number;
+      comment: string;
+      ratedAt: string;
+    };
+  };
+  dispute?: {
+    isDisputed: boolean;
+    reason?: string;
+    status?: 'open' | 'resolved' | 'closed';
+    initiatedBy?: string;
+    initiatedAt?: string;
+    resolvedAt?: string;
+    resolution?: string;
+  };
+  priority: 'low' | 'normal' | 'high' | 'urgent';
+  tags: string[];
+  notes: Array<{
+    content: string;
+    addedBy: string;
+    addedAt: string;
+  }>;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface OrderAnalytics {
+  totalOrders: number;
+  completedOrders: number;
+  completionRate: string;
+  totalEarnings: number;
+  avgDeliveryTime: number;
+  recentOrdersCount: number;
+}
+
+export interface Category {
+  _id: string;
+  name: string;
+  description: string;
+  isActive: boolean;
+  servicesCount: number;
   createdAt: string;
   updatedAt: string;
 }

@@ -37,8 +37,29 @@ export const orderAPI = {
     return response.data;
   },
 
-  async submitDeliverables(id: string, deliverables: any): Promise<ApiResponse> {
-    const response = await api.put<ApiResponse>(`/orders/${id}/deliverables`, deliverables);
+  async submitDeliverables(id: string, formData: FormData): Promise<ApiResponse> {
+    const response = await api.put<ApiResponse>(`/orders/${id}/deliverables`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  },
+
+  async requestRevision(id: string, revisionData: any): Promise<ApiResponse> {
+    const response = await api.put<ApiResponse>(`/orders/${id}/revision`, revisionData);
+    return response.data;
+  },
+
+  async getOrderAnalytics(params?: any): Promise<ApiResponse> {
+    const response = await api.get<ApiResponse>('/orders/analytics', { params });
+    return response.data;
+  },
+
+  async downloadDeliverable(fileUrl: string): Promise<Blob> {
+    const response = await api.get(fileUrl, {
+      responseType: 'blob',
+    });
     return response.data;
   }
 };
