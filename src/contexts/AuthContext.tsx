@@ -11,7 +11,7 @@ interface User {
   role?: 'client' | 'freelancer';
   profilePicture?: string;
   needsRoleSelection?: boolean;
-  roleSelected: boolean;
+  roleSelected?: boolean;
 }
 
 interface AuthContextType {

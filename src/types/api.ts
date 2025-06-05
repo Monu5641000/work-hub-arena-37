@@ -16,13 +16,13 @@ export interface User {
   _id: string;
   firstName: string;
   lastName: string;
-  email: string;
-  phone: string;
-  role: 'client' | 'freelancer' | 'admin';
-  avatar?: string;
-  isVerified: boolean;
+  email?: string;
+  phoneNumber?: string;
+  role?: 'client' | 'freelancer';
+  profilePicture?: string;
   needsRoleSelection?: boolean;
   roleSelected?: boolean;
+  isVerified: boolean;
   createdAt: string;
   updatedAt: string;
 }

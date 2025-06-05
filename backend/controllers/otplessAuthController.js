@@ -37,7 +37,33 @@ exports.verifyOTP = async (req, res) => {
     const cleanPhone = OTPService.validatePhoneNumber(phoneNumber);
     
     const otpResult = await OTPService.verifyOTP(cleanPhone, otp, orderId);
-    const user = await UserService.findOrCreateOTPUser(cleanPhone, otpResult.userId);
+    
+    // Find or create user with temporary role
+    let user = await User.findOne({ phoneNumber: cleanPhone });
+    
+    if (!user) {
+      // Create new user with temporary role
+      user = await User.create({
+        firstName: 'User',
+        lastName: 'Name',
+        phoneNumber: cleanPhone,
+        authProvider: 'otpless',
+        otplessUserId: otpResult.userId || cleanPhone,
+        isVerified: true,
+        role: 'client', // Temporary default role
+        roleSelected: false // User hasn't selected actual role yet
+      });
+    } else {
+      // Ensure existing user has a role
+      if (!user.role) {
+        user.role = 'client'; // Set temporary role if missing
+      }
+      
+      // Update last login
+      user.lastLogin = new Date();
+      await user.save();
+    }
+
     const token = UserService.generateToken(user._id);
 
     res.status(200).json({
@@ -68,7 +94,48 @@ exports.googleLogin = async (req, res) => {
     }
 
     const googleUser = await googleAuthService.verifyIdToken(idToken);
-    const user = await UserService.findOrCreateGoogleUser(googleUser);
+    
+    // Find or create user
+    let user = await User.findOne({ 
+      $or: [
+        { googleId: googleUser.id },
+        { email: googleUser.email }
+      ]
+    });
+
+    if (!user) {
+      // Create new user with temporary role
+      user = await User.create({
+        firstName: googleUser.given_name,
+        lastName: googleUser.family_name,
+        email: googleUser.email,
+        profilePicture: googleUser.picture,
+        authProvider: 'google',
+        googleId: googleUser.id,
+        isVerified: googleUser.email_verified || true,
+        role: 'client', // Temporary default role
+        roleSelected: false // User hasn't selected actual role yet
+      });
+    } else {
+      // Ensure existing user has a role
+      if (!user.role) {
+        user.role = 'client'; // Set temporary role if missing
+      }
+      
+      // Update user info if needed
+      if (!user.googleId) {
+        user.googleId = googleUser.id;
+      }
+      if (!user.profilePicture && googleUser.picture) {
+        user.profilePicture = googleUser.picture;
+      }
+      if (!user.email && googleUser.email) {
+        user.email = googleUser.email;
+      }
+      user.lastLogin = new Date();
+      await user.save();
+    }
+
     const token = UserService.generateToken(user._id);
 
     res.status(200).json({
