@@ -1,71 +1,30 @@
+
 const User = require('../models/User');
-const jwt = require('jsonwebtoken');
-const axios = require('axios');
-const { OAuth2Client } = require('google-auth-library');
+const OTPService = require('../utils/otpService');
+const GoogleAuthService = require('../utils/googleAuthService');
+const UserService = require('../utils/userService');
 
-// Initialize Google OAuth client
-const googleClient = new OAuth2Client(process.env.GOOGLE_WEB_CLIENT_ID);
-
-// Generate JWT token
-const generateToken = (id) => {
-  return jwt.sign({ id }, process.env.JWT_SECRET, {
-    expiresIn: process.env.JWT_EXPIRE || '7d'
-  });
-};
+const googleAuthService = new GoogleAuthService();
 
 // Send OTP using OTPless
 exports.sendOTP = async (req, res) => {
   try {
     const { phoneNumber } = req.body;
+    const cleanPhone = OTPService.validatePhoneNumber(phoneNumber);
+    const result = await OTPService.sendOTP(cleanPhone);
 
-    // Validate phone number format
-    const cleanPhone = phoneNumber.replace(/\s/g, '');
-    if (!/^\+91[6-9]\d{9}$/.test(cleanPhone)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Please provide a valid Indian phone number'
-      });
-    }
-
-    // Send OTP using OTPless API
-    const otplessResponse = await axios.post('https://auth.otpless.app/auth/otp/v1/send', {
-      phoneNumber: cleanPhone,
-      otpLength: 6,
-      channel: 'SMS',
-      expiry: 600 // 10 minutes
-    }, {
-      headers: {
-        'clientId': process.env.OTPLESS_CLIENT_ID,
-        'clientSecret': process.env.OTPLESS_CLIENT_SECRET,
-        'Content-Type': 'application/json'
+    res.status(200).json({
+      success: true,
+      message: 'OTP sent successfully',
+      data: {
+        orderId: result.orderId
       }
     });
-
-    console.log('OTPless API Response:', otplessResponse.data);
-
-    // Check if response contains orderId (which indicates success)
-    if (otplessResponse.data && otplessResponse.data.orderId) {
-      res.status(200).json({
-        success: true,
-        message: 'OTP sent successfully',
-        data: {
-          orderId: otplessResponse.data.orderId
-        }
-      });
-    } else {
-      throw new Error('OTPless API did not return orderId');
-    }
   } catch (error) {
     console.error('OTP sending error:', error);
-    
-    // If it's an axios error, log the full response
-    if (error.response) {
-      console.error('OTPless API Error Response:', error.response.data);
-    }
-    
     res.status(500).json({
       success: false,
-      message: 'Failed to send OTP',
+      message: error.message || 'Failed to send OTP',
       error: error.message
     });
   }
@@ -75,82 +34,22 @@ exports.sendOTP = async (req, res) => {
 exports.verifyOTP = async (req, res) => {
   try {
     const { phoneNumber, otp, orderId } = req.body;
-
-    const cleanPhone = phoneNumber.replace(/\s/g, '');
-
-    console.log('Verifying OTP:', { phoneNumber: cleanPhone, otp, orderId });
-
-    // Verify OTP using OTPless API
-    const verifyResponse = await axios.post('https://auth.otpless.app/auth/otp/v1/verify', {
-      orderId,
-      otp,
-      phoneNumber: cleanPhone
-    }, {
-      headers: {
-        'clientId': process.env.OTPLESS_CLIENT_ID,
-        'clientSecret': process.env.OTPLESS_CLIENT_SECRET,
-        'Content-Type': 'application/json'
-      }
-    });
-
-    console.log('OTPless Verify Response:', verifyResponse.data);
-
-    // Check if OTP is verified - the response structure might vary
-    const isVerified = verifyResponse.data.isOTPVerified || 
-                      verifyResponse.data.verified || 
-                      verifyResponse.data.success ||
-                      (verifyResponse.data.status && verifyResponse.data.status === 'SUCCESS');
-
-    if (!isVerified) {
-      console.log('OTP verification failed:', verifyResponse.data);
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid OTP or OTP has expired'
-      });
-    }
-
-    // Find or create user
-    let user = await User.findOne({ phoneNumber: cleanPhone });
+    const cleanPhone = OTPService.validatePhoneNumber(phoneNumber);
     
-    if (!user) {
-      // Create new user without role (user will select role later)
-      user = await User.create({
-        firstName: 'User',
-        lastName: 'Name',
-        phoneNumber: cleanPhone,
-        authProvider: 'otpless',
-        otplessUserId: verifyResponse.data.userId || cleanPhone,
-        isVerified: true,
-        roleSelected: false
-      });
-    } else {
-      // Update last login
-      user.lastLogin = new Date();
-      await user.save();
-    }
-
-    // Generate token
-    const token = generateToken(user._id);
+    const otpResult = await OTPService.verifyOTP(cleanPhone, otp, orderId);
+    const user = await UserService.findOrCreateOTPUser(cleanPhone, otpResult.userId);
+    const token = UserService.generateToken(user._id);
 
     res.status(200).json({
       success: true,
       token,
-      user: {
-        ...user.toJSON(),
-        needsRoleSelection: !user.roleSelected
-      }
+      user: UserService.formatUserResponse(user)
     });
   } catch (error) {
     console.error('OTP verification error:', error);
-    
-    // If it's an axios error, log the full response
-    if (error.response) {
-      console.error('OTPless Verify API Error Response:', error.response.data);
-    }
-    
     res.status(500).json({
       success: false,
-      message: 'OTP verification failed',
+      message: error.message || 'OTP verification failed',
       error: error.message
     });
   }
@@ -168,82 +67,20 @@ exports.googleLogin = async (req, res) => {
       });
     }
 
-    // Verify Google ID token
-    const ticket = await googleClient.verifyIdToken({
-      idToken: idToken,
-      audience: process.env.GOOGLE_WEB_CLIENT_ID
-    });
-
-    const payload = ticket.getPayload();
-    
-    if (!payload || !payload.sub) {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid Google token'
-      });
-    }
-
-    // Extract user info from Google payload
-    const googleUser = {
-      id: payload.sub,
-      email: payload.email,
-      given_name: payload.given_name || 'User',
-      family_name: payload.family_name || 'Name',
-      picture: payload.picture,
-      email_verified: payload.email_verified
-    };
-
-    // Find or create user
-    let user = await User.findOne({ 
-      $or: [
-        { googleId: googleUser.id },
-        { email: googleUser.email }
-      ]
-    });
-
-    if (!user) {
-      // Create new user without role (user will select role later)
-      user = await User.create({
-        firstName: googleUser.given_name,
-        lastName: googleUser.family_name,
-        email: googleUser.email,
-        profilePicture: googleUser.picture,
-        authProvider: 'google',
-        googleId: googleUser.id,
-        isVerified: googleUser.email_verified || true,
-        roleSelected: false
-      });
-    } else {
-      // Update user info if needed
-      if (!user.googleId) {
-        user.googleId = googleUser.id;
-      }
-      if (!user.profilePicture && googleUser.picture) {
-        user.profilePicture = googleUser.picture;
-      }
-      if (!user.email && googleUser.email) {
-        user.email = googleUser.email;
-      }
-      user.lastLogin = new Date();
-      await user.save();
-    }
-
-    // Generate token
-    const token = generateToken(user._id);
+    const googleUser = await googleAuthService.verifyIdToken(idToken);
+    const user = await UserService.findOrCreateGoogleUser(googleUser);
+    const token = UserService.generateToken(user._id);
 
     res.status(200).json({
       success: true,
       token,
-      user: {
-        ...user.toJSON(),
-        needsRoleSelection: !user.roleSelected
-      }
+      user: UserService.formatUserResponse(user)
     });
   } catch (error) {
     console.error('Google login error:', error);
     res.status(500).json({
       success: false,
-      message: 'Google login failed',
+      message: error.message || 'Google login failed',
       error: error.message
     });
   }
@@ -255,37 +92,17 @@ exports.selectRole = async (req, res) => {
     const { role } = req.body;
     const userId = req.user.id;
 
-    if (!['client', 'freelancer'].includes(role)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid role. Must be client or freelancer'
-      });
-    }
-
-    const user = await User.findByIdAndUpdate(
-      userId,
-      {
-        role,
-        roleSelected: true
-      },
-      {
-        new: true,
-        runValidators: true
-      }
-    );
+    const user = await UserService.updateUserRole(userId, role);
 
     res.status(200).json({
       success: true,
-      user: {
-        ...user.toJSON(),
-        needsRoleSelection: false
-      }
+      user: UserService.formatUserResponse(user)
     });
   } catch (error) {
     console.error('Role selection error:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to select role',
+      message: error.message || 'Failed to select role',
       error: error.message
     });
   }
@@ -297,10 +114,7 @@ exports.getMe = async (req, res) => {
     const user = await User.findById(req.user.id);
     res.status(200).json({
       success: true,
-      user: {
-        ...user.toJSON(),
-        needsRoleSelection: !user.roleSelected
-      }
+      user: UserService.formatUserResponse(user)
     });
   } catch (error) {
     res.status(500).json({
