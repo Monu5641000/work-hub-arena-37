@@ -6,12 +6,14 @@ import { useAuth } from '@/contexts/AuthContext';
 interface ProtectedRouteProps {
   children: React.ReactNode;
   requiredRole?: 'client' | 'freelancer' | 'admin';
+  allowedRoles?: ('client' | 'freelancer' | 'admin')[];
   requireRoleSelection?: boolean;
 }
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ 
   children, 
-  requiredRole, 
+  requiredRole,
+  allowedRoles,
   requireRoleSelection = true 
 }) => {
   const { user, token, isLoading } = useAuth();
@@ -33,8 +35,16 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     return <Navigate to="/role-selection" replace />;
   }
 
+  // Check if user has required role (single role check)
   if (requiredRole && user.role !== requiredRole) {
-    // Redirect based on user role
+    const redirectPath = user.role === 'admin' ? '/admin' : 
+                        user.role === 'freelancer' ? '/dashboard/freelancer' : 
+                        '/dashboard/client';
+    return <Navigate to={redirectPath} replace />;
+  }
+
+  // Check if user has one of the allowed roles (multiple roles check)
+  if (allowedRoles && !allowedRoles.includes(user.role as any)) {
     const redirectPath = user.role === 'admin' ? '/admin' : 
                         user.role === 'freelancer' ? '/dashboard/freelancer' : 
                         '/dashboard/client';

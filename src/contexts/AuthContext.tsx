@@ -6,12 +6,27 @@ interface User {
   _id: string;
   firstName: string;
   lastName: string;
+  fullName?: string;
   email?: string;
   phoneNumber?: string;
   role?: 'client' | 'freelancer' | 'admin';
   profilePicture?: string;
   needsRoleSelection?: boolean;
   roleSelected?: boolean;
+  rating?: {
+    average: number;
+    count: number;
+  };
+  bio?: string;
+  skills?: Array<{
+    name: string;
+    level: 'beginner' | 'intermediate' | 'expert';
+  }>;
+  hourlyRate?: number;
+  location?: {
+    city: string;
+    country: string;
+  };
 }
 
 interface AuthContextType {

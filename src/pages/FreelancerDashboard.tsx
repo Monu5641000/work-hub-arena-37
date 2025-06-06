@@ -29,6 +29,12 @@ import axios from 'axios';
 
 const API_BASE_URL = 'http://localhost:5000/api';
 
+interface ApiResponse {
+  success: boolean;
+  data?: any;
+  message?: string;
+}
+
 const FreelancerDashboard = () => {
   const navigate = useNavigate();
   const { user, token } = useAuth();
@@ -84,8 +90,8 @@ const FreelancerDashboard = () => {
     }
   };
 
-  const handleProfilePictureUpload = async (event) => {
-    const file = event.target.files[0];
+  const handleProfilePictureUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
     if (!file) return;
 
     try {
@@ -93,7 +99,7 @@ const FreelancerDashboard = () => {
       const formData = new FormData();
       formData.append('profilePicture', file);
 
-      const response = await axios.put(`${API_BASE_URL}/users/profile/picture`, formData, {
+      const response = await axios.put<ApiResponse>(`${API_BASE_URL}/users/profile/picture`, formData, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'multipart/form-data'
@@ -153,6 +159,8 @@ const FreelancerDashboard = () => {
     );
   }
 
+  const fullName = user ? `${user.firstName} ${user.lastName}` : '';
+
   return (
     <div className="min-h-screen bg-white">
       <Navbar />
@@ -167,7 +175,7 @@ const FreelancerDashboard = () => {
                   {user?.profilePicture ? (
                     <img 
                       src={user.profilePicture} 
-                      alt={user.fullName}
+                      alt={fullName}
                       className="w-20 h-20 rounded-full object-cover"
                     />
                   ) : (
@@ -246,7 +254,7 @@ const FreelancerDashboard = () => {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {services.slice(0, 3).map(service => (
+                  {services.slice(0, 3).map((service: any) => (
                     <div key={service._id} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
                       <div className="flex-1">
                         <h3 className="font-medium text-gray-900">{service.title}</h3>
@@ -293,7 +301,7 @@ const FreelancerDashboard = () => {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {projects.slice(0, 3).map(project => (
+                  {projects.slice(0, 3).map((project: any) => (
                     <div key={project._id} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
                       <div className="flex-1">
                         <h3 className="font-medium text-gray-900">{project.title}</h3>

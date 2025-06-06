@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Search, Filter, Star, MapPin, Clock, DollarSign } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -14,10 +13,33 @@ import axios from 'axios';
 
 const API_BASE_URL = 'http://localhost:5000/api';
 
+interface FreelancerProfile {
+  _id: string;
+  firstName: string;
+  lastName: string;
+  profilePicture?: string;
+  bio?: string;
+  skills?: Array<{ name: string; level: string }>;
+  hourlyRate?: number;
+  location?: { city: string; country: string };
+  rating?: { average: number; count: number };
+}
+
+interface ApiResponse {
+  success: boolean;
+  data: FreelancerProfile[];
+  pagination?: {
+    current: number;
+    pages: number;
+    total: number;
+    limit: number;
+  };
+}
+
 const FindFreelancers = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [freelancers, setFreelancers] = useState([]);
+  const [freelancers, setFreelancers] = useState<FreelancerProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSkill, setSelectedSkill] = useState('');
@@ -39,7 +61,7 @@ const FindFreelancers = () => {
       if (searchQuery) params.append('search', searchQuery);
       params.append('sort', sortBy);
 
-      const response = await axios.get(`${API_BASE_URL}/users/freelancers?${params.toString()}`);
+      const response = await axios.get<ApiResponse>(`${API_BASE_URL}/users/freelancers?${params.toString()}`);
       setFreelancers(response.data.data || []);
     } catch (error) {
       console.error('Error fetching freelancers:', error);
@@ -102,7 +124,7 @@ const FindFreelancers = () => {
                 <SelectValue placeholder="All Skills" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Skills</SelectItem>
+                <SelectItem value="all">All Skills</SelectItem>
                 {skills.map(skill => (
                   <SelectItem key={skill} value={skill}>{skill}</SelectItem>
                 ))}
@@ -114,7 +136,7 @@ const FindFreelancers = () => {
                 <SelectValue placeholder="All Categories" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Categories</SelectItem>
+                <SelectItem value="all">All Categories</SelectItem>
                 {categories.map(category => (
                   <SelectItem key={category} value={category}>{category}</SelectItem>
                 ))}
@@ -126,7 +148,7 @@ const FindFreelancers = () => {
                 <SelectValue placeholder="Min Rating" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Any Rating</SelectItem>
+                <SelectItem value="any">Any Rating</SelectItem>
                 <SelectItem value="4.5">4.5+ Stars</SelectItem>
                 <SelectItem value="4.0">4.0+ Stars</SelectItem>
                 <SelectItem value="3.5">3.5+ Stars</SelectItem>
@@ -169,7 +191,7 @@ const FindFreelancers = () => {
                         {freelancer.profilePicture ? (
                           <img 
                             src={freelancer.profilePicture} 
-                            alt={freelancer.fullName}
+                            alt={`${freelancer.firstName} ${freelancer.lastName}`}
                             className="w-16 h-16 rounded-full object-cover"
                           />
                         ) : (
@@ -214,7 +236,7 @@ const FindFreelancers = () => {
                           {skill.name}
                         </Badge>
                       ))}
-                      {freelancer.skills?.length > 3 && (
+                      {freelancer.skills && freelancer.skills.length > 3 && (
                         <Badge variant="outline" className="text-xs">
                           +{freelancer.skills.length - 3} more
                         </Badge>
