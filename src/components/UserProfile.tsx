@@ -62,14 +62,7 @@ const UserProfile: React.FC<UserProfileProps> = ({ userId, isOwnProfile = true }
       const response = await authAPI.updateProfile(formData);
       if (response.success) {
         setUser(response.data);
-        // Convert the response data to match AuthContext User interface
-        const authUser = {
-          ...response.data,
-          location: typeof response.data.location === 'object' && response.data.location 
-            ? `${response.data.location.city}, ${response.data.location.country}`
-            : response.data.location || ''
-        };
-        updateUser(authUser);
+        updateUser(response.data);
         setEditing(false);
         toast({
           title: "Success",
