@@ -1,5 +1,6 @@
+
 import { useState } from "react";
-import { Search, Star, Users, CheckCircle, ArrowRight, Menu } from "lucide-react";
+import { Search, Star, Users, CheckCircle, ArrowRight, Menu, Sparkles, Globe, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,12 +16,12 @@ const Index = () => {
   const [searchQuery, setSearchQuery] = useState("");
 
   const categories = [
-    { name: "Web Development", count: 1250, icon: "💻" },
-    { name: "Graphic Design", count: 890, icon: "🎨" },
-    { name: "Digital Marketing", count: 675, icon: "📱" },
-    { name: "Writing & Translation", count: 534, icon: "✍️" },
-    { name: "Video & Animation", count: 423, icon: "🎬" },
-    { name: "Music & Audio", count: 298, icon: "🎵" }
+    { name: "Web Development", count: 1250, icon: "💻", color: "from-blue-400 to-blue-600" },
+    { name: "Graphic Design", count: 890, icon: "🎨", color: "from-pink-400 to-pink-600" },
+    { name: "Digital Marketing", count: 675, icon: "📱", color: "from-green-400 to-green-600" },
+    { name: "Writing & Translation", count: 534, icon: "✍️", color: "from-purple-400 to-purple-600" },
+    { name: "Video & Animation", count: 423, icon: "🎬", color: "from-red-400 to-red-600" },
+    { name: "Music & Audio", count: 298, icon: "🎵", color: "from-yellow-400 to-yellow-600" }
   ];
 
   const testimonials = [
@@ -28,19 +29,22 @@ const Index = () => {
       name: "Sarah Johnson",
       role: "Startup Founder",
       content: "Found an amazing developer within 24 hours. The quality of work exceeded my expectations!",
-      rating: 5
+      rating: 5,
+      avatar: "SJ"
     },
     {
       name: "Rajesh Kumar",
       role: "Marketing Director",
       content: "Servpe has been a game-changer for our agency. Top-tier talent at competitive rates.",
-      rating: 5
+      rating: 5,
+      avatar: "RK"
     },
     {
       name: "Priya Sharma",
       role: "E-commerce Owner",
       content: "The platform made it so easy to find the right freelancer for my project. Highly recommended!",
-      rating: 5
+      rating: 5,
+      avatar: "PS"
     }
   ];
 
@@ -50,29 +54,43 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 text-white overflow-hidden">
+      {/* Animated Background Elements */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-purple-500 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob"></div>
+        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-blue-500 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob animation-delay-2000"></div>
+        <div className="absolute top-40 left-40 w-80 h-80 bg-pink-500 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob animation-delay-4000"></div>
+      </div>
+
       {/* Navigation */}
-      <nav className="bg-white border-b border-gray-200 sticky top-0 z-50 backdrop-blur-sm bg-white/95">
+      <nav className="relative z-50 bg-black/20 backdrop-blur-xl border-b border-white/10 sticky top-0">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center">
-              <div className="text-2xl font-bold bg-gradient-to-r from-orange-500 to-red-600 bg-clip-text text-transparent hover:scale-105 transition-transform duration-200 cursor-pointer" onClick={() => navigate('/')}>
+              <div className="text-2xl font-bold bg-gradient-to-r from-orange-400 to-pink-600 bg-clip-text text-transparent hover:scale-105 transition-all duration-300 cursor-pointer flex items-center gap-2" onClick={() => navigate('/')}>
+                <Sparkles className="w-6 h-6 text-orange-400" />
                 Servpe
               </div>
             </div>
             
             <div className="hidden md:flex items-center space-x-8">
-              <a href="/services" className="text-gray-700 hover:text-gray-900 transition-colors duration-200">Browse Services</a>
-              <a href="/create-project" className="text-gray-700 hover:text-gray-900 transition-colors duration-200">Post Project</a>
+              <a href="/services" className="text-white/80 hover:text-white transition-all duration-300 hover:scale-105 relative group">
+                Browse Services
+                <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-orange-400 to-pink-600 group-hover:w-full transition-all duration-300"></span>
+              </a>
+              <a href="/create-project" className="text-white/80 hover:text-white transition-all duration-300 hover:scale-105 relative group">
+                Post Project
+                <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-orange-400 to-pink-600 group-hover:w-full transition-all duration-300"></span>
+              </a>
               
               {user ? (
                 <UserMenu />
               ) : (
                 <>
-                  <Button variant="ghost" onClick={() => navigate('/login')} className="hover:bg-gray-100 transition-colors duration-200">
+                  <Button variant="ghost" onClick={() => navigate('/login')} className="text-white border-white/20 hover:bg-white/10 hover:scale-105 transition-all duration-300">
                     Sign In
                   </Button>
-                  <Button onClick={() => navigate('/login')} className="bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 hover:scale-105 transition-all duration-200">
+                  <Button onClick={() => navigate('/login')} className="bg-gradient-to-r from-orange-500 to-pink-600 hover:from-orange-600 hover:to-pink-700 hover:scale-105 hover:shadow-lg hover:shadow-orange-500/25 transition-all duration-300">
                     Get Started
                   </Button>
                 </>
@@ -80,7 +98,7 @@ const Index = () => {
             </div>
             
             <div className="md:hidden">
-              <Button variant="ghost" size="sm">
+              <Button variant="ghost" size="sm" className="text-white">
                 <Menu className="h-5 w-5" />
               </Button>
             </div>
@@ -89,45 +107,68 @@ const Index = () => {
       </nav>
 
       {/* Hero Section */}
-      <section className="bg-gradient-to-br from-orange-50 to-red-50 py-20 animate-fade-in">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center">
-            <h1 className="text-4xl md:text-6xl font-bold text-gray-900 mb-6 animate-scale-in">
-              Hire top <span className="bg-gradient-to-r from-orange-500 to-red-600 bg-clip-text text-transparent">Indian freelancers</span> in minutes
+      <section className="relative py-20 px-4">
+        <div className="max-w-7xl mx-auto text-center">
+          <div className="animate-fade-in">
+            <h1 className="text-5xl md:text-7xl font-bold mb-6 leading-tight">
+              Find India's Top{" "}
+              <span className="bg-gradient-to-r from-orange-400 via-pink-500 to-purple-600 bg-clip-text text-transparent animate-pulse">
+                Freelancers
+              </span>{" "}
+              in Seconds
             </h1>
-            <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto animate-fade-in" style={{animationDelay: '0.2s'}}>
-              Connect with skilled professionals for your projects. From web development to design, find the perfect match for your needs at affordable Indian rates.
+            <div className="flex items-center justify-center gap-2 mb-6">
+              <Zap className="w-6 h-6 text-yellow-400 animate-bounce" />
+              <span className="text-xl text-white/80">Powered by AI</span>
+            </div>
+            <p className="text-xl text-white/70 mb-8 max-w-3xl mx-auto leading-relaxed">
+              No more endless scrolling. Just tell us what you need – Servpe's AI finds your
+              perfect match in seconds.
             </p>
             
-            <form onSubmit={handleSearch} className="max-w-2xl mx-auto mb-8 animate-fade-in" style={{animationDelay: '0.4s'}}>
-              <div className="flex shadow-lg rounded-lg overflow-hidden">
+            <form onSubmit={handleSearch} className="max-w-2xl mx-auto mb-8">
+              <div className="flex shadow-2xl rounded-2xl overflow-hidden backdrop-blur-xl bg-white/10 border border-white/20 hover:bg-white/20 transition-all duration-300">
                 <Input
                   type="text"
-                  placeholder="What do you need help with?"
+                  placeholder='Describe your requirements... (e.g. "E-commerce website management")'
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="flex-1 h-12 text-lg border-0 focus:ring-0"
+                  className="flex-1 h-14 text-lg border-0 bg-transparent text-white placeholder:text-white/50 focus:ring-0"
                 />
-                <Button type="submit" className="h-12 px-8 bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 hover:scale-105 transition-all duration-200">
+                <Button type="submit" className="h-14 px-8 bg-gradient-to-r from-orange-500 to-pink-600 hover:from-orange-600 hover:to-pink-700 hover:scale-105 transition-all duration-300 group">
                   <Search className="h-5 w-5 mr-2" />
-                  Search
+                  <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform duration-300" />
                 </Button>
               </div>
             </form>
+
+            {/* Quick Service Tags */}
+            <div className="flex flex-wrap justify-center gap-3 mb-8">
+              {["Video Editing", "Website development", "Instagram reel editing", "Graphic design", "Content writing", "AI services", "Youtube thumbnail"].map((tag, index) => (
+                <Badge 
+                  key={tag} 
+                  variant="secondary" 
+                  className="px-4 py-2 bg-white/10 text-white border-white/20 hover:bg-white/20 hover:scale-105 transition-all duration-300 cursor-pointer"
+                  style={{ animationDelay: `${index * 0.1}s` }}
+                >
+                  {tag}
+                </Badge>
+              ))}
+            </div>
             
-            <div className="flex flex-col sm:flex-row gap-4 justify-center animate-fade-in" style={{animationDelay: '0.6s'}}>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
               {user ? (
-                <Button size="lg" onClick={() => navigate(user.role === 'client' ? '/dashboard/client' : '/dashboard/freelancer')} className="bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 hover:scale-105 transition-all duration-200">
+                <Button size="lg" onClick={() => navigate(user.role === 'client' ? '/dashboard/client' : '/dashboard/freelancer')} className="bg-gradient-to-r from-orange-500 to-pink-600 hover:from-orange-600 hover:to-pink-700 hover:scale-105 hover:shadow-xl hover:shadow-orange-500/25 transition-all duration-300 group">
                   Go to Dashboard
-                  <ArrowRight className="ml-2 h-5 w-5" />
+                  <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform duration-300" />
                 </Button>
               ) : (
-                <Button size="lg" onClick={() => navigate('/login')} className="bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 hover:scale-105 transition-all duration-200">
+                <Button size="lg" onClick={() => navigate('/login')} className="bg-gradient-to-r from-orange-500 to-pink-600 hover:from-orange-600 hover:to-pink-700 hover:scale-105 hover:shadow-xl hover:shadow-orange-500/25 transition-all duration-300 group">
                   Get Started
-                  <ArrowRight className="ml-2 h-5 w-5" />
+                  <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform duration-300" />
                 </Button>
               )}
-              <Button size="lg" variant="outline" onClick={() => navigate('/services')} className="hover:bg-gray-50 hover:scale-105 transition-all duration-200">
+              <Button size="lg" variant="outline" onClick={() => navigate('/services')} className="border-white/30 text-white hover:bg-white/10 hover:scale-105 transition-all duration-300">
                 Explore Services
               </Button>
             </div>
@@ -136,20 +177,25 @@ const Index = () => {
       </section>
 
       {/* Categories */}
-      <section className="py-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <section className="relative py-16 px-4">
+        <div className="max-w-7xl mx-auto">
           <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-gray-900 mb-4">Popular Categories</h2>
-            <p className="text-gray-600">Discover services across various categories</p>
+            <h2 className="text-4xl font-bold mb-4">Popular Categories</h2>
+            <p className="text-white/70 text-lg">Discover services across various categories</p>
           </div>
           
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
             {categories.map((category, index) => (
-              <Card key={category.name} className="hover:shadow-lg transition-all duration-300 cursor-pointer hover:-translate-y-1 animate-fade-in hover-scale" style={{animationDelay: `${index * 0.1}s`}}>
-                <CardContent className="p-6 text-center">
-                  <div className="text-3xl mb-3">{category.icon}</div>
-                  <h3 className="font-semibold text-gray-900 mb-2">{category.name}</h3>
-                  <p className="text-sm text-gray-500">{category.count} services</p>
+              <Card 
+                key={category.name} 
+                className="group hover:shadow-2xl transition-all duration-500 cursor-pointer hover:-translate-y-2 bg-white/5 backdrop-blur-xl border-white/10 hover:bg-white/10 transform-gpu perspective-1000"
+                style={{ animationDelay: `${index * 0.1}s` }}
+              >
+                <CardContent className="p-6 text-center relative overflow-hidden">
+                  <div className={`absolute inset-0 bg-gradient-to-br ${category.color} opacity-0 group-hover:opacity-10 transition-opacity duration-500`}></div>
+                  <div className="text-4xl mb-4 group-hover:scale-110 transition-transform duration-300">{category.icon}</div>
+                  <h3 className="font-semibold text-white mb-2 group-hover:text-white transition-colors duration-300">{category.name}</h3>
+                  <p className="text-sm text-white/60 group-hover:text-white/80 transition-colors duration-300">{category.count} services</p>
                 </CardContent>
               </Card>
             ))}
@@ -158,62 +204,72 @@ const Index = () => {
       </section>
 
       {/* Features */}
-      <section className="py-16 bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <section className="relative py-16 px-4">
+        <div className="max-w-7xl mx-auto">
           <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-gray-900 mb-4">Why Choose Servpe?</h2>
-            <p className="text-gray-600">The best platform to connect with talented freelancers</p>
+            <h2 className="text-4xl font-bold mb-4">Why Choose Servpe?</h2>
+            <p className="text-white/70 text-lg">The best platform to connect with talented freelancers</p>
           </div>
           
           <div className="grid md:grid-cols-3 gap-8">
-            <div className="text-center animate-fade-in" style={{animationDelay: '0.1s'}}>
-              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4 hover:scale-110 transition-transform duration-200">
-                <Users className="h-8 w-8 text-blue-600" />
+            <div className="text-center group hover:scale-105 transition-all duration-500 p-6 rounded-2xl bg-white/5 backdrop-blur-xl border border-white/10 hover:bg-white/10">
+              <div className="w-20 h-20 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:scale-110 group-hover:rotate-3 transition-all duration-500 shadow-lg shadow-blue-500/25">
+                <Users className="h-10 w-10 text-white" />
               </div>
-              <h3 className="text-xl font-semibold mb-2">Verified Professionals</h3>
-              <p className="text-gray-600">All freelancers are verified and have proven track records</p>
+              <h3 className="text-2xl font-semibold mb-4 text-white">Verified Professionals</h3>
+              <p className="text-white/70">All freelancers are verified and have proven track records</p>
             </div>
             
-            <div className="text-center animate-fade-in" style={{animationDelay: '0.2s'}}>
-              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4 hover:scale-110 transition-transform duration-200">
-                <CheckCircle className="h-8 w-8 text-green-600" />
+            <div className="text-center group hover:scale-105 transition-all duration-500 p-6 rounded-2xl bg-white/5 backdrop-blur-xl border border-white/10 hover:bg-white/10">
+              <div className="w-20 h-20 bg-gradient-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:scale-110 group-hover:rotate-3 transition-all duration-500 shadow-lg shadow-green-500/25">
+                <CheckCircle className="h-10 w-10 text-white" />
               </div>
-              <h3 className="text-xl font-semibold mb-2">Quality Guaranteed</h3>
-              <p className="text-gray-600">Get your money back if you're not satisfied with the work</p>
+              <h3 className="text-2xl font-semibold mb-4 text-white">Quality Guaranteed</h3>
+              <p className="text-white/70">Get your money back if you're not satisfied with the work</p>
             </div>
             
-            <div className="text-center animate-fade-in" style={{animationDelay: '0.3s'}}>
-              <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4 hover:scale-110 transition-transform duration-200">
-                <Star className="h-8 w-8 text-purple-600" />
+            <div className="text-center group hover:scale-105 transition-all duration-500 p-6 rounded-2xl bg-white/5 backdrop-blur-xl border border-white/10 hover:bg-white/10">
+              <div className="w-20 h-20 bg-gradient-to-br from-purple-400 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:scale-110 group-hover:rotate-3 transition-all duration-500 shadow-lg shadow-purple-500/25">
+                <Star className="h-10 w-10 text-white" />
               </div>
-              <h3 className="text-xl font-semibold mb-2">Top Rated</h3>
-              <p className="text-gray-600">Work with freelancers rated 4.9/5 on average</p>
+              <h3 className="text-2xl font-semibold mb-4 text-white">Top Rated</h3>
+              <p className="text-white/70">Work with freelancers rated 4.9/5 on average</p>
             </div>
           </div>
         </div>
       </section>
 
       {/* Testimonials */}
-      <section className="py-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <section className="relative py-16 px-4">
+        <div className="max-w-7xl mx-auto">
           <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-gray-900 mb-4">What Our Clients Say</h2>
-            <p className="text-gray-600">Join thousands of satisfied customers</p>
+            <h2 className="text-4xl font-bold mb-4">What Our Clients Say</h2>
+            <p className="text-white/70 text-lg">Join thousands of satisfied customers</p>
           </div>
           
           <div className="grid md:grid-cols-3 gap-8">
             {testimonials.map((testimonial, index) => (
-              <Card key={index} className="hover:shadow-lg transition-all duration-300 hover:-translate-y-1 animate-fade-in" style={{animationDelay: `${index * 0.2}s`}}>
-                <CardContent className="p-6">
-                  <div className="flex items-center mb-4">
+              <Card 
+                key={index} 
+                className="group hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 bg-white/5 backdrop-blur-xl border-white/10 hover:bg-white/10 transform-gpu"
+                style={{ animationDelay: `${index * 0.2}s` }}
+              >
+                <CardContent className="p-8 relative overflow-hidden">
+                  <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full blur-2xl opacity-20 group-hover:opacity-40 transition-opacity duration-500"></div>
+                  <div className="flex items-center mb-6">
                     {[...Array(testimonial.rating)].map((_, i) => (
                       <Star key={i} className="h-5 w-5 text-yellow-400 fill-current" />
                     ))}
                   </div>
-                  <p className="text-gray-600 mb-4">"{testimonial.content}"</p>
-                  <div>
-                    <p className="font-semibold text-gray-900">{testimonial.name}</p>
-                    <p className="text-sm text-gray-500">{testimonial.role}</p>
+                  <p className="text-white/80 mb-6 text-lg leading-relaxed">"{testimonial.content}"</p>
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 bg-gradient-to-br from-orange-400 to-pink-600 rounded-full flex items-center justify-center text-white font-bold">
+                      {testimonial.avatar}
+                    </div>
+                    <div>
+                      <p className="font-semibold text-white text-lg">{testimonial.name}</p>
+                      <p className="text-sm text-white/60">{testimonial.role}</p>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -223,55 +279,57 @@ const Index = () => {
       </section>
 
       {/* CTA Section */}
-      <section className="py-16 bg-gradient-to-r from-orange-500 to-red-600">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-3xl font-bold text-white mb-4">Ready to Get Started?</h2>
-          <p className="text-xl text-orange-100 mb-8">Join Servpe today and connect with top freelancers</p>
-          <Button size="lg" onClick={() => navigate('/login')} className="bg-white text-orange-600 hover:bg-gray-100 hover:scale-105 transition-all duration-200">
-            Sign Up Now
-            <ArrowRight className="ml-2 h-5 w-5" />
-          </Button>
+      <section className="relative py-16 px-4">
+        <div className="max-w-4xl mx-auto text-center">
+          <div className="bg-gradient-to-r from-orange-500/20 to-pink-600/20 backdrop-blur-xl rounded-3xl p-12 border border-white/10">
+            <h2 className="text-4xl font-bold text-white mb-4">Ready to Get Started?</h2>
+            <p className="text-xl text-white/70 mb-8">Join Servpe today and connect with top freelancers</p>
+            <Button size="lg" onClick={() => navigate('/login')} className="bg-white text-gray-900 hover:bg-gray-100 hover:scale-105 transition-all duration-300 group text-lg px-8 py-4">
+              Sign Up Now
+              <ArrowRight className="ml-2 h-6 w-6 group-hover:translate-x-1 transition-transform duration-300" />
+            </Button>
+          </div>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="bg-gray-900 text-white py-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <footer className="relative bg-black/30 backdrop-blur-xl text-white py-12 border-t border-white/10">
+        <div className="max-w-7xl mx-auto px-4">
           <div className="grid md:grid-cols-4 gap-8">
             <div>
-              <div className="text-2xl font-bold mb-4">Servpe</div>
-              <p className="text-gray-300">Connecting talented freelancers with amazing projects.</p>
+              <div className="text-2xl font-bold mb-4 bg-gradient-to-r from-orange-400 to-pink-600 bg-clip-text text-transparent">Servpe</div>
+              <p className="text-white/60">Connecting talented freelancers with amazing projects.</p>
             </div>
             
             <div>
-              <h3 className="font-semibold mb-4">For Clients</h3>
-              <ul className="space-y-2 text-gray-300">
-                <li><a href="#" className="hover:text-white transition-colors">How to Hire</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Talent Marketplace</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Project Catalog</a></li>
+              <h3 className="font-semibold mb-4 text-white">For Clients</h3>
+              <ul className="space-y-2 text-white/60">
+                <li><a href="#" className="hover:text-white transition-colors duration-300">How to Hire</a></li>
+                <li><a href="#" className="hover:text-white transition-colors duration-300">Talent Marketplace</a></li>
+                <li><a href="#" className="hover:text-white transition-colors duration-300">Project Catalog</a></li>
               </ul>
             </div>
             
             <div>
-              <h3 className="font-semibold mb-4">For Freelancers</h3>
-              <ul className="space-y-2 text-gray-300">
-                <li><a href="#" className="hover:text-white transition-colors">How to Find Work</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Direct Contracts</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Find Freelance Jobs</a></li>
+              <h3 className="font-semibold mb-4 text-white">For Freelancers</h3>
+              <ul className="space-y-2 text-white/60">
+                <li><a href="#" className="hover:text-white transition-colors duration-300">How to Find Work</a></li>
+                <li><a href="#" className="hover:text-white transition-colors duration-300">Direct Contracts</a></li>
+                <li><a href="#" className="hover:text-white transition-colors duration-300">Find Freelance Jobs</a></li>
               </ul>
             </div>
             
             <div>
-              <h3 className="font-semibold mb-4">Resources</h3>
-              <ul className="space-y-2 text-gray-300">
-                <li><a href="#" className="hover:text-white transition-colors">Help & Support</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Success Stories</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Community</a></li>
+              <h3 className="font-semibold mb-4 text-white">Resources</h3>
+              <ul className="space-y-2 text-white/60">
+                <li><a href="#" className="hover:text-white transition-colors duration-300">Help & Support</a></li>
+                <li><a href="#" className="hover:text-white transition-colors duration-300">Success Stories</a></li>
+                <li><a href="#" className="hover:text-white transition-colors duration-300">Community</a></li>
               </ul>
             </div>
           </div>
           
-          <div className="border-t border-gray-800 mt-8 pt-8 text-center text-gray-300">
+          <div className="border-t border-white/20 mt-8 pt-8 text-center text-white/60">
             <p>&copy; 2024 Servpe. All rights reserved.</p>
           </div>
         </div>
