@@ -60,6 +60,6 @@ export const orderAPI = {
     const response = await api.get(fileUrl, {
       responseType: 'blob',
     });
-    return response.data;
+    return response.data as Blob;
   }
 };
