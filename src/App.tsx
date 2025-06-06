@@ -1,5 +1,4 @@
-
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from '@/contexts/AuthContext';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { Toaster } from '@/components/ui/toaster';
@@ -43,10 +42,10 @@ function App() {
             <Route path="/signup" element={<SignUp />} />
             <Route path="/otp-login" element={<OTPLogin />} />
             <Route path="/services" element={<Services />} />
-            <Route path="/services/:id" element={<ServiceDetail />} />
-            <Route path="/freelancers" element={<FindFreelancers />} />
-
-            {/* Auth required routes */}
+            <Route path="/services/:serviceId" element={<ServiceDetail />} />
+            <Route path="/find-freelancers" element={<FindFreelancers />} />
+            
+            {/* Protected Routes */}
             <Route path="/role-selection" element={
               <ProtectedRoute>
                 <RoleSelection />
@@ -57,16 +56,21 @@ function App() {
                 <Onboarding />
               </ProtectedRoute>
             } />
-
-            {/* Client routes */}
-            <Route path="/dashboard/client" element={
+            
+            {/* Client Routes */}
+            <Route path="/client/dashboard" element={
               <ProtectedRoute allowedRoles={['client']}>
                 <ClientDashboard />
               </ProtectedRoute>
             } />
-            <Route path="/create-project" element={
+            <Route path="/client/orders" element={
               <ProtectedRoute allowedRoles={['client']}>
-                <CreateProject />
+                <ClientOrders />
+              </ProtectedRoute>
+            } />
+            <Route path="/client/order-history" element={
+              <ProtectedRoute allowedRoles={['client']}>
+                <ClientOrderHistory />
               </ProtectedRoute>
             } />
             <Route path="/post-project" element={
@@ -74,26 +78,26 @@ function App() {
                 <PostProject />
               </ProtectedRoute>
             } />
-            <Route path="/orders" element={
+            <Route path="/create-project" element={
               <ProtectedRoute allowedRoles={['client']}>
-                <ClientOrders />
+                <CreateProject />
               </ProtectedRoute>
             } />
-            <Route path="/order-history" element={
-              <ProtectedRoute allowedRoles={['client']}>
-                <ClientOrderHistory />
-              </ProtectedRoute>
-            } />
-
-            {/* Freelancer routes */}
-            <Route path="/dashboard/freelancer" element={
+            
+            {/* Freelancer Routes */}
+            <Route path="/freelancer/dashboard" element={
               <ProtectedRoute allowedRoles={['freelancer']}>
                 <FreelancerDashboard />
               </ProtectedRoute>
             } />
-            <Route path="/create-service" element={
+            <Route path="/freelancer/orders" element={
               <ProtectedRoute allowedRoles={['freelancer']}>
-                <CreateService />
+                <FreelancerOrders />
+              </ProtectedRoute>
+            } />
+            <Route path="/freelancer/order-dashboard" element={
+              <ProtectedRoute allowedRoles={['freelancer']}>
+                <FreelancerOrderDashboard />
               </ProtectedRoute>
             } />
             <Route path="/my-services" element={
@@ -101,31 +105,26 @@ function App() {
                 <MyServices />
               </ProtectedRoute>
             } />
+            <Route path="/create-service" element={
+              <ProtectedRoute allowedRoles={['freelancer']}>
+                <CreateService />
+              </ProtectedRoute>
+            } />
             <Route path="/my-proposals" element={
               <ProtectedRoute allowedRoles={['freelancer']}>
                 <MyProposals />
               </ProtectedRoute>
             } />
-            <Route path="/freelancer-orders" element={
-              <ProtectedRoute allowedRoles={['freelancer']}>
-                <FreelancerOrders />
-              </ProtectedRoute>
-            } />
-            <Route path="/freelancer/dashboard" element={
-              <ProtectedRoute allowedRoles={['freelancer']}>
-                <FreelancerOrderDashboard />
-              </ProtectedRoute>
-            } />
-
-            {/* Shared routes */}
+            
+            {/* Shared Routes */}
             <Route path="/messages" element={
               <ProtectedRoute>
                 <Messages />
               </ProtectedRoute>
             } />
-
-            {/* Admin routes */}
-            <Route path="/admin" element={
+            
+            {/* Admin Routes */}
+            <Route path="/admin/dashboard" element={
               <ProtectedRoute allowedRoles={['admin']}>
                 <AdminDashboard />
               </ProtectedRoute>
@@ -140,8 +139,8 @@ function App() {
                 <AdminCategories />
               </ProtectedRoute>
             } />
-
-            {/* 404 route */}
+            
+            {/* Catch all route */}
             <Route path="*" element={<NotFound />} />
           </Routes>
           <Toaster />

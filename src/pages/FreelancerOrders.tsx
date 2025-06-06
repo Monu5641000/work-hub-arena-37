@@ -1,242 +1,335 @@
 
-import React, { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { Calendar, Clock, DollarSign, FileText, User, ArrowRight, CheckCircle, XCircle } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Search, Eye, MessageCircle, Clock, Upload } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useNavigate } from 'react-router-dom';
+import { Progress } from '@/components/ui/progress';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
+import { useToast } from '@/hooks/use-toast';
 import { orderAPI } from '@/api/orders';
+import OrderDetail from '@/components/OrderDetail';
 import Navbar from '@/components/Navbar';
-import { formatDistanceToNow } from 'date-fns';
 
 const FreelancerOrders = () => {
-  const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState('active');
+  const [orders, setOrders] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
+  const [selectedOrder, setSelectedOrder] = useState<any>(null);
+  const [showOrderDetail, setShowOrderDetail] = useState(false);
+  const [deliveryMessage, setDeliveryMessage] = useState('');
+  const [isSubmittingDelivery, setIsSubmittingDelivery] = useState(false);
+  const { toast } = useToast();
 
-  const { data: ordersData, isLoading } = useQuery({
-    queryKey: ['freelancer-orders', activeTab],
-    queryFn: () => orderAPI.getMyOrders({ 
-      status: activeTab === 'all' ? undefined : 
-              activeTab === 'active' ? 'in_progress,delivered,revision_requested' : 
-              activeTab === 'completed' ? 'completed' : 
-              'pending,accepted'
-    }),
-  });
+  useEffect(() => {
+    loadOrders();
+  }, [statusFilter]);
 
-  const orders = ordersData?.data || [];
+  const loadOrders = async () => {
+    try {
+      setLoading(true);
+      const params = {
+        status: statusFilter || undefined,
+        page: 1,
+        limit: 20
+      };
+
+      const response = await orderAPI.getMyOrders(params);
+      if (response.success) {
+        // Filter to show only freelancer orders
+        const freelancerOrders = response.data?.filter((order: any) => 
+          order.userRole === 'freelancer'
+        ) || [];
+        setOrders(freelancerOrders);
+      } else {
+        throw new Error(response.message);
+      }
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: "Failed to load orders",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const submitDeliverables = async (orderId: string) => {
+    if (!deliveryMessage.trim()) {
+      toast({
+        title: "Error",
+        description: "Please provide a delivery message",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSubmittingDelivery(true);
+    try {
+      const formData = new FormData();
+      formData.append('message', deliveryMessage);
+
+      const response = await orderAPI.submitDeliverables(orderId, formData);
+      if (response.success) {
+        toast({
+          title: "Success",
+          description: "Deliverables submitted successfully",
+        });
+        setDeliveryMessage('');
+        loadOrders();
+      }
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: "Failed to submit deliverables",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmittingDelivery(false);
+    }
+  };
+
+  const filteredOrders = orders.filter(order =>
+    order.service?.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    order.orderNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    order.client?.firstName?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'pending': return 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30';
-      case 'accepted': return 'bg-blue-500/20 text-blue-300 border-blue-500/30';
-      case 'in_progress': return 'bg-purple-500/20 text-purple-300 border-purple-500/30';
-      case 'delivered': return 'bg-green-500/20 text-green-300 border-green-500/30';
-      case 'revision_requested': return 'bg-orange-500/20 text-orange-300 border-orange-500/30';
-      case 'completed': return 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30';
-      case 'cancelled': return 'bg-red-500/20 text-red-300 border-red-500/30';
-      default: return 'bg-gray-500/20 text-gray-300 border-gray-500/30';
+      case 'pending': return 'bg-yellow-500';
+      case 'accepted': return 'bg-blue-500';
+      case 'in_progress': return 'bg-purple-500';
+      case 'delivered': return 'bg-green-500';
+      case 'completed': return 'bg-green-600';
+      case 'cancelled': return 'bg-red-500';
+      case 'revision_requested': return 'bg-orange-500';
+      default: return 'bg-gray-500';
     }
   };
 
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case 'urgent': return 'bg-red-500/20 text-red-300 border-red-500/30';
-      case 'high': return 'bg-orange-500/20 text-orange-300 border-orange-500/30';
-      case 'normal': return 'bg-blue-500/20 text-blue-300 border-blue-500/30';
-      case 'low': return 'bg-gray-500/20 text-gray-300 border-gray-500/30';
-      default: return 'bg-gray-500/20 text-gray-300 border-gray-500/30';
-    }
+  const getStatusText = (status: string) => {
+    return status.replace('_', ' ').toUpperCase();
   };
 
-  if (isLoading) {
+  const handleViewOrder = (order: any) => {
+    setSelectedOrder(order);
+    setShowOrderDetail(true);
+  };
+
+  const handleOrderUpdate = (updatedOrder: any) => {
+    setOrders(prevOrders => 
+      prevOrders.map(order => 
+        order._id === updatedOrder._id ? updatedOrder : order
+      )
+    );
+    setSelectedOrder(updatedOrder);
+  };
+
+  if (showOrderDetail && selectedOrder) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-black">
+      <div className="min-h-screen bg-gray-50">
         <Navbar />
-        <div className="max-w-7xl mx-auto px-4 py-8">
-          <div className="animate-pulse space-y-6">
-            {[...Array(3)].map((_, i) => (
-              <div key={i} className="glass-card rounded-2xl p-6">
-                <div className="h-32 bg-white/10 rounded-xl"></div>
-              </div>
-            ))}
+        <div className="max-w-6xl mx-auto px-4 py-8">
+          <div className="mb-6">
+            <Button 
+              variant="outline" 
+              onClick={() => setShowOrderDetail(false)}
+              className="mb-4"
+            >
+              ← Back to Orders
+            </Button>
           </div>
+          <OrderDetail 
+            orderId={selectedOrder._id} 
+            onOrderUpdate={handleOrderUpdate}
+          />
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-black text-white">
+    <div className="min-h-screen bg-gray-50">
       <Navbar />
       
-      {/* Animated Background */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-purple-500 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob"></div>
-        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-blue-500 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob animation-delay-2000"></div>
-      </div>
-
-      <div className="relative z-10 max-w-7xl mx-auto px-4 py-8">
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold text-white text-glow mb-2">My Orders</h1>
-          <p className="text-white/70 text-lg">Manage your active and completed orders</p>
+      <div className="max-w-6xl mx-auto px-4 py-8">
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">My Orders</h1>
+            <p className="text-gray-600 mt-2">Manage your freelance orders</p>
+          </div>
         </div>
 
-        <div className="glass-card rounded-2xl p-6 border border-white/10">
-          <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid w-full grid-cols-4 mb-6 bg-white/10 border border-white/20">
-              <TabsTrigger value="pending" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-pink-600 data-[state=active]:text-white">
-                Pending
-              </TabsTrigger>
-              <TabsTrigger value="active" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-pink-600 data-[state=active]:text-white">
-                Active
-              </TabsTrigger>
-              <TabsTrigger value="completed" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-pink-600 data-[state=active]:text-white">
-                Completed
-              </TabsTrigger>
-              <TabsTrigger value="all" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-pink-600 data-[state=active]:text-white">
-                All
-              </TabsTrigger>
-            </TabsList>
+        {/* Search and Filters */}
+        <div className="bg-white rounded-lg shadow-sm p-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="md:col-span-2">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                <Input
+                  placeholder="Search orders..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+            </div>
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger>
+                <SelectValue placeholder="All Statuses" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">All Statuses</SelectItem>
+                <SelectItem value="pending">Pending</SelectItem>
+                <SelectItem value="accepted">Accepted</SelectItem>
+                <SelectItem value="in_progress">In Progress</SelectItem>
+                <SelectItem value="delivered">Delivered</SelectItem>
+                <SelectItem value="completed">Completed</SelectItem>
+                <SelectItem value="revision_requested">Revision Requested</SelectItem>
+                <SelectItem value="cancelled">Cancelled</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
 
-            <TabsContent value={activeTab}>
-              {orders.length === 0 ? (
-                <Card className="glass-card border-white/10">
-                  <CardContent className="text-center py-12">
-                    <div className="w-20 h-20 bg-gradient-to-br from-purple-500 to-pink-600 rounded-full flex items-center justify-center mx-auto mb-6">
-                      <FileText className="w-10 h-10 text-white" />
+        {/* Orders List */}
+        {loading ? (
+          <div className="grid gap-6">
+            {[...Array(3)].map((_, index) => (
+              <Card key={index} className="animate-pulse">
+                <CardHeader>
+                  <div className="h-4 bg-gray-200 rounded w-1/3"></div>
+                  <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+                </CardHeader>
+                <CardContent>
+                  <div className="h-3 bg-gray-200 rounded mb-4"></div>
+                  <div className="h-8 bg-gray-200 rounded w-full"></div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        ) : filteredOrders.length === 0 ? (
+          <Card>
+            <CardContent className="text-center py-12">
+              <p className="text-gray-500 text-lg">No orders found</p>
+              <p className="text-gray-400 mb-4">You don't have any orders yet</p>
+              <Button onClick={() => window.location.href = '/my-services'}>
+                Manage Services
+              </Button>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="grid gap-6">
+            {filteredOrders.map((order) => (
+              <Card key={order._id} className="hover:shadow-lg transition-shadow">
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle className="text-lg">Order #{order.orderNumber}</CardTitle>
+                      <CardDescription>{order.service?.title}</CardDescription>
                     </div>
-                    <h3 className="text-xl font-medium text-white mb-2">No orders found</h3>
-                    <p className="text-white/70">Orders will appear here when clients place them</p>
-                  </CardContent>
-                </Card>
-              ) : (
-                <div className="space-y-6">
-                  {orders.map((order: any, index) => (
-                    <Card 
-                      key={order._id} 
-                      className="group card-3d hover:shadow-3d transition-all duration-500 glass-card border-white/10 overflow-hidden"
-                      style={{ 
-                        animationDelay: `${index * 0.1}s`,
-                        ['--stagger' as any]: index
-                      }}
-                    >
-                      <CardHeader>
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <CardTitle className="text-xl text-white group-hover:text-glow transition-all duration-300">
-                              Order #{order.orderNumber}
-                            </CardTitle>
-                            <CardDescription className="text-white/70 text-lg mt-1">
-                              {order.service?.title}
-                            </CardDescription>
-                          </div>
-                          <div className="flex space-x-2">
-                            <Badge className={`${getStatusColor(order.status)} border`}>
-                              {order.status.replace('_', ' ')}
-                            </Badge>
-                            <Badge className={`${getPriorityColor(order.priority)} border`}>
-                              {order.priority}
-                            </Badge>
-                          </div>
-                        </div>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
-                          <div className="flex items-center space-x-3 p-3 rounded-xl glass">
-                            <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-emerald-600 rounded-lg flex items-center justify-center">
-                              <DollarSign className="h-5 w-5 text-white" />
-                            </div>
-                            <div>
-                              <p className="text-sm text-white/60">Earnings</p>
-                              <p className="font-semibold text-white text-lg">₹{order.freelancerEarnings}</p>
-                            </div>
-                          </div>
-                          <div className="flex items-center space-x-3 p-3 rounded-xl glass">
-                            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
-                              <Calendar className="h-5 w-5 text-white" />
-                            </div>
-                            <div>
-                              <p className="text-sm text-white/60">Delivery</p>
-                              <p className="font-semibold text-white">
-                                {formatDistanceToNow(new Date(order.deliveryDate), { addSuffix: true })}
-                              </p>
-                            </div>
-                          </div>
-                          <div className="flex items-center space-x-3 p-3 rounded-xl glass">
-                            <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-red-600 rounded-lg flex items-center justify-center">
-                              <Clock className="h-5 w-5 text-white" />
-                            </div>
-                            <div>
-                              <p className="text-sm text-white/60">Progress</p>
-                              <p className="font-semibold text-white">{order.progress}%</p>
-                            </div>
-                          </div>
-                          <div className="flex items-center space-x-3 p-3 rounded-xl glass">
-                            <div className="w-10 h-10 bg-gradient-to-br from-pink-500 to-purple-600 rounded-lg flex items-center justify-center">
-                              <FileText className="h-5 w-5 text-white" />
-                            </div>
-                            <div>
-                              <p className="text-sm text-white/60">Plan</p>
-                              <p className="font-semibold text-white capitalize">{order.selectedPlan}</p>
-                            </div>
-                          </div>
-                        </div>
+                    <div className="text-right">
+                      <Badge className={getStatusColor(order.status)}>
+                        {getStatusText(order.status)}
+                      </Badge>
+                      <p className="text-sm text-gray-500 mt-1">
+                        ₹{order.freelancerEarnings?.toLocaleString()}
+                      </p>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-medium">Progress</span>
+                        <span className="text-sm text-gray-500">{order.progress}%</span>
+                      </div>
+                      <Progress value={order.progress} />
+                    </div>
 
-                        <div className="mb-6 p-4 rounded-xl glass">
-                          <p className="text-sm text-white/60 mb-2">Client:</p>
-                          <div className="flex items-center space-x-3">
-                            <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-purple-600 rounded-full flex items-center justify-center text-white font-bold">
-                              {order.client?.firstName?.[0] || 'C'}
-                            </div>
-                            <p className="font-medium text-white text-lg">
-                              {order.client?.firstName} {order.client?.lastName}
-                            </p>
-                          </div>
-                        </div>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                      <div>
+                        <p className="text-gray-500">Client</p>
+                        <p className="font-medium">
+                          {order.client?.firstName} {order.client?.lastName}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-gray-500">Delivery Date</p>
+                        <p className="font-medium">
+                          {new Date(order.deliveryDate).toLocaleDateString()}
+                        </p>
+                        {order.isOverdue && (
+                          <Badge variant="destructive" className="mt-1">Overdue</Badge>
+                        )}
+                      </div>
+                      <div>
+                        <p className="text-gray-500">Days Remaining</p>
+                        <p className="font-medium flex items-center">
+                          <Clock className="h-3 w-3 mr-1" />
+                          {order.daysRemaining > 0 ? order.daysRemaining : 0} days
+                        </p>
+                      </div>
+                    </div>
 
-                        <div className="mb-6 p-4 rounded-xl glass">
-                          <p className="text-sm text-white/60 mb-2">Requirements:</p>
-                          <p className="text-white leading-relaxed">
-                            {order.requirements}
-                          </p>
-                        </div>
-
-                        <div className="flex flex-wrap gap-3">
-                          <Button 
-                            onClick={() => navigate(`/orders/${order._id}`)}
-                            className="flex-1 bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 btn-3d group"
-                          >
-                            View Details
-                            <ArrowRight className="ml-2 h-4 w-4 arrow-hover" />
-                          </Button>
-                          {order.status === 'pending' && (
-                            <>
-                              <Button className="bg-green-600 hover:bg-green-700 btn-3d">
-                                <CheckCircle className="h-4 w-4 mr-2" />
-                                Accept
-                              </Button>
-                              <Button variant="outline" className="border-red-500/30 text-red-300 hover:bg-red-500/10 btn-3d">
-                                <XCircle className="h-4 w-4 mr-2" />
-                                Decline
-                              </Button>
-                            </>
-                          )}
-                          {order.status === 'in_progress' && (
-                            <Button className="bg-blue-600 hover:bg-blue-700 btn-3d">
+                    <div className="flex space-x-2 pt-4 border-t">
+                      <Button 
+                        size="sm" 
+                        onClick={() => handleViewOrder(order)}
+                      >
+                        <Eye className="h-4 w-4 mr-2" />
+                        View Details
+                      </Button>
+                      <Button size="sm" variant="outline">
+                        <MessageCircle className="h-4 w-4 mr-2" />
+                        Chat
+                      </Button>
+                      {(order.status === 'in_progress' || order.status === 'revision_requested') && (
+                        <Dialog>
+                          <DialogTrigger asChild>
+                            <Button size="sm" variant="outline">
+                              <Upload className="h-4 w-4 mr-2" />
                               Submit Work
                             </Button>
-                          )}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              )}
-            </TabsContent>
-          </Tabs>
-        </div>
+                          </DialogTrigger>
+                          <DialogContent>
+                            <DialogHeader>
+                              <DialogTitle>Submit Deliverables</DialogTitle>
+                              <DialogDescription>
+                                Upload your completed work and add a message for the client
+                              </DialogDescription>
+                            </DialogHeader>
+                            <div className="space-y-4">
+                              <Textarea
+                                placeholder="Add a message about your delivery..."
+                                value={deliveryMessage}
+                                onChange={(e) => setDeliveryMessage(e.target.value)}
+                              />
+                              <Button 
+                                onClick={() => submitDeliverables(order._id)}
+                                disabled={isSubmittingDelivery}
+                                className="w-full"
+                              >
+                                Submit Deliverables
+                              </Button>
+                            </div>
+                          </DialogContent>
+                        </Dialog>
+                      )}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

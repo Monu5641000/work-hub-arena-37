@@ -1,111 +1,172 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ArrowLeft, Star, Heart, Clock, CheckCircle, MessageCircle, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
 import { useNavigate, useParams } from "react-router-dom";
+import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
+import { serviceAPI } from "@/api/services";
+import { orderAPI } from "@/api/orders";
+import Chat from "@/components/Chat";
 
 const ServiceDetail = () => {
   const navigate = useNavigate();
   const { serviceId } = useParams();
+  const { user } = useAuth();
+  const { toast } = useToast();
   const [selectedPlan, setSelectedPlan] = useState('basic');
+  const [service, setService] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [requirements, setRequirements] = useState('');
+  const [isBooking, setIsBooking] = useState(false);
+  const [showChat, setShowChat] = useState(false);
 
-  // In a real app, this would be fetched from the API
-  const service = {
-    id: serviceId,
-    title: "I will create a professional logo design for your business",
-    freelancer: {
-      name: "Priya Sharma",
-      avatar: "/placeholder.svg",
-      rating: 4.9,
-      reviews: 127,
-      level: "Top Rated",
-      memberSince: "2020",
-      responseTime: "1 hour",
-      isOnline: true
-    },
-    images: ["/placeholder.svg", "/placeholder.svg", "/placeholder.svg"],
-    video: "/placeholder.mp4",
-    description: "I will create a stunning, professional logo that perfectly represents your brand identity. With over 5 years of experience in graphic design, I understand what makes a logo memorable and effective.",
-    category: "Design",
-    tags: ["logo", "branding", "graphic-design"],
-    rating: 4.9,
-    reviews: 234,
-    totalOrders: 1500,
-    pricingPlans: {
-      basic: {
-        title: "Basic Logo",
-        price: 2500,
-        deliveryDays: 3,
-        revisions: 2,
-        features: [
-          "1 Logo concept",
-          "High-resolution files",
-          "Vector files (AI, EPS)",
-          "Commercial use rights"
-        ]
-      },
-      standard: {
-        title: "Standard Package",
-        price: 4500,
-        deliveryDays: 5,
-        revisions: 5,
-        features: [
-          "3 Logo concepts",
-          "High-resolution files",
-          "Vector files (AI, EPS)",
-          "Source files",
-          "Social media kit",
-          "Commercial use rights"
-        ]
-      },
-      premium: {
-        title: "Premium Package",
-        price: 7500,
-        deliveryDays: 7,
-        revisions: 10,
-        features: [
-          "5 Logo concepts",
-          "High-resolution files",
-          "Vector files (AI, EPS)",
-          "Source files",
-          "Complete brand kit",
-          "Business card design",
-          "Social media kit",
-          "Commercial use rights"
-        ]
+  useEffect(() => {
+    if (serviceId) {
+      loadService();
+    }
+  }, [serviceId]);
+
+  const loadService = async () => {
+    try {
+      const response = await serviceAPI.getService(serviceId!);
+      if (response.success) {
+        setService(response.data);
+      } else {
+        toast({
+          title: "Error",
+          description: "Service not found",
+          variant: "destructive",
+        });
+        navigate('/services');
       }
-    },
-    faqs: [
-      {
-        question: "What file formats will I receive?",
-        answer: "You'll receive your logo in multiple formats including PNG, JPG, PDF, AI, and EPS files."
-      },
-      {
-        question: "How many revisions are included?",
-        answer: "The number of revisions depends on the package you choose. Basic includes 2, Standard includes 5, and Premium includes 10 revisions."
-      }
-    ]
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to load service",
+        variant: "destructive",
+      });
+      navigate('/services');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const reviews = [
-    {
-      client: "Rahul Kumar",
-      rating: 5,
-      comment: "Excellent work! Priya understood my requirements perfectly and delivered beyond expectations.",
-      date: "2 weeks ago"
-    },
-    {
-      client: "Sarah Johnson",
-      rating: 5,
-      comment: "Professional, fast, and high-quality work. Highly recommended!",
-      date: "1 month ago"
+  const handleBookNow = async () => {
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "Please login to book this service",
+        variant: "destructive",
+      });
+      navigate('/login');
+      return;
     }
-  ];
 
-  const currentPlan = service.pricingPlans[selectedPlan as keyof typeof service.pricingPlans];
+    if (!requirements.trim()) {
+      toast({
+        title: "Requirements Missing",
+        description: "Please provide your requirements",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsBooking(true);
+    try {
+      const orderData = {
+        serviceId: service._id,
+        selectedPlan,
+        requirements: requirements.trim(),
+        addOns: []
+      };
+
+      const response = await orderAPI.createOrder(orderData);
+      if (response.success) {
+        toast({
+          title: "Order Placed",
+          description: "Your order has been sent to the freelancer",
+        });
+        navigate('/client/orders');
+      } else {
+        throw new Error(response.message || 'Failed to create order');
+      }
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to place order",
+        variant: "destructive",
+      });
+    } finally {
+      setIsBooking(false);
+    }
+  };
+
+  const handleContactSeller = () => {
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "Please login to contact the seller",
+        variant: "destructive",
+      });
+      navigate('/login');
+      return;
+    }
+    setShowChat(true);
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-2 text-gray-600">Loading service...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!service) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-gray-600">Service not found</p>
+          <Button onClick={() => navigate('/services')} className="mt-4">
+            Back to Services
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  const currentPlan = service.pricingPlans[selectedPlan];
+
+  if (showChat) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-4">
+        <div className="max-w-4xl mx-auto">
+          <Button 
+            variant="ghost" 
+            onClick={() => setShowChat(false)}
+            className="mb-4"
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Service
+          </Button>
+          <Chat
+            recipientId={service.freelancer._id}
+            recipientName={`${service.freelancer.firstName} ${service.freelancer.lastName}`}
+            onClose={() => setShowChat(false)}
+          />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -130,7 +191,7 @@ const ServiceDetail = () => {
             {/* Service Images */}
             <div className="bg-white rounded-lg overflow-hidden">
               <img 
-                src={service.images[0]} 
+                src={service.images?.[0]?.url || "/placeholder.svg"} 
                 alt={service.title}
                 className="w-full h-96 object-cover"
               />
@@ -149,17 +210,17 @@ const ServiceDetail = () => {
                 <div className="flex items-center space-x-4">
                   <div className="flex items-center space-x-1">
                     <Star className="h-4 w-4 text-yellow-400 fill-current" />
-                    <span className="font-medium">{service.rating}</span>
-                    <span className="text-gray-500">({service.reviews} reviews)</span>
+                    <span className="font-medium">{service.averageRating || 0}</span>
+                    <span className="text-gray-500">({service.totalReviews || 0} reviews)</span>
                   </div>
                   <span className="text-gray-500">•</span>
-                  <span className="text-gray-500">{service.totalOrders} orders completed</span>
+                  <span className="text-gray-500">{service.orders || 0} orders completed</span>
                 </div>
               </CardHeader>
               <CardContent>
                 <p className="text-gray-700 leading-relaxed">{service.description}</p>
                 <div className="flex flex-wrap gap-2 mt-4">
-                  {service.tags.map((tag) => (
+                  {service.tags?.map((tag: string) => (
                     <Badge key={tag} variant="outline">{tag}</Badge>
                   ))}
                 </div>
@@ -172,83 +233,35 @@ const ServiceDetail = () => {
                 <div className="flex items-center space-x-4">
                   <div className="relative">
                     <img 
-                      src={service.freelancer.avatar}
-                      alt={service.freelancer.name}
+                      src={service.freelancer.profilePicture || "/placeholder.svg"}
+                      alt={`${service.freelancer.firstName} ${service.freelancer.lastName}`}
                       className="w-16 h-16 rounded-full"
                     />
-                    {service.freelancer.isOnline && (
-                      <div className="absolute bottom-0 right-0 w-4 h-4 bg-green-500 rounded-full border-2 border-white"></div>
-                    )}
                   </div>
                   <div className="flex-1">
-                    <h3 className="font-semibold text-lg">{service.freelancer.name}</h3>
+                    <h3 className="font-semibold text-lg">
+                      {service.freelancer.firstName} {service.freelancer.lastName}
+                    </h3>
                     <div className="flex items-center space-x-2 text-sm text-gray-600">
-                      <Badge variant="secondary">{service.freelancer.level}</Badge>
+                      <Badge variant="secondary">Freelancer</Badge>
                       <span>•</span>
                       <div className="flex items-center">
                         <Star className="h-3 w-3 text-yellow-400 fill-current mr-1" />
-                        <span>{service.freelancer.rating}</span>
+                        <span>{service.freelancer.rating?.average || 0}</span>
                       </div>
                       <span>•</span>
-                      <span>{service.freelancer.reviews} reviews</span>
-                    </div>
-                    <div className="flex items-center space-x-4 mt-2 text-sm text-gray-600">
-                      <span>Member since {service.freelancer.memberSince}</span>
-                      <span>•</span>
-                      <span>Responds within {service.freelancer.responseTime}</span>
+                      <span>{service.freelancer.rating?.count || 0} reviews</span>
                     </div>
                   </div>
                   <div className="flex space-x-2">
-                    <Button variant="outline" size="sm">
+                    <Button variant="outline" size="sm" onClick={handleContactSeller}>
                       <MessageCircle className="h-4 w-4 mr-2" />
                       Contact
-                    </Button>
-                    <Button variant="outline" size="sm">
-                      <User className="h-4 w-4 mr-2" />
-                      View Profile
                     </Button>
                   </div>
                 </div>
               </CardContent>
             </Card>
-
-            {/* Tabs for additional content */}
-            <Tabs defaultValue="reviews" className="w-full">
-              <TabsList>
-                <TabsTrigger value="reviews">Reviews ({service.reviews})</TabsTrigger>
-                <TabsTrigger value="faq">FAQ</TabsTrigger>
-              </TabsList>
-              <TabsContent value="reviews" className="space-y-4">
-                {reviews.map((review, index) => (
-                  <Card key={index}>
-                    <CardContent className="p-4">
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center space-x-2">
-                          <span className="font-medium">{review.client}</span>
-                          <div className="flex items-center">
-                            {[...Array(review.rating)].map((_, i) => (
-                              <Star key={i} className="h-3 w-3 text-yellow-400 fill-current" />
-                            ))}
-                          </div>
-                        </div>
-                        <span className="text-sm text-gray-500">{review.date}</span>
-                      </div>
-                      <p className="text-gray-700">{review.comment}</p>
-                    </CardContent>
-                  </Card>
-                ))}
-              </TabsContent>
-              <TabsContent value="faq" className="space-y-4">
-                {service.faqs.map((faq, index) => (
-                  <Card key={index}>
-                    <CardContent className="p-4">
-                      <h4 className="font-medium mb-2">{faq.question}</h4>
-                      <p className="text-gray-700">{faq.answer}</p>
-                    </CardContent>
-                  </Card>
-                ))}
-              </TabsContent>
-            </Tabs>
           </div>
 
           {/* Sidebar - Pricing */}
@@ -261,7 +274,7 @@ const ServiceDetail = () => {
                 <CardContent className="space-y-4">
                   {/* Package Selection */}
                   <div className="flex space-x-2">
-                    {Object.entries(service.pricingPlans).map(([key, plan]) => (
+                    {Object.entries(service.pricingPlans).map(([key, plan]: [string, any]) => (
                       <button
                         key={key}
                         onClick={() => setSelectedPlan(key)}
@@ -271,45 +284,62 @@ const ServiceDetail = () => {
                             : 'border-gray-200 hover:border-gray-300'
                         }`}
                       >
-                        {plan.title}
+                        {plan.title || key.charAt(0).toUpperCase() + key.slice(1)}
                       </button>
                     ))}
                   </div>
 
                   {/* Selected Package Details */}
-                  <div className="border rounded-lg p-4">
-                    <div className="flex justify-between items-center mb-3">
-                      <h3 className="font-semibold">{currentPlan.title}</h3>
-                      <span className="text-2xl font-bold">₹{currentPlan.price.toLocaleString()}</span>
-                    </div>
-                    
-                    <div className="flex items-center space-x-4 text-sm text-gray-600 mb-4">
-                      <div className="flex items-center">
-                        <Clock className="h-4 w-4 mr-1" />
-                        <span>{currentPlan.deliveryDays} days delivery</span>
+                  {currentPlan && (
+                    <div className="border rounded-lg p-4">
+                      <div className="flex justify-between items-center mb-3">
+                        <h3 className="font-semibold">
+                          {currentPlan.title || selectedPlan.charAt(0).toUpperCase() + selectedPlan.slice(1)}
+                        </h3>
+                        <span className="text-2xl font-bold">₹{currentPlan.price?.toLocaleString()}</span>
                       </div>
-                      <span>•</span>
-                      <span>{currentPlan.revisions} revisions</span>
+                      
+                      <div className="flex items-center space-x-4 text-sm text-gray-600 mb-4">
+                        <div className="flex items-center">
+                          <Clock className="h-4 w-4 mr-1" />
+                          <span>{currentPlan.deliveryTime} days delivery</span>
+                        </div>
+                        <span>•</span>
+                        <span>{currentPlan.revisions} revisions</span>
+                      </div>
+
+                      <ul className="space-y-2 mb-4">
+                        {currentPlan.features?.map((feature: string, index: number) => (
+                          <li key={index} className="flex items-center text-sm">
+                            <CheckCircle className="h-4 w-4 text-green-500 mr-2 flex-shrink-0" />
+                            <span>{feature}</span>
+                          </li>
+                        ))}
+                      </ul>
+
+                      <div className="space-y-3">
+                        <Textarea
+                          placeholder="Describe your requirements..."
+                          value={requirements}
+                          onChange={(e) => setRequirements(e.target.value)}
+                          className="min-h-[100px]"
+                        />
+                        
+                        <Button 
+                          className="w-full bg-blue-600 hover:bg-blue-700" 
+                          onClick={handleBookNow}
+                          disabled={isBooking}
+                        >
+                          {isBooking ? 'Placing Order...' : `Book Now (₹${currentPlan.price?.toLocaleString()})`}
+                        </Button>
+                        
+                        <Button variant="outline" className="w-full" onClick={handleContactSeller}>
+                          <MessageCircle className="h-4 w-4 mr-2" />
+                          Contact Seller
+                        </Button>
+                      </div>
                     </div>
-
-                    <ul className="space-y-2 mb-4">
-                      {currentPlan.features.map((feature, index) => (
-                        <li key={index} className="flex items-center text-sm">
-                          <CheckCircle className="h-4 w-4 text-green-500 mr-2 flex-shrink-0" />
-                          <span>{feature}</span>
-                        </li>
-                      ))}
-                    </ul>
-
-                    <Button className="w-full bg-blue-600 hover:bg-blue-700 mb-3">
-                      Continue (₹{currentPlan.price.toLocaleString()})
-                    </Button>
-                    
-                    <Button variant="outline" className="w-full">
-                      <MessageCircle className="h-4 w-4 mr-2" />
-                      Contact Seller
-                    </Button>
-                  </div>
+                  )}
                 </CardContent>
               </Card>
             </div>

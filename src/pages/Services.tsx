@@ -1,177 +1,238 @@
 
-import React, { useState, useEffect } from 'react';
-import { Search, Filter, Star, Heart, Eye, ArrowRight } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useNavigate, useSearchParams } from 'react-router-dom';
-import { serviceAPI } from '@/api/services';
-import { formatCurrency } from '@/utils/currency';
-import { useAuth } from '@/contexts/AuthContext';
-import Navbar from '@/components/Navbar';
+import { useState, useEffect } from "react";
+import { Search, Filter, Star, Clock, ArrowRight } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useNavigate } from "react-router-dom";
+import { useToast } from "@/hooks/use-toast";
+import { serviceAPI } from "@/api/services";
+import Navbar from "@/components/Navbar";
 
 const Services = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
-  const [searchParams] = useSearchParams();
-  const [services, setServices] = useState([]);
+  const { toast } = useToast();
+  const [services, setServices] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState(searchParams.get('search') || '');
-  const [selectedCategory, setSelectedCategory] = useState('');
-  const [sortBy, setSortBy] = useState('newest');
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("");
+  const [sortBy, setSortBy] = useState("newest");
+  const [pagination, setPagination] = useState({ page: 1, pages: 1, total: 0 });
 
   useEffect(() => {
     fetchServices();
-  }, [selectedCategory, sortBy, searchQuery]);
+  }, [searchTerm, selectedCategory, sortBy]);
 
   const fetchServices = async () => {
     try {
       setLoading(true);
-      const response = await serviceAPI.getAllServices({
-        category: selectedCategory,
-        sort: sortBy,
-        search: searchQuery
-      });
-      setServices(response.data || []);
-    } catch (error) {
+      const params = {
+        search: searchTerm || undefined,
+        category: selectedCategory || undefined,
+        sortBy: sortBy === 'newest' ? 'createdAt' : sortBy === 'rating' ? 'averageRating' : 'price',
+        sortOrder: sortBy === 'price' ? 'asc' : 'desc',
+        page: 1,
+        limit: 12
+      };
+
+      const response = await serviceAPI.getAllServices(params);
+      if (response.success) {
+        setServices(response.data || []);
+        setPagination(response.pagination || { page: 1, pages: 1, total: 0 });
+      } else {
+        throw new Error(response.message);
+      }
+    } catch (error: any) {
       console.error('Error fetching services:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load services",
+        variant: "destructive",
+      });
       setServices([]);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    fetchServices();
+  const handleServiceClick = (serviceId: string) => {
+    navigate(`/services/${serviceId}`);
   };
 
   const categories = [
-    "Web Development",
-    "Graphic Design",
-    "Digital Marketing",
-    "Writing & Translation",
-    "Video & Animation",
-    "Music & Audio"
+    "web-development",
+    "mobile-development", 
+    "design",
+    "writing",
+    "marketing",
+    "data-science",
+    "consulting",
+    "other"
   ];
 
-  const filteredServices = services.filter(service =>
-    service.title.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-gray-50">
       <Navbar />
-
-      {/* Header Section */}
-      <header className="bg-gray-50 py-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-4">Find the Perfect Service</h1>
-          <p className="text-gray-600">Explore a wide range of services offered by talented freelancers.</p>
+      
+      <div className="max-w-7xl mx-auto px-4 py-8">
+        {/* Header */}
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 mb-4">Browse Services</h1>
+          <p className="text-lg text-gray-600">Find the perfect freelancer for your project</p>
         </div>
-      </header>
 
-      {/* Search and Filters Section */}
-      <section className="py-8">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <form onSubmit={handleSearch} className="flex items-center mb-6">
-            <div className="flex rounded-md shadow-sm w-full">
-              <Input
-                type="text"
-                placeholder="Search for services..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="flex-1 block w-full rounded-none rounded-l-md border-gray-300 focus:ring-purple-500 focus:border-purple-500 sm:text-sm"
-              />
-              <Button type="submit" className="bg-purple-500 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-r-md focus:outline-none focus:shadow-outline">
-                <Search className="w-5 h-5 mr-2" />
-                Search
-              </Button>
+        {/* Search and Filters */}
+        <div className="bg-white rounded-lg shadow-sm p-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="md:col-span-2">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                <Input
+                  placeholder="Search services..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
             </div>
-          </form>
-
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center space-x-4">
-              <Select onValueChange={setSelectedCategory}>
-                <SelectTrigger className="w-[180px] sm:w-[200px]">
-                  <SelectValue placeholder="All Categories" />
-                </SelectTrigger>
-                <SelectContent>
-                  {categories.map(category => (
-                    <SelectItem key={category} value={category}>{category}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-
-              <Select onValueChange={setSortBy}>
-                <SelectTrigger className="w-[150px]">
-                  <SelectValue placeholder="Newest" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="newest">Newest</SelectItem>
-                  <SelectItem value="oldest">Oldest</SelectItem>
-                  <SelectItem value="highest_rated">Highest Rated</SelectItem>
-                  <SelectItem value="lowest_rated">Lowest Rated</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <Button variant="outline" className="flex items-center">
-                <Filter className="w-4 h-4 mr-2" />
-                Filters
-              </Button>
-            </div>
+            <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+              <SelectTrigger>
+                <SelectValue placeholder="All Categories" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">All Categories</SelectItem>
+                {categories.map((category) => (
+                  <SelectItem key={category} value={category}>
+                    {category.charAt(0).toUpperCase() + category.slice(1).replace('-', ' ')}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={sortBy} onValueChange={setSortBy}>
+              <SelectTrigger>
+                <SelectValue placeholder="Sort by" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="newest">Newest</SelectItem>
+                <SelectItem value="rating">Highest Rated</SelectItem>
+                <SelectItem value="price">Lowest Price</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </div>
-      </section>
 
-      {/* Services Grid Section */}
-      <section className="py-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          {loading ? (
-            <div className="text-center text-gray-500">Loading services...</div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredServices.map(service => (
-                <Card key={service.id} className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300">
+        {/* Services Grid */}
+        {loading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[...Array(6)].map((_, index) => (
+              <Card key={index} className="animate-pulse">
+                <div className="h-48 bg-gray-200 rounded-t-lg"></div>
+                <CardHeader>
+                  <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                  <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    <div className="h-3 bg-gray-200 rounded"></div>
+                    <div className="h-3 bg-gray-200 rounded w-5/6"></div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        ) : services.length === 0 ? (
+          <div className="text-center py-12">
+            <p className="text-gray-500 text-lg">No services found</p>
+            <p className="text-gray-400">Try adjusting your search or filters</p>
+          </div>
+        ) : (
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+              {services.map((service) => (
+                <Card 
+                  key={service._id} 
+                  className="hover:shadow-lg transition-shadow cursor-pointer"
+                  onClick={() => handleServiceClick(service._id)}
+                >
+                  <div className="h-48 overflow-hidden rounded-t-lg">
+                    <img 
+                      src={service.images?.[0]?.url || "/placeholder.svg"}
+                      alt={service.title}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
                   <CardHeader>
-                    <CardTitle className="text-xl font-semibold">{service.title}</CardTitle>
-                  </CardHeader>
-                  <CardContent className="p-4">
-                    <div className="mb-2">
-                      <Badge className="mr-2">{service.category}</Badge>
-                      {service.is_featured && <Badge className="bg-green-500 text-white">Featured</Badge>}
-                    </div>
-                    <CardDescription className="text-gray-600 mb-4">{service.short_description}</CardDescription>
                     <div className="flex items-center justify-between">
-                      <div className="text-purple-600 font-bold">{formatCurrency(service.price)}</div>
-                      <div className="flex items-center space-x-2">
-                        <Star className="w-4 h-4 text-yellow-500" />
-                        <span className="text-sm text-gray-500">{service.rating || 4.5} ({service.review_count || 25})</span>
+                      <Badge variant="secondary">
+                        {service.category.replace('-', ' ')}
+                      </Badge>
+                      <div className="flex items-center space-x-1">
+                        <Star className="h-3 w-3 text-yellow-400 fill-current" />
+                        <span className="text-sm">{service.averageRating || 0}</span>
                       </div>
                     </div>
-                    <div className="flex items-center justify-between mt-4">
-                      <div className="flex items-center space-x-2 text-gray-500">
-                        <Heart className="w-4 h-4" />
-                        <span>{service.likes || 120}</span>
-                        <Eye className="w-4 h-4" />
-                        <span>{service.views || 350}</span>
+                    <CardTitle className="text-lg line-clamp-2">{service.title}</CardTitle>
+                    <CardDescription className="line-clamp-2">
+                      {service.description}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-2 text-sm text-gray-600">
+                        <img 
+                          src={service.freelancer?.profilePicture || "/placeholder.svg"}
+                          alt={service.freelancer?.firstName}
+                          className="w-6 h-6 rounded-full"
+                        />
+                        <span>{service.freelancer?.firstName} {service.freelancer?.lastName}</span>
                       </div>
-                      <Button size="sm" onClick={() => navigate(`/services/${service.id}`)} className="bg-purple-500 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">
+                      <div className="text-right">
+                        <p className="text-sm text-gray-500">Starting at</p>
+                        <p className="font-semibold text-green-600">
+                          ₹{service.pricingPlans?.basic?.price?.toLocaleString()}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between mt-3 pt-3 border-t">
+                      <div className="flex items-center text-sm text-gray-500">
+                        <Clock className="h-3 w-3 mr-1" />
+                        {service.pricingPlans?.basic?.deliveryTime} days
+                      </div>
+                      <Button size="sm" variant="outline">
                         View Details
-                        <ArrowRight className="w-4 h-4 ml-2" />
+                        <ArrowRight className="h-3 w-3 ml-1" />
                       </Button>
                     </div>
                   </CardContent>
                 </Card>
               ))}
             </div>
-          )}
-        </div>
-      </section>
+
+            {/* Pagination */}
+            {pagination.pages > 1 && (
+              <div className="flex justify-center">
+                <div className="flex space-x-2">
+                  {[...Array(pagination.pages)].map((_, index) => (
+                    <Button
+                      key={index}
+                      variant={pagination.page === index + 1 ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => {
+                        setPagination(prev => ({ ...prev, page: index + 1 }));
+                        fetchServices();
+                      }}
+                    >
+                      {index + 1}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </>
+        )}
+      </div>
     </div>
   );
 };
