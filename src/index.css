@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -102,7 +103,7 @@
 }
 
 .glass-card-dark {
-  background: linear-gradient(145deg, rgba(0,0,0,0.8), rgba(0,0,0,0.6));
+  background: linear-gradient(145deg, rgba(0,0,0,0.9), rgba(0,0,0,0.7));
   backdrop-filter: blur(25px) saturate(180%);
   border: 1px solid rgba(255,255,255,0.15);
   position: relative;
@@ -126,18 +127,19 @@
 
 .shadow-3d-purple {
   box-shadow: 
-    0 25px 50px rgba(139, 92, 246, 0.3),
-    0 15px 35px rgba(168, 85, 247, 0.2),
+    0 25px 50px rgba(139, 92, 246, 0.4),
+    0 15px 35px rgba(168, 85, 247, 0.3),
     inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
 
 .shadow-glow-purple {
   box-shadow: 
-    0 0 30px rgba(139, 92, 246, 0.6),
-    0 0 60px rgba(168, 85, 247, 0.4),
-    0 25px 50px rgba(139, 92, 246, 0.3);
+    0 0 30px rgba(139, 92, 246, 0.7),
+    0 0 60px rgba(168, 85, 247, 0.5),
+    0 25px 50px rgba(139, 92, 246, 0.4);
 }
 
+/* Enhanced responsive float-in animation */
 @keyframes float-in {
   0% {
     opacity: 0;
@@ -215,10 +217,10 @@
 
 @keyframes pulse-glow {
   0%, 100% {
-    box-shadow: 0 0 20px rgba(139, 92, 246, 0.3);
+    box-shadow: 0 0 20px rgba(139, 92, 246, 0.4);
   }
   50% {
-    box-shadow: 0 0 40px rgba(139, 92, 246, 0.6);
+    box-shadow: 0 0 40px rgba(139, 92, 246, 0.7);
   }
 }
 
@@ -307,11 +309,12 @@
 
 /* Enhanced Card Effects */
 .card-3d {
-  background: linear-gradient(145deg, rgba(255,255,255,0.1), rgba(255,255,255,0.05));
+  background: linear-gradient(145deg, rgba(0,0,0,0.8), rgba(0,0,0,0.6));
   backdrop-filter: blur(20px);
   border: 1px solid rgba(255,255,255,0.1);
   position: relative;
   overflow: hidden;
+  transition: all 0.4s ease;
 }
 
 .card-3d::before {
@@ -331,18 +334,18 @@
 
 .card-3d:hover {
   transform: translateY(-10px) rotateX(5deg) scale(1.02);
-  box-shadow: 0 20px 40px rgba(139, 92, 246, 0.3);
+  box-shadow: 0 20px 40px rgba(139, 92, 246, 0.4);
 }
 
-/* Glassmorphism */
+/* Enhanced Glassmorphism */
 .glass {
-  background: rgba(0, 0, 0, 0.25);
+  background: rgba(0, 0, 0, 0.3);
   backdrop-filter: blur(20px);
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .glass-card {
-  background: linear-gradient(145deg, rgba(0,0,0,0.4), rgba(0,0,0,0.2));
+  background: linear-gradient(145deg, rgba(0,0,0,0.6), rgba(0,0,0,0.4));
   backdrop-filter: blur(20px);
   border: 1px solid rgba(255,255,255,0.1);
 }
@@ -372,7 +375,7 @@
 
 .btn-3d:hover {
   transform: translateY(-2px) scale(1.05);
-  box-shadow: 0 10px 25px rgba(139, 92, 246, 0.4);
+  box-shadow: 0 10px 25px rgba(139, 92, 246, 0.5);
 }
 
 /* Hover Arrow Animation */
@@ -384,13 +387,28 @@
   transform: translateX(5px);
 }
 
+/* Responsive Design Enhancements */
+@media (max-width: 768px) {
+  .card-3d:hover {
+    transform: translateY(-5px) scale(1.01);
+  }
+  
+  .btn-3d:hover {
+    transform: translateY(-1px) scale(1.02);
+  }
+  
+  .glass-card-dark {
+    backdrop-filter: blur(15px);
+  }
+}
+
 /* Scrollbar */
 ::-webkit-scrollbar {
   width: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  background: rgba(0, 0, 0, 0.3);
+  background: rgba(0, 0, 0, 0.4);
 }
 
 ::-webkit-scrollbar-thumb {
@@ -404,7 +422,7 @@
 
 /* Text Animations */
 .text-glow {
-  text-shadow: 0 0 20px rgba(139, 92, 246, 0.5);
+  text-shadow: 0 0 20px rgba(139, 92, 246, 0.6);
 }
 
 .text-gradient-purple {
@@ -432,4 +450,24 @@
 /* Stagger Animations */
 .stagger-animation {
   animation-delay: calc(var(--stagger) * 0.1s);
+}
+
+/* Enhanced Focus States */
+.focus-enhanced:focus-visible {
+  outline: 2px solid rgba(139, 92, 246, 0.8);
+  outline-offset: 2px;
+}
+
+/* Mobile-first responsive utilities */
+@media (max-width: 640px) {
+  .glass-card-dark {
+    margin: 1rem;
+    border-radius: 1rem;
+  }
+  
+  .shadow-3d-purple {
+    box-shadow: 
+      0 15px 30px rgba(139, 92, 246, 0.3),
+      0 8px 20px rgba(168, 85, 247, 0.2);
+  }
 }

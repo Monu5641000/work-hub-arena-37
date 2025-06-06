@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Calendar, Clock, DollarSign, FileText, MessageSquare, Star } from 'lucide-react';
+import { Calendar, Clock, DollarSign, FileText, MessageSquare, Star, ArrowRight, Filter } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -29,25 +29,27 @@ const ClientOrders = () => {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'pending': return 'bg-yellow-100 text-yellow-800';
-      case 'accepted': return 'bg-blue-100 text-blue-800';
-      case 'in_progress': return 'bg-purple-100 text-purple-800';
-      case 'delivered': return 'bg-green-100 text-green-800';
-      case 'revision_requested': return 'bg-orange-100 text-orange-800';
-      case 'completed': return 'bg-emerald-100 text-emerald-800';
-      case 'cancelled': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'pending': return 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30';
+      case 'accepted': return 'bg-blue-500/20 text-blue-300 border-blue-500/30';
+      case 'in_progress': return 'bg-purple-500/20 text-purple-300 border-purple-500/30';
+      case 'delivered': return 'bg-green-500/20 text-green-300 border-green-500/30';
+      case 'revision_requested': return 'bg-orange-500/20 text-orange-300 border-orange-500/30';
+      case 'completed': return 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30';
+      case 'cancelled': return 'bg-red-500/20 text-red-300 border-red-500/30';
+      default: return 'bg-gray-500/20 text-gray-300 border-gray-500/30';
     }
   };
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-black">
         <Navbar />
         <div className="max-w-7xl mx-auto px-4 py-8">
           <div className="animate-pulse space-y-6">
             {[...Array(3)].map((_, i) => (
-              <div key={i} className="h-48 bg-gray-200 rounded-lg"></div>
+              <div key={i} className="glass-card rounded-2xl p-6">
+                <div className="h-32 bg-white/10 rounded-xl"></div>
+              </div>
             ))}
           </div>
         </div>
@@ -56,124 +58,173 @@ const ClientOrders = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-black text-white">
       <Navbar />
-      <div className="max-w-7xl mx-auto px-4 py-8">
+      
+      {/* Animated Background */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-purple-500 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob"></div>
+        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-blue-500 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob animation-delay-2000"></div>
+      </div>
+
+      <div className="relative z-10 max-w-7xl mx-auto px-4 py-8">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">My Orders</h1>
-          <p className="text-gray-600 mt-2">Track your service orders and communicate with freelancers</p>
+          <h1 className="text-4xl font-bold text-white text-glow mb-2">My Orders</h1>
+          <p className="text-white/70 text-lg">Track your service orders and communicate with freelancers</p>
         </div>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="active">Active</TabsTrigger>
-            <TabsTrigger value="completed">Completed</TabsTrigger>
-            <TabsTrigger value="cancelled">Cancelled</TabsTrigger>
-            <TabsTrigger value="all">All</TabsTrigger>
-          </TabsList>
+        <div className="glass-card rounded-2xl p-6 border border-white/10">
+          <Tabs value={activeTab} onValueChange={setActiveTab}>
+            <TabsList className="grid w-full grid-cols-4 mb-6 bg-white/10 border border-white/20">
+              <TabsTrigger value="active" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-pink-600 data-[state=active]:text-white">
+                Active
+              </TabsTrigger>
+              <TabsTrigger value="completed" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-pink-600 data-[state=active]:text-white">
+                Completed
+              </TabsTrigger>
+              <TabsTrigger value="cancelled" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-pink-600 data-[state=active]:text-white">
+                Cancelled
+              </TabsTrigger>
+              <TabsTrigger value="all" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-pink-600 data-[state=active]:text-white">
+                All
+              </TabsTrigger>
+            </TabsList>
 
-          <TabsContent value={activeTab} className="mt-6">
-            {orders.length === 0 ? (
-              <Card>
-                <CardContent className="text-center py-12">
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">No orders found</h3>
-                  <p className="text-gray-600 mb-4">Browse services to place your first order</p>
-                  <Button onClick={() => navigate('/services')}>
-                    Browse Services
-                  </Button>
-                </CardContent>
-              </Card>
-            ) : (
-              <div className="space-y-6">
-                {orders.map((order: any) => (
-                  <Card key={order._id} className="hover:shadow-lg transition-shadow">
-                    <CardHeader>
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <CardTitle className="text-lg">
-                            Order #{order.orderNumber}
-                          </CardTitle>
-                          <CardDescription>
-                            {order.service?.title}
-                          </CardDescription>
-                        </div>
-                        <Badge className={getStatusColor(order.status)}>
-                          {order.status.replace('_', ' ')}
-                        </Badge>
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
-                        <div className="flex items-center space-x-2">
-                          <DollarSign className="h-4 w-4 text-gray-500" />
+            <TabsContent value={activeTab}>
+              {orders.length === 0 ? (
+                <Card className="glass-card border-white/10">
+                  <CardContent className="text-center py-12">
+                    <div className="w-20 h-20 bg-gradient-to-br from-purple-500 to-pink-600 rounded-full flex items-center justify-center mx-auto mb-6">
+                      <FileText className="w-10 h-10 text-white" />
+                    </div>
+                    <h3 className="text-xl font-medium text-white mb-2">No orders found</h3>
+                    <p className="text-white/70 mb-6">Browse services to place your first order</p>
+                    <Button 
+                      onClick={() => navigate('/services')}
+                      className="bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 btn-3d group"
+                    >
+                      Browse Services
+                      <ArrowRight className="ml-2 h-4 w-4 arrow-hover" />
+                    </Button>
+                  </CardContent>
+                </Card>
+              ) : (
+                <div className="space-y-6">
+                  {orders.map((order: any, index) => (
+                    <Card 
+                      key={order._id} 
+                      className="group card-3d hover:shadow-3d transition-all duration-500 glass-card border-white/10 overflow-hidden"
+                      style={{ 
+                        animationDelay: `${index * 0.1}s`,
+                        ['--stagger' as any]: index
+                      }}
+                    >
+                      <CardHeader>
+                        <div className="flex justify-between items-start">
                           <div>
-                            <p className="text-sm text-gray-600">Total Amount</p>
-                            <p className="font-semibold">₹{order.totalAmount}</p>
+                            <CardTitle className="text-xl text-white group-hover:text-glow transition-all duration-300">
+                              Order #{order.orderNumber}
+                            </CardTitle>
+                            <CardDescription className="text-white/70 text-lg mt-1">
+                              {order.service?.title}
+                            </CardDescription>
+                          </div>
+                          <Badge className={`${getStatusColor(order.status)} border`}>
+                            {order.status.replace('_', ' ')}
+                          </Badge>
+                        </div>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+                          <div className="flex items-center space-x-3 p-3 rounded-xl glass">
+                            <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-emerald-600 rounded-lg flex items-center justify-center">
+                              <DollarSign className="h-5 w-5 text-white" />
+                            </div>
+                            <div>
+                              <p className="text-sm text-white/60">Total Amount</p>
+                              <p className="font-semibold text-white text-lg">₹{order.totalAmount}</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center space-x-3 p-3 rounded-xl glass">
+                            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
+                              <Calendar className="h-5 w-5 text-white" />
+                            </div>
+                            <div>
+                              <p className="text-sm text-white/60">Delivery</p>
+                              <p className="font-semibold text-white">
+                                {formatDistanceToNow(new Date(order.deliveryDate), { addSuffix: true })}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex items-center space-x-3 p-3 rounded-xl glass">
+                            <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-red-600 rounded-lg flex items-center justify-center">
+                              <Clock className="h-5 w-5 text-white" />
+                            </div>
+                            <div>
+                              <p className="text-sm text-white/60">Progress</p>
+                              <p className="font-semibold text-white">{order.progress}%</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center space-x-3 p-3 rounded-xl glass">
+                            <div className="w-10 h-10 bg-gradient-to-br from-pink-500 to-purple-600 rounded-lg flex items-center justify-center">
+                              <FileText className="h-5 w-5 text-white" />
+                            </div>
+                            <div>
+                              <p className="text-sm text-white/60">Plan</p>
+                              <p className="font-semibold text-white capitalize">{order.selectedPlan}</p>
+                            </div>
                           </div>
                         </div>
-                        <div className="flex items-center space-x-2">
-                          <Calendar className="h-4 w-4 text-gray-500" />
-                          <div>
-                            <p className="text-sm text-gray-600">Delivery</p>
-                            <p className="font-semibold">
-                              {formatDistanceToNow(new Date(order.deliveryDate), { addSuffix: true })}
+
+                        <div className="mb-6 p-4 rounded-xl glass">
+                          <p className="text-sm text-white/60 mb-2">Freelancer:</p>
+                          <div className="flex items-center space-x-3">
+                            <div className="w-10 h-10 bg-gradient-to-br from-purple-400 to-pink-600 rounded-full flex items-center justify-center text-white font-bold">
+                              {order.freelancer?.firstName?.[0] || 'F'}
+                            </div>
+                            <p className="font-medium text-white text-lg">
+                              {order.freelancer?.firstName} {order.freelancer?.lastName}
                             </p>
                           </div>
                         </div>
-                        <div className="flex items-center space-x-2">
-                          <Clock className="h-4 w-4 text-gray-500" />
-                          <div>
-                            <p className="text-sm text-gray-600">Progress</p>
-                            <p className="font-semibold">{order.progress}%</p>
-                          </div>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <FileText className="h-4 w-4 text-gray-500" />
-                          <div>
-                            <p className="text-sm text-gray-600">Plan</p>
-                            <p className="font-semibold capitalize">{order.selectedPlan}</p>
-                          </div>
-                        </div>
-                      </div>
 
-                      <div className="mb-4">
-                        <p className="text-sm text-gray-600 mb-1">Freelancer:</p>
-                        <p className="font-medium">
-                          {order.freelancer?.firstName} {order.freelancer?.lastName}
-                        </p>
-                      </div>
-
-                      <div className="flex space-x-3">
-                        <Button 
-                          onClick={() => navigate(`/orders/${order._id}`)}
-                          className="flex-1"
-                        >
-                          View Details
-                        </Button>
-                        <Button variant="outline">
-                          <MessageSquare className="h-4 w-4 mr-2" />
-                          Message
-                        </Button>
-                        {order.status === 'delivered' && (
-                          <>
-                            <Button variant="outline">Accept Work</Button>
-                            <Button variant="outline">Request Revision</Button>
-                          </>
-                        )}
-                        {order.status === 'completed' && !order.rating?.clientRating && (
-                          <Button variant="outline">
-                            <Star className="h-4 w-4 mr-2" />
-                            Rate
+                        <div className="flex flex-wrap gap-3">
+                          <Button 
+                            onClick={() => navigate(`/orders/${order._id}`)}
+                            className="flex-1 bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 btn-3d group"
+                          >
+                            View Details
+                            <ArrowRight className="ml-2 h-4 w-4 arrow-hover" />
                           </Button>
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            )}
-          </TabsContent>
-        </Tabs>
+                          <Button variant="outline" className="border-white/30 text-white hover:bg-white/10 btn-3d">
+                            <MessageSquare className="h-4 w-4 mr-2" />
+                            Message
+                          </Button>
+                          {order.status === 'delivered' && (
+                            <>
+                              <Button variant="outline" className="border-white/30 text-white hover:bg-white/10 btn-3d">
+                                Accept Work
+                              </Button>
+                              <Button variant="outline" className="border-white/30 text-white hover:bg-white/10 btn-3d">
+                                Request Revision
+                              </Button>
+                            </>
+                          )}
+                          {order.status === 'completed' && !order.rating?.clientRating && (
+                            <Button variant="outline" className="border-white/30 text-white hover:bg-white/10 btn-3d">
+                              <Star className="h-4 w-4 mr-2" />
+                              Rate
+                            </Button>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </TabsContent>
+          </Tabs>
+        </div>
       </div>
     </div>
   );
