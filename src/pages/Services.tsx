@@ -51,16 +51,16 @@ const Services = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-black">
+      <div className="min-h-screen bg-white">
         <Navbar />
         <div className="max-w-7xl mx-auto px-4 py-8">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[...Array(6)].map((_, i) => (
               <div key={i} className="animate-pulse">
                 <div className="glass-card rounded-2xl p-6 space-y-4">
-                  <div className="h-48 bg-white/10 rounded-xl"></div>
-                  <div className="h-4 bg-white/10 rounded w-3/4"></div>
-                  <div className="h-4 bg-white/10 rounded w-1/2"></div>
+                  <div className="h-48 bg-gray-200 rounded-xl"></div>
+                  <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                  <div className="h-4 bg-gray-200 rounded w-1/2"></div>
                 </div>
               </div>
             ))}
@@ -71,13 +71,13 @@ const Services = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-black text-white">
+    <div className="min-h-screen bg-white text-gray-900">
       <Navbar />
       
       {/* Animated Background */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-purple-500 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob"></div>
-        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-blue-500 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob animation-delay-2000"></div>
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-purple-200 rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-blob"></div>
+        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-blue-200 rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-blob animation-delay-2000"></div>
       </div>
 
       <div className="relative z-10 max-w-7xl mx-auto px-4 py-8">
@@ -86,23 +86,23 @@ const Services = () => {
           <h1 className="text-4xl md:text-6xl font-bold mb-4 text-glow">
             Browse <span className="text-gradient-purple">Services</span>
           </h1>
-          <p className="text-white/70 text-lg max-w-2xl mx-auto">
+          <p className="text-gray-600 text-lg max-w-2xl mx-auto">
             Discover amazing services from talented freelancers
           </p>
         </div>
 
         {/* Search and Filters */}
-        <div className="glass-card rounded-2xl p-6 mb-8 border border-white/10">
+        <div className="glass-card rounded-2xl p-6 mb-8 border border-gray-200">
           <form onSubmit={handleSearch} className="mb-6">
             <div className="flex gap-4">
               <div className="flex-1 relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-white/50" />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-500" />
                 <Input
                   type="text"
                   placeholder="Search services..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10 h-12 bg-white/10 border-white/20 text-white placeholder:text-white/50 focus:bg-white/20"
+                  className="pl-10 h-12 bg-white border-gray-300 text-gray-900 placeholder:text-gray-500 focus:bg-gray-50"
                 />
               </div>
               <Button type="submit" className="h-12 px-8 bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 btn-3d">
@@ -114,13 +114,13 @@ const Services = () => {
           <div className="flex flex-wrap gap-4 items-center justify-between">
             <div className="flex flex-wrap gap-4">
               <Select value={category} onValueChange={setCategory}>
-                <SelectTrigger className="w-48 bg-white/10 border-white/20 text-white">
+                <SelectTrigger className="w-48 bg-white border-gray-300 text-gray-900">
                   <SelectValue placeholder="Category" />
                 </SelectTrigger>
-                <SelectContent className="bg-gray-900 border-white/20">
+                <SelectContent className="bg-white border-gray-300">
                   <SelectItem value="">All Categories</SelectItem>
                   {categories.map((cat) => (
-                    <SelectItem key={cat} value={cat} className="text-white hover:bg-white/10">
+                    <SelectItem key={cat} value={cat} className="text-gray-900 hover:bg-gray-100">
                       {cat}
                     </SelectItem>
                   ))}
@@ -128,26 +128,26 @@ const Services = () => {
               </Select>
 
               <Select value={priceRange} onValueChange={setPriceRange}>
-                <SelectTrigger className="w-48 bg-white/10 border-white/20 text-white">
+                <SelectTrigger className="w-48 bg-white border-gray-300 text-gray-900">
                   <SelectValue placeholder="Price Range" />
                 </SelectTrigger>
-                <SelectContent className="bg-gray-900 border-white/20">
-                  <SelectItem value="" className="text-white hover:bg-white/10">All Prices</SelectItem>
-                  <SelectItem value="low" className="text-white hover:bg-white/10">Under ₹1,000</SelectItem>
-                  <SelectItem value="mid" className="text-white hover:bg-white/10">₹1,000 - ₹5,000</SelectItem>
-                  <SelectItem value="high" className="text-white hover:bg-white/10">Above ₹5,000</SelectItem>
+                <SelectContent className="bg-white border-gray-300">
+                  <SelectItem value="" className="text-gray-900 hover:bg-gray-100">All Prices</SelectItem>
+                  <SelectItem value="low" className="text-gray-900 hover:bg-gray-100">Under ₹1,000</SelectItem>
+                  <SelectItem value="mid" className="text-gray-900 hover:bg-gray-100">₹1,000 - ₹5,000</SelectItem>
+                  <SelectItem value="high" className="text-gray-900 hover:bg-gray-100">Above ₹5,000</SelectItem>
                 </SelectContent>
               </Select>
 
               <Select value={sortBy} onValueChange={setSortBy}>
-                <SelectTrigger className="w-48 bg-white/10 border-white/20 text-white">
+                <SelectTrigger className="w-48 bg-white border-gray-300 text-gray-900">
                   <SelectValue placeholder="Sort By" />
                 </SelectTrigger>
-                <SelectContent className="bg-gray-900 border-white/20">
-                  <SelectItem value="newest" className="text-white hover:bg-white/10">Newest First</SelectItem>
-                  <SelectItem value="price_low" className="text-white hover:bg-white/10">Price: Low to High</SelectItem>
-                  <SelectItem value="price_high" className="text-white hover:bg-white/10">Price: High to Low</SelectItem>
-                  <SelectItem value="rating" className="text-white hover:bg-white/10">Highest Rated</SelectItem>
+                <SelectContent className="bg-white border-gray-300">
+                  <SelectItem value="newest" className="text-gray-900 hover:bg-gray-100">Newest First</SelectItem>
+                  <SelectItem value="price_low" className="text-gray-900 hover:bg-gray-100">Price: Low to High</SelectItem>
+                  <SelectItem value="price_high" className="text-gray-900 hover:bg-gray-100">Price: High to Low</SelectItem>
+                  <SelectItem value="rating" className="text-gray-900 hover:bg-gray-100">Highest Rated</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -176,9 +176,9 @@ const Services = () => {
         {/* Services Grid */}
         {services.length === 0 ? (
           <div className="text-center py-12">
-            <div className="glass-card rounded-2xl p-12 border border-white/10">
-              <h3 className="text-2xl font-bold text-white mb-4">No services found</h3>
-              <p className="text-white/70 mb-6">Try adjusting your search criteria</p>
+            <div className="glass-card rounded-2xl p-12 border border-gray-200">
+              <h3 className="text-2xl font-bold text-gray-900 mb-4">No services found</h3>
+              <p className="text-gray-600 mb-6">Try adjusting your search criteria</p>
               <Button onClick={() => {
                 setSearchQuery('');
                 setCategory('');
@@ -197,7 +197,7 @@ const Services = () => {
             {services.map((service: any, index) => (
               <Card 
                 key={service._id} 
-                className="group card-3d hover:shadow-3d transition-all duration-500 cursor-pointer transform-3d glass-card border-white/10 overflow-hidden"
+                className="group card-3d hover:shadow-3d transition-all duration-500 cursor-pointer transform-3d glass-card border-gray-200 overflow-hidden"
                 onClick={() => navigate(`/services/${service._id}`)}
                 style={{ 
                   animationDelay: `${index * 0.1}s`,
@@ -222,10 +222,10 @@ const Services = () => {
                 </div>
 
                 <CardHeader className="pb-3">
-                  <CardTitle className="text-lg text-white group-hover:text-glow transition-all duration-300">
+                  <CardTitle className="text-lg text-gray-900 group-hover:text-glow transition-all duration-300">
                     {service.title}
                   </CardTitle>
-                  <CardDescription className="text-white/70 line-clamp-2">
+                  <CardDescription className="text-gray-600 line-clamp-2">
                     {service.description}
                   </CardDescription>
                 </CardHeader>
@@ -237,12 +237,12 @@ const Services = () => {
                         {service.freelancer?.firstName?.[0] || 'F'}
                       </div>
                       <div>
-                        <p className="text-sm font-medium text-white">
+                        <p className="text-sm font-medium text-gray-900">
                           {service.freelancer?.firstName} {service.freelancer?.lastName}
                         </p>
                         <div className="flex items-center">
                           <Star className="h-3 w-3 text-yellow-400 fill-current" />
-                          <span className="text-xs text-white/70 ml-1">
+                          <span className="text-xs text-gray-600 ml-1">
                             {service.rating || 5.0} ({service.reviewCount || 0})
                           </span>
                         </div>
@@ -251,13 +251,13 @@ const Services = () => {
                   </div>
 
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center text-white/70 text-sm">
+                    <div className="flex items-center text-gray-600 text-sm">
                       <Clock className="h-4 w-4 mr-1" />
                       {service.deliveryTime} days
                     </div>
                     <div className="text-right">
-                      <p className="text-sm text-white/70">Starting at</p>
-                      <p className="text-lg font-bold text-white">
+                      <p className="text-sm text-gray-600">Starting at</p>
+                      <p className="text-lg font-bold text-gray-900">
                         {formatCurrency(service.pricing?.basic?.price || service.basePrice)}
                       </p>
                     </div>

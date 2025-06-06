@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Sparkles, ArrowRight, User, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -31,17 +31,17 @@ const LoginPopup = ({ isOpen, onClose }: LoginPopupProps) => {
         <div className="relative">
           {/* 3D Card Container */}
           <div className="login-popup-card perspective-1000 transform-3d">
-            <div className="glass-card-dark rounded-2xl p-6 sm:p-8 border border-white/20 shadow-3d-purple transform-gpu hover:shadow-glow-purple transition-all duration-700 animate-scale-in">
+            <div className="glass-card-dark rounded-2xl p-6 sm:p-8 border border-gray-200 shadow-3d-purple transform-gpu hover:shadow-glow-purple transition-all duration-700 animate-scale-in">
               {/* Background Glow Effects */}
-              <div className="absolute -top-10 -left-10 w-20 h-20 sm:w-32 sm:h-32 bg-purple-500 rounded-full blur-3xl opacity-20 animate-blob"></div>
-              <div className="absolute -bottom-10 -right-10 w-20 h-20 sm:w-32 sm:h-32 bg-pink-500 rounded-full blur-3xl opacity-20 animate-blob animation-delay-2000"></div>
+              <div className="absolute -top-10 -left-10 w-20 h-20 sm:w-32 sm:h-32 bg-purple-500 rounded-full blur-3xl opacity-10 animate-blob"></div>
+              <div className="absolute -bottom-10 -right-10 w-20 h-20 sm:w-32 sm:h-32 bg-pink-500 rounded-full blur-3xl opacity-10 animate-blob animation-delay-2000"></div>
               
               {/* Close Button */}
               <button
                 onClick={onClose}
-                className="absolute top-3 right-3 w-7 h-7 rounded-full glass hover:bg-white/20 flex items-center justify-center transition-all duration-300 hover:rotate-90 z-10"
+                className="absolute top-3 right-3 w-7 h-7 rounded-full glass hover:bg-gray-100 flex items-center justify-center transition-all duration-300 hover:rotate-90 z-10"
               >
-                <X className="w-3 h-3 text-white/70" />
+                <X className="w-3 h-3 text-gray-600" />
               </button>
 
               {/* Header */}
@@ -52,34 +52,34 @@ const LoginPopup = ({ isOpen, onClose }: LoginPopupProps) => {
                   </div>
                 </div>
                 <DialogHeader>
-                  <DialogTitle className="text-xl sm:text-2xl font-bold text-white text-glow mb-2">
+                  <DialogTitle className="text-xl sm:text-2xl font-bold text-gray-900 text-glow mb-2">
                     Welcome to Servpe
                   </DialogTitle>
-                  <p className="text-white/70 text-sm sm:text-base">
+                  <DialogDescription className="text-gray-600 text-sm sm:text-base">
                     Join thousands of freelancers and clients
-                  </p>
+                  </DialogDescription>
                 </DialogHeader>
               </div>
 
               {/* Features */}
               <div className="space-y-3 mb-6">
-                <div className="flex items-center space-x-3 p-2 sm:p-3 rounded-lg glass hover:bg-white/10 transition-all duration-300 hover:scale-105">
+                <div className="flex items-center space-x-3 p-2 sm:p-3 rounded-lg glass hover:bg-gray-50 transition-all duration-300 hover:scale-105">
                   <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
                     <User className="w-4 h-4 text-white" />
                   </div>
                   <div>
-                    <p className="text-white font-medium text-sm">Connect with Top Talent</p>
-                    <p className="text-white/60 text-xs">Find verified professionals instantly</p>
+                    <p className="text-gray-900 font-medium text-sm">Connect with Top Talent</p>
+                    <p className="text-gray-600 text-xs">Find verified professionals instantly</p>
                   </div>
                 </div>
                 
-                <div className="flex items-center space-x-3 p-2 sm:p-3 rounded-lg glass hover:bg-white/10 transition-all duration-300 hover:scale-105">
+                <div className="flex items-center space-x-3 p-2 sm:p-3 rounded-lg glass hover:bg-gray-50 transition-all duration-300 hover:scale-105">
                   <div className="w-8 h-8 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-lg flex items-center justify-center">
                     <Lock className="w-4 h-4 text-white" />
                   </div>
                   <div>
-                    <p className="text-white font-medium text-sm">Secure & Trusted</p>
-                    <p className="text-white/60 text-xs">Your projects are safe with us</p>
+                    <p className="text-gray-900 font-medium text-sm">Secure & Trusted</p>
+                    <p className="text-gray-600 text-xs">Your projects are safe with us</p>
                   </div>
                 </div>
               </div>
@@ -97,15 +97,15 @@ const LoginPopup = ({ isOpen, onClose }: LoginPopupProps) => {
                 <Button 
                   variant="outline"
                   onClick={handleLogin}
-                  className="w-full h-10 border-white/30 text-white hover:bg-white/10 btn-3d text-sm"
+                  className="w-full h-10 border-gray-300 text-gray-900 hover:bg-gray-50 btn-3d text-sm"
                 >
                   Already have an account? Sign In
                 </Button>
               </div>
 
               {/* Footer */}
-              <div className="text-center mt-4 pt-4 border-t border-white/10">
-                <p className="text-white/50 text-xs">
+              <div className="text-center mt-4 pt-4 border-t border-gray-200">
+                <p className="text-gray-500 text-xs">
                   Join our community of 10,000+ users
                 </p>
               </div>
