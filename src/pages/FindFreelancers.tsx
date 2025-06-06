@@ -55,9 +55,9 @@ const FindFreelancers = () => {
     try {
       setLoading(true);
       const params = new URLSearchParams();
-      if (selectedSkill) params.append('skills', selectedSkill);
-      if (selectedCategory) params.append('category', selectedCategory);
-      if (minRating) params.append('rating', minRating);
+      if (selectedSkill && selectedSkill !== 'all') params.append('skills', selectedSkill);
+      if (selectedCategory && selectedCategory !== 'all') params.append('category', selectedCategory);
+      if (minRating && minRating !== 'any') params.append('rating', minRating);
       if (searchQuery) params.append('search', searchQuery);
       params.append('sort', sortBy);
 
@@ -74,6 +74,14 @@ const FindFreelancers = () => {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     fetchFreelancers();
+  };
+
+  const handleMessageClick = (freelancerId: string) => {
+    if (!user) {
+      navigate('/login');
+      return;
+    }
+    navigate(`/messages?freelancer=${freelancerId}`);
   };
 
   const skills = [
@@ -252,7 +260,7 @@ const FindFreelancers = () => {
                       </Button>
                       <Button 
                         variant="outline" 
-                        onClick={() => navigate(`/messages?freelancer=${freelancer._id}`)}
+                        onClick={() => handleMessageClick(freelancer._id)}
                         className="border-purple-600 text-purple-600 hover:bg-purple-50"
                       >
                         Message
