@@ -138,6 +138,49 @@ export default {
 					'100%': {
 						'background-position': '0% 50%'
 					}
+				},
+				'pulse-glow': {
+					'0%, 100%': {
+						'box-shadow': '0 0 20px rgba(139, 92, 246, 0.3)'
+					},
+					'50%': {
+						'box-shadow': '0 0 40px rgba(139, 92, 246, 0.6)'
+					}
+				},
+				'card-hover': {
+					'0%': {
+						transform: 'translateY(0) rotateX(0)'
+					},
+					'100%': {
+						transform: 'translateY(-10px) rotateX(5deg)'
+					}
+				},
+				'arrow-move': {
+					'0%': {
+						transform: 'translateX(0)'
+					},
+					'100%': {
+						transform: 'translateX(5px)'
+					}
+				},
+				'gradient-shift': {
+					'0%': {
+						'background-position': '0% 50%'
+					},
+					'50%': {
+						'background-position': '100% 50%'
+					},
+					'100%': {
+						'background-position': '0% 50%'
+					}
+				},
+				'spin-3d': {
+					'0%': {
+						transform: 'rotateY(0deg)'
+					},
+					'100%': {
+						transform: 'rotateY(360deg)'
+					}
 				}
 			},
 			animation: {
@@ -147,7 +190,12 @@ export default {
 				'fade-in': 'fade-in 0.6s ease-out',
 				'scale-in': 'scale-in 0.5s ease-out',
 				'float': 'float 3s ease-in-out infinite',
-				'gradient': 'gradient 3s ease infinite'
+				'gradient': 'gradient 3s ease infinite',
+				'pulse-glow': 'pulse-glow 2s ease-in-out infinite',
+				'card-hover': 'card-hover 0.3s ease-out',
+				'arrow-move': 'arrow-move 0.3s ease-out infinite alternate',
+				'gradient-shift': 'gradient-shift 3s ease infinite',
+				'spin-3d': 'spin-3d 2s linear infinite'
 			},
 			fontFamily: {
 				'inter': ['Inter', 'sans-serif'],
@@ -156,9 +204,10 @@ export default {
 				xs: '2px',
 			},
 			boxShadow: {
-				'glow': '0 0 20px rgba(59, 130, 246, 0.5)',
-				'glow-orange': '0 0 20px rgba(249, 115, 22, 0.5)',
-				'glow-pink': '0 0 20px rgba(236, 72, 153, 0.5)',
+				'glow': '0 0 20px rgba(139, 92, 246, 0.5)',
+				'glow-purple': '0 0 20px rgba(168, 85, 247, 0.5)',
+				'glow-blue': '0 0 20px rgba(59, 130, 246, 0.5)',
+				'3d': '0 20px 40px rgba(0, 0, 0, 0.3), 0 0 40px rgba(139, 92, 246, 0.2)',
 			}
 		}
 	},

@@ -4,6 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import UserMenu from '@/components/UserMenu';
+import { Sparkles, ChevronRight } from 'lucide-react';
 
 const Navbar = () => {
   const { user, token } = useAuth();
@@ -57,12 +58,13 @@ const Navbar = () => {
   };
 
   return (
-    <nav className="bg-white shadow-sm border-b">
+    <nav className="glass border-b border-white/10 sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
           <div className="flex items-center">
-            <Link to="/" className="flex items-center">
-              <span className="text-2xl font-bold text-orange-600">Servpe</span>
+            <Link to="/" className="flex items-center group">
+              <Sparkles className="w-6 h-6 text-purple-400 animate-pulse-glow mr-2" />
+              <span className="text-2xl font-bold text-gradient-purple hover:scale-105 transition-all duration-300">Servpe</span>
             </Link>
           </div>
 
@@ -71,9 +73,10 @@ const Navbar = () => {
               <Link
                 key={item.href}
                 to={item.href}
-                className="text-gray-600 hover:text-orange-600 px-3 py-2 text-sm font-medium transition-colors"
+                className="text-white/80 hover:text-white px-3 py-2 text-sm font-medium transition-all duration-300 hover:scale-105 relative group"
               >
                 {item.label}
+                <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-purple-400 to-pink-600 group-hover:w-full transition-all duration-300"></span>
               </Link>
             ))}
           </div>
@@ -81,11 +84,12 @@ const Navbar = () => {
           <div className="flex items-center space-x-4">
             {!token ? (
               <>
-                <Button variant="ghost" onClick={() => navigate('/login')}>
+                <Button variant="ghost" onClick={() => navigate('/login')} className="text-white border-white/20 hover:bg-white/10 btn-3d">
                   Login
                 </Button>
-                <Button onClick={() => navigate('/login')}>
+                <Button onClick={() => navigate('/login')} className="bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 btn-3d group">
                   Get Started
+                  <ChevronRight className="ml-2 h-4 w-4 arrow-hover" />
                 </Button>
               </>
             ) : (

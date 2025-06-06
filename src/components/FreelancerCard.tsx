@@ -1,5 +1,5 @@
 
-import { Star, MapPin, MessageSquare, Heart } from "lucide-react";
+import { Star, MapPin, MessageSquare, Heart, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -33,42 +33,42 @@ const FreelancerCard = ({ freelancer, onShowInterest }: FreelancerCardProps) => 
   };
 
   return (
-    <Card className="hover:shadow-lg transition-shadow">
+    <Card className="card-3d hover:shadow-3d transition-all duration-500 group transform-3d">
       <CardContent className="p-6">
         <div className="flex items-start space-x-4 mb-4">
-          <div className="w-16 h-16 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full flex items-center justify-center text-white font-bold text-xl">
+          <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-pink-600 rounded-full flex items-center justify-center text-white font-bold text-xl group-hover:animate-pulse-glow">
             {freelancer.firstName[0]}{freelancer.lastName[0]}
           </div>
           <div className="flex-1">
-            <h3 className="text-lg font-semibold text-gray-900">
+            <h3 className="text-lg font-semibold text-white group-hover:text-glow transition-all duration-300">
               {freelancer.firstName} {freelancer.lastName}
             </h3>
-            <div className="flex items-center space-x-2 text-sm text-gray-600">
-              <Star className="h-4 w-4 text-yellow-500" />
+            <div className="flex items-center space-x-2 text-sm text-white/80">
+              <Star className="h-4 w-4 text-yellow-500 animate-pulse" />
               <span>{freelancer.rating.average} ({freelancer.rating.count} reviews)</span>
             </div>
-            <div className="flex items-center space-x-1 text-sm text-gray-600 mt-1">
+            <div className="flex items-center space-x-1 text-sm text-white/60 mt-1">
               <MapPin className="h-4 w-4" />
               <span>{freelancer.location.city}, {freelancer.location.country}</span>
             </div>
           </div>
           <div className="text-right">
-            <p className="text-lg font-bold text-gray-900">${freelancer.hourlyRate}/hr</p>
+            <p className="text-lg font-bold text-white group-hover:text-glow transition-all duration-300">${freelancer.hourlyRate}/hr</p>
           </div>
         </div>
 
-        <p className="text-gray-600 text-sm mb-4 line-clamp-2">
+        <p className="text-white/70 text-sm mb-4 line-clamp-2 group-hover:text-white/90 transition-all duration-300">
           {freelancer.bio}
         </p>
 
         <div className="flex flex-wrap gap-2 mb-4">
           {freelancer.skills.slice(0, 4).map((skill, index) => (
-            <Badge key={index} variant="secondary" className="text-xs">
+            <Badge key={index} variant="secondary" className="text-xs glass hover:bg-white/20 transition-all duration-300 hover:scale-105">
               {skill.name}
             </Badge>
           ))}
           {freelancer.skills.length > 4 && (
-            <Badge variant="outline" className="text-xs">
+            <Badge variant="outline" className="text-xs border-white/30 text-white/70 hover:border-white/50 hover:text-white transition-all duration-300">
               +{freelancer.skills.length - 4} more
             </Badge>
           )}
@@ -77,7 +77,7 @@ const FreelancerCard = ({ freelancer, onShowInterest }: FreelancerCardProps) => 
         {freelancer.portfolio.length > 0 && (
           <div className="grid grid-cols-3 gap-2 mb-4">
             {freelancer.portfolio.slice(0, 3).map((item, index) => (
-              <div key={index} className="aspect-square bg-gray-100 rounded-lg overflow-hidden">
+              <div key={index} className="aspect-square bg-black/40 rounded-lg overflow-hidden border border-white/10 hover:border-white/30 transition-all duration-300 hover:scale-105">
                 <img 
                   src={item.imageUrl || "/placeholder.svg"} 
                   alt={item.title}
@@ -92,15 +92,16 @@ const FreelancerCard = ({ freelancer, onShowInterest }: FreelancerCardProps) => 
           <Button 
             variant="outline" 
             size="sm" 
-            className="flex-1"
+            className="flex-1 border-white/30 text-white hover:bg-white/10 btn-3d group"
             onClick={() => window.open(`/messages?freelancer=${freelancer.id}`, '_blank')}
           >
             <MessageSquare className="h-4 w-4 mr-1" />
             Message
+            <ChevronRight className="h-3 w-3 ml-1 arrow-hover" />
           </Button>
           <Button 
             size="sm" 
-            className="flex-1"
+            className="flex-1 bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 btn-3d group"
             onClick={handleShowInterest}
           >
             <Heart className="h-4 w-4 mr-1" />
