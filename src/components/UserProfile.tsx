@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { User, Mail, Phone, MapPin, Edit, Save, X, Star, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -63,7 +62,14 @@ const UserProfile: React.FC<UserProfileProps> = ({ userId, isOwnProfile = true }
       const response = await authAPI.updateProfile(formData);
       if (response.success) {
         setUser(response.data);
-        updateUser(response.data);
+        // Convert the response data to match AuthContext User interface
+        const authUser = {
+          ...response.data,
+          location: typeof response.data.location === 'object' && response.data.location 
+            ? `${response.data.location.city}, ${response.data.location.country}`
+            : response.data.location || ''
+        };
+        updateUser(authUser);
         setEditing(false);
         toast({
           title: "Success",
@@ -280,22 +286,14 @@ const UserProfile: React.FC<UserProfileProps> = ({ userId, isOwnProfile = true }
                   <label className="text-sm font-medium text-gray-700">Location</label>
                   {editing ? (
                     <Input
-                      value={`${formData.location?.city || ''}, ${formData.location?.country || ''}`}
-                      onChange={(e) => {
-                        const [city, country] = e.target.value.split(', ');
-                        handleInputChange('location', { city: city || '', country: country || '' });
-                      }}
+                      value={formData.location || ''}
+                      onChange={(e) => handleInputChange('location', e.target.value)}
                       placeholder="City, Country"
                     />
                   ) : (
                     <div className="flex items-center mt-1">
                       <MapPin className="h-4 w-4 text-gray-400 mr-2" />
-                      <span>
-                        {user.location?.city && user.location?.country 
-                          ? `${user.location.city}, ${user.location.country}`
-                          : 'Not provided'
-                        }
-                      </span>
+                      <span>{user.location || 'Not provided'}</span>
                     </div>
                   )}
                 </div>

@@ -13,20 +13,20 @@ interface User {
   profilePicture?: string;
   needsRoleSelection?: boolean;
   roleSelected?: boolean;
-  rating?: {
-    average: number;
-    count: number;
-  };
+  isVerified: boolean;
+  location?: string;
   bio?: string;
   skills?: Array<{
     name: string;
     level: 'beginner' | 'intermediate' | 'expert';
   }>;
   hourlyRate?: number;
-  location?: {
-    city: string;
-    country: string;
+  rating?: {
+    average: number;
+    count: number;
   };
+  createdAt: string;
+  updatedAt: string;
 }
 
 interface AuthContextType {
