@@ -1,5 +1,4 @@
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Search, Star, Users, CheckCircle, ArrowRight, Menu, Sparkles, Globe, Zap, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,11 +8,28 @@ import { useNavigate } from "react-router-dom";
 import { formatCurrency } from "@/utils/currency";
 import { useAuth } from "@/contexts/AuthContext";
 import UserMenu from "@/components/UserMenu";
+import LoginPopup from "@/components/LoginPopup";
 
 const Index = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
+  const [showLoginPopup, setShowLoginPopup] = useState(false);
+
+  // Show login popup on page load for non-authenticated users
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (!user) {
+        setShowLoginPopup(true);
+      }
+    }, 1500); // Show popup after 1.5 seconds
+
+    return () => clearTimeout(timer);
+  }, [user]);
+
+  const handleCloseLoginPopup = () => {
+    setShowLoginPopup(false);
+  };
 
   const categories = [
     { name: "Web Development", count: 1250, icon: "💻", color: "from-purple-500 to-indigo-600" },
@@ -55,6 +71,9 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-black text-white overflow-hidden">
+      {/* Login Popup */}
+      <LoginPopup isOpen={showLoginPopup} onClose={handleCloseLoginPopup} />
+      
       {/* Animated Background Elements */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute -top-40 -right-40 w-80 h-80 bg-purple-500 rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-blob"></div>

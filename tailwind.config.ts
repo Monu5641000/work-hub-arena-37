@@ -1,4 +1,3 @@
-
 import type { Config } from "tailwindcss";
 
 export default {
@@ -64,10 +63,20 @@ export default {
 					ring: 'hsl(var(--sidebar-ring))'
 				}
 			},
-			borderRadius: {
-				lg: 'var(--radius)',
-				md: 'calc(var(--radius) - 2px)',
-				sm: 'calc(var(--radius) - 4px)'
+			backdropBlur: {
+				xs: '2px',
+				'3xl': '64px',
+			},
+			blur: {
+				'3xl': '64px',
+				'4xl': '128px',
+			},
+			boxShadow: {
+				'glow': '0 0 20px rgba(139, 92, 246, 0.5)',
+				'glow-purple': '0 0 20px rgba(168, 85, 247, 0.5)',
+				'glow-blue': '0 0 20px rgba(59, 130, 246, 0.5)',
+				'3d': '0 20px 40px rgba(0, 0, 0, 0.3), 0 0 40px rgba(139, 92, 246, 0.2)',
+				'3d-purple': '0 25px 50px rgba(139, 92, 246, 0.3), 0 15px 35px rgba(168, 85, 247, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
 			},
 			keyframes: {
 				'accordion-down': {
