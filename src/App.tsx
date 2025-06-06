@@ -1,161 +1,154 @@
 
-import React from "react";
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { AuthProvider } from "@/contexts/AuthContext";
-import ProtectedRoute from "@/components/ProtectedRoute";
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { AuthProvider } from '@/contexts/AuthContext';
+import ProtectedRoute from '@/components/ProtectedRoute';
+import { Toaster } from '@/components/ui/toaster';
 
-// Pages
-import Index from "./pages/Index";
-import OTPLogin from "./pages/OTPLogin";
-import RoleSelection from "./pages/RoleSelection";
-import Onboarding from "./pages/Onboarding";
-import Services from "./pages/Services";
-import ServiceDetail from "./pages/ServiceDetail";
-import CreateService from "./pages/CreateService";
-import CreateProject from "./pages/CreateProject";
-import PostProject from "./pages/PostProject";
-import Messages from "./pages/Messages";
-import ClientDashboard from "./pages/ClientDashboard";
-import FreelancerDashboard from "./pages/FreelancerDashboard";
-import AdminDashboard from "./pages/AdminDashboard";
-import MyProposals from "./pages/MyProposals";
-import UserProfile from "./components/UserProfile";
-import NotFound from "./pages/NotFound";
+// Import pages
+import Index from '@/pages/Index';
+import Login from '@/pages/Login';
+import SignUp from '@/pages/SignUp';
+import OTPLogin from '@/pages/OTPLogin';
+import RoleSelection from '@/pages/RoleSelection';
+import Onboarding from '@/pages/Onboarding';
+import Services from '@/pages/Services';
+import ServiceDetail from '@/pages/ServiceDetail';
+import FindFreelancers from '@/pages/FindFreelancers';
+import CreateService from '@/pages/CreateService';
+import MyServices from '@/pages/MyServices';
+import CreateProject from '@/pages/CreateProject';
+import PostProject from '@/pages/PostProject';
+import MyProposals from '@/pages/MyProposals';
+import Messages from '@/pages/Messages';
+import ClientDashboard from '@/pages/ClientDashboard';
+import FreelancerDashboard from '@/pages/FreelancerDashboard';
+import ClientOrders from '@/pages/ClientOrders';
+import ClientOrderHistory from '@/pages/ClientOrderHistory';
+import FreelancerOrders from '@/pages/FreelancerOrders';
+import FreelancerOrderDashboard from '@/pages/FreelancerOrderDashboard';
+import AdminDashboard from '@/pages/AdminDashboard';
+import AdminUsers from '@/pages/admin/AdminUsers';
+import AdminCategories from '@/pages/admin/AdminCategories';
+import NotFound from '@/pages/NotFound';
 
-// New Pages
-import MyServices from "./pages/MyServices";
-import FreelancerOrders from "./pages/FreelancerOrders";
-import ClientOrders from "./pages/ClientOrders";
-import AdminUsers from "./pages/admin/AdminUsers";
-import AdminCategories from "./pages/admin/AdminCategories";
-
-const queryClient = new QueryClient();
-
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <AuthProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
+function App() {
+  return (
+    <AuthProvider>
+      <Router>
+        <div className="App">
           <Routes>
-            {/* Public Routes */}
+            {/* Public routes */}
             <Route path="/" element={<Index />} />
-            <Route path="/login" element={<OTPLogin />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/signup" element={<SignUp />} />
+            <Route path="/otp-login" element={<OTPLogin />} />
             <Route path="/services" element={<Services />} />
-            <Route path="/services/:serviceId" element={<ServiceDetail />} />
-            
-            {/* Auth Required Routes */}
+            <Route path="/services/:id" element={<ServiceDetail />} />
+            <Route path="/freelancers" element={<FindFreelancers />} />
+
+            {/* Auth required routes */}
             <Route path="/role-selection" element={
-              <ProtectedRoute requireRoleSelection={false}>
+              <ProtectedRoute>
                 <RoleSelection />
               </ProtectedRoute>
             } />
-            
             <Route path="/onboarding" element={
               <ProtectedRoute>
                 <Onboarding />
               </ProtectedRoute>
             } />
-            
-            <Route path="/profile" element={
-              <ProtectedRoute>
-                <UserProfile />
+
+            {/* Client routes */}
+            <Route path="/dashboard/client" element={
+              <ProtectedRoute allowedRoles={['client']}>
+                <ClientDashboard />
               </ProtectedRoute>
             } />
-            
+            <Route path="/create-project" element={
+              <ProtectedRoute allowedRoles={['client']}>
+                <CreateProject />
+              </ProtectedRoute>
+            } />
+            <Route path="/post-project" element={
+              <ProtectedRoute allowedRoles={['client']}>
+                <PostProject />
+              </ProtectedRoute>
+            } />
+            <Route path="/orders" element={
+              <ProtectedRoute allowedRoles={['client']}>
+                <ClientOrders />
+              </ProtectedRoute>
+            } />
+            <Route path="/order-history" element={
+              <ProtectedRoute allowedRoles={['client']}>
+                <ClientOrderHistory />
+              </ProtectedRoute>
+            } />
+
+            {/* Freelancer routes */}
+            <Route path="/dashboard/freelancer" element={
+              <ProtectedRoute allowedRoles={['freelancer']}>
+                <FreelancerDashboard />
+              </ProtectedRoute>
+            } />
+            <Route path="/create-service" element={
+              <ProtectedRoute allowedRoles={['freelancer']}>
+                <CreateService />
+              </ProtectedRoute>
+            } />
+            <Route path="/my-services" element={
+              <ProtectedRoute allowedRoles={['freelancer']}>
+                <MyServices />
+              </ProtectedRoute>
+            } />
+            <Route path="/my-proposals" element={
+              <ProtectedRoute allowedRoles={['freelancer']}>
+                <MyProposals />
+              </ProtectedRoute>
+            } />
+            <Route path="/freelancer-orders" element={
+              <ProtectedRoute allowedRoles={['freelancer']}>
+                <FreelancerOrders />
+              </ProtectedRoute>
+            } />
+            <Route path="/freelancer/dashboard" element={
+              <ProtectedRoute allowedRoles={['freelancer']}>
+                <FreelancerOrderDashboard />
+              </ProtectedRoute>
+            } />
+
+            {/* Shared routes */}
             <Route path="/messages" element={
               <ProtectedRoute>
                 <Messages />
               </ProtectedRoute>
             } />
 
-            {/* Client Routes */}
-            <Route path="/dashboard/client" element={
-              <ProtectedRoute requiredRole="client">
-                <ClientDashboard />
-              </ProtectedRoute>
-            } />
-            
-            <Route path="/post-project" element={
-              <ProtectedRoute requiredRole="client">
-                <PostProject />
-              </ProtectedRoute>
-            } />
-            
-            <Route path="/create-project" element={
-              <ProtectedRoute requiredRole="client">
-                <CreateProject />
-              </ProtectedRoute>
-            } />
-            
-            <Route path="/orders" element={
-              <ProtectedRoute requiredRole="client">
-                <ClientOrders />
-              </ProtectedRoute>
-            } />
-
-            {/* Freelancer Routes */}
-            <Route path="/dashboard/freelancer" element={
-              <ProtectedRoute requiredRole="freelancer">
-                <FreelancerDashboard />
-              </ProtectedRoute>
-            } />
-            
-            <Route path="/create-service" element={
-              <ProtectedRoute requiredRole="freelancer">
-                <CreateService />
-              </ProtectedRoute>
-            } />
-            
-            <Route path="/my-services" element={
-              <ProtectedRoute requiredRole="freelancer">
-                <MyServices />
-              </ProtectedRoute>
-            } />
-            
-            <Route path="/freelancer-orders" element={
-              <ProtectedRoute requiredRole="freelancer">
-                <FreelancerOrders />
-              </ProtectedRoute>
-            } />
-            
-            <Route path="/my-proposals" element={
-              <ProtectedRoute requiredRole="freelancer">
-                <MyProposals />
-              </ProtectedRoute>
-            } />
-
-            {/* Admin Routes */}
+            {/* Admin routes */}
             <Route path="/admin" element={
-              <ProtectedRoute requiredRole="admin">
+              <ProtectedRoute allowedRoles={['admin']}>
                 <AdminDashboard />
               </ProtectedRoute>
             } />
-            
             <Route path="/admin/users" element={
-              <ProtectedRoute requiredRole="admin">
+              <ProtectedRoute allowedRoles={['admin']}>
                 <AdminUsers />
               </ProtectedRoute>
             } />
-            
             <Route path="/admin/categories" element={
-              <ProtectedRoute requiredRole="admin">
+              <ProtectedRoute allowedRoles={['admin']}>
                 <AdminCategories />
               </ProtectedRoute>
             } />
 
-            {/* 404 */}
+            {/* 404 route */}
             <Route path="*" element={<NotFound />} />
           </Routes>
-        </BrowserRouter>
-      </AuthProvider>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+          <Toaster />
+        </div>
+      </Router>
+    </AuthProvider>
+  );
+}
 
 export default App;

@@ -1,6 +1,7 @@
 
 const express = require('express');
 const { protect, restrictTo } = require('../middleware/auth');
+const { upload, handleMulterError } = require('../middleware/upload');
 const User = require('../models/User');
 const Service = require('../models/Service');
 
@@ -124,6 +125,38 @@ router.put('/profile', async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Error updating profile'
+    });
+  }
+});
+
+// Upload profile picture
+router.put('/profile/picture', upload.single('profilePicture'), handleMulterError, async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        message: 'No file uploaded'
+      });
+    }
+
+    const profilePictureUrl = `/uploads/profiles/${req.file.filename}`;
+    
+    const user = await User.findByIdAndUpdate(
+      req.user.id,
+      { profilePicture: profilePictureUrl },
+      { new: true, runValidators: true }
+    ).select('-password');
+
+    res.status(200).json({
+      success: true,
+      data: user,
+      message: 'Profile picture updated successfully'
+    });
+  } catch (error) {
+    console.error('Upload profile picture error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error uploading profile picture'
     });
   }
 });

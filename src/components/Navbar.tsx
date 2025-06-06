@@ -20,6 +20,7 @@ const Navbar = () => {
 
     const baseItems = [
       { label: 'Services', href: '/services' },
+      { label: 'Find Freelancers', href: '/freelancers' },
       { label: 'Projects', href: '/projects' },
     ];
 
