@@ -14,21 +14,20 @@ const Navbar = () => {
     if (!user || !token) {
       return [
         { label: 'Services', href: '/services' },
-        { label: 'Find Freelancers', href: '/freelancers' },
+        { label: 'Find Freelancers', href: '/find-freelancers' },
       ];
     }
 
     const baseItems = [
       { label: 'Services', href: '/services' },
-      { label: 'Find Freelancers', href: '/freelancers' },
-      { label: 'Projects', href: '/projects' },
+      { label: 'Find Freelancers', href: '/find-freelancers' },
     ];
 
     if (user.role === 'client') {
       return [
         ...baseItems,
-        { label: 'Dashboard', href: '/dashboard/client' },
-        { label: 'My Orders', href: '/orders' },
+        { label: 'Dashboard', href: '/client/dashboard' },
+        { label: 'My Orders', href: '/client/orders' },
         { label: 'Post Project', href: '/post-project' },
         { label: 'Messages', href: '/messages' },
       ];
@@ -37,9 +36,9 @@ const Navbar = () => {
     if (user.role === 'freelancer') {
       return [
         ...baseItems,
-        { label: 'Dashboard', href: '/dashboard/freelancer' },
+        { label: 'Dashboard', href: '/freelancer/dashboard' },
         { label: 'My Services', href: '/my-services' },
-        { label: 'Orders', href: '/freelancer-orders' },
+        { label: 'Orders', href: '/freelancer/orders' },
         { label: 'Proposals', href: '/my-proposals' },
         { label: 'Messages', href: '/messages' },
       ];
@@ -47,10 +46,8 @@ const Navbar = () => {
 
     if (user.role === 'admin') {
       return [
-        { label: 'Admin Dashboard', href: '/admin' },
+        { label: 'Admin Dashboard', href: '/admin/dashboard' },
         { label: 'Users', href: '/admin/users' },
-        { label: 'Services', href: '/admin/services' },
-        { label: 'Orders', href: '/admin/orders' },
         { label: 'Categories', href: '/admin/categories' },
       ];
     }

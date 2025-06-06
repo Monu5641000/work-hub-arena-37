@@ -3,6 +3,7 @@ const User = require('../models/User');
 const Service = require('../models/Service');
 const Order = require('../models/Order');
 const Project = require('../models/Project');
+const Category = require('../models/Category');
 
 // Get all users
 exports.getAllUsers = async (req, res) => {
@@ -149,8 +150,10 @@ exports.getPlatformStats = async (req, res) => {
       totalClients,
       totalServices,
       totalOrders,
-      activeOrders,
+      pendingOrders,
       completedOrders,
+      cancelledOrders,
+      totalCategories,
       totalRevenue
     ] = await Promise.all([
       User.countDocuments(),
@@ -160,6 +163,8 @@ exports.getPlatformStats = async (req, res) => {
       Order.countDocuments(),
       Order.countDocuments({ status: { $in: ['pending', 'accepted', 'in_progress'] } }),
       Order.countDocuments({ status: 'completed' }),
+      Order.countDocuments({ status: 'cancelled' }),
+      Category.countDocuments(),
       Order.aggregate([
         { $match: { status: 'completed' } },
         { $group: { _id: null, total: { $sum: '$totalAmount' } } }
@@ -188,8 +193,10 @@ exports.getPlatformStats = async (req, res) => {
           totalClients,
           totalServices,
           totalOrders,
-          activeOrders,
+          pendingOrders,
           completedOrders,
+          cancelledOrders,
+          totalCategories,
           totalRevenue: totalRevenue[0]?.total || 0
         },
         recentOrders,

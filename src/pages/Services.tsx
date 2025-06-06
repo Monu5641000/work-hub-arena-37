@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from "react";
-import { Search, Filter, Star, Clock, ArrowRight } from "lucide-react";
+import { Search, Filter, Star, Clock, ArrowRight, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -59,6 +59,11 @@ const Services = () => {
 
   const handleServiceClick = (serviceId: string) => {
     navigate(`/services/${serviceId}`);
+  };
+
+  const handleFreelancerClick = (e: React.MouseEvent, username: string) => {
+    e.stopPropagation();
+    navigate(`/@${username}`);
   };
 
   const categories = [
@@ -179,14 +184,18 @@ const Services = () => {
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-2 text-sm text-gray-600">
+                    <div className="flex items-center justify-between mb-3">
+                      <div 
+                        className="flex items-center space-x-2 text-sm text-gray-600 hover:text-blue-600 cursor-pointer"
+                        onClick={(e) => handleFreelancerClick(e, service.freelancer?.username)}
+                      >
                         <img 
                           src={service.freelancer?.profilePicture || "/placeholder.svg"}
                           alt={service.freelancer?.firstName}
                           className="w-6 h-6 rounded-full"
                         />
                         <span>{service.freelancer?.firstName} {service.freelancer?.lastName}</span>
+                        <User className="h-3 w-3" />
                       </div>
                       <div className="text-right">
                         <p className="text-sm text-gray-500">Starting at</p>
@@ -195,7 +204,7 @@ const Services = () => {
                         </p>
                       </div>
                     </div>
-                    <div className="flex items-center justify-between mt-3 pt-3 border-t">
+                    <div className="flex items-center justify-between pt-3 border-t">
                       <div className="flex items-center text-sm text-gray-500">
                         <Clock className="h-3 w-3 mr-1" />
                         {service.pricingPlans?.basic?.deliveryTime} days

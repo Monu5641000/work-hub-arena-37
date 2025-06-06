@@ -1,3 +1,4 @@
+
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from '@/contexts/AuthContext';
 import ProtectedRoute from '@/components/ProtectedRoute';
@@ -25,7 +26,9 @@ import ClientOrders from '@/pages/ClientOrders';
 import ClientOrderHistory from '@/pages/ClientOrderHistory';
 import FreelancerOrders from '@/pages/FreelancerOrders';
 import FreelancerOrderDashboard from '@/pages/FreelancerOrderDashboard';
-import AdminDashboard from '@/pages/AdminDashboard';
+import FreelancerProfile from '@/pages/FreelancerProfile';
+import AdminLayout from '@/pages/admin/AdminLayout';
+import AdminDashboard from '@/pages/admin/AdminDashboard';
 import AdminUsers from '@/pages/admin/AdminUsers';
 import AdminCategories from '@/pages/admin/AdminCategories';
 import NotFound from '@/pages/NotFound';
@@ -44,6 +47,7 @@ function App() {
             <Route path="/services" element={<Services />} />
             <Route path="/services/:serviceId" element={<ServiceDetail />} />
             <Route path="/find-freelancers" element={<FindFreelancers />} />
+            <Route path="/@:username" element={<FreelancerProfile />} />
             
             {/* Protected Routes */}
             <Route path="/role-selection" element={
@@ -124,21 +128,16 @@ function App() {
             } />
             
             {/* Admin Routes */}
-            <Route path="/admin/dashboard" element={
+            <Route path="/admin" element={
               <ProtectedRoute allowedRoles={['admin']}>
-                <AdminDashboard />
+                <AdminLayout />
               </ProtectedRoute>
-            } />
-            <Route path="/admin/users" element={
-              <ProtectedRoute allowedRoles={['admin']}>
-                <AdminUsers />
-              </ProtectedRoute>
-            } />
-            <Route path="/admin/categories" element={
-              <ProtectedRoute allowedRoles={['admin']}>
-                <AdminCategories />
-              </ProtectedRoute>
-            } />
+            }>
+              <Route index element={<AdminDashboard />} />
+              <Route path="dashboard" element={<AdminDashboard />} />
+              <Route path="users" element={<AdminUsers />} />
+              <Route path="categories" element={<AdminCategories />} />
+            </Route>
             
             {/* Catch all route */}
             <Route path="*" element={<NotFound />} />
