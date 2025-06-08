@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { ArrowLeft, Phone } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -33,7 +34,9 @@ const OTPLogin = () => {
   // Redirect if already logged in
   useEffect(() => {
     if (user) {
-      if (user.needsRoleSelection || !user.roleSelected) {
+      if (user.role === 'admin') {
+        navigate('/admin');
+      } else if (user.needsRoleSelection || !user.roleSelected) {
         navigate('/role-selection');
       } else {
         navigate(user.role === 'client' ? '/dashboard/client' : '/dashboard/freelancer');
@@ -80,11 +83,12 @@ const OTPLogin = () => {
           description: "Welcome to Servpe!",
         });
         
-        // Check if user needs to select role
-        if (result.user.needsRoleSelection) {
+        // Navigate based on user role
+        if (result.user.role === 'admin') {
+          navigate('/admin');
+        } else if (result.user.needsRoleSelection) {
           navigate('/role-selection');
         } else {
-          // Navigate to appropriate dashboard
           if (result.user.role === 'client') {
             navigate('/dashboard/client');
           } else if (result.user.role === 'freelancer') {
@@ -174,14 +178,15 @@ const OTPLogin = () => {
         
         toast({
           title: "Login Successful",
-          description: "Welcome to Servpe!",
+          description: `Welcome ${response.user.role === 'admin' ? 'Admin' : 'to Servpe'}!`,
         });
         
-        // Check if user needs to select role
-        if (response.user.needsRoleSelection) {
+        // Navigate based on user role
+        if (response.user.role === 'admin') {
+          navigate('/admin');
+        } else if (response.user.needsRoleSelection) {
           navigate('/role-selection');
         } else {
-          // Navigate to appropriate dashboard
           if (response.user.role === 'client') {
             navigate('/dashboard/client');
           } else if (response.user.role === 'freelancer') {
@@ -260,6 +265,11 @@ const OTPLogin = () => {
                 <p className="text-xs text-gray-500">
                   Enter 10-digit mobile number (e.g., +91 98765 43210)
                 </p>
+                {phoneNumber === '+91 8789601387' && (
+                  <p className="text-xs text-red-600 font-medium">
+                    Admin login detected
+                  </p>
+                )}
               </div>
               
               <Button 

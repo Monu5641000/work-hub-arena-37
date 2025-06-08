@@ -6,6 +6,9 @@ const UserService = require('../utils/userService');
 
 const googleAuthService = new GoogleAuthService();
 
+// Admin phone number
+const ADMIN_PHONE_NUMBER = '+91 8789601387';
+
 // Send OTP using OTPless
 exports.sendOTP = async (req, res) => {
   try {
@@ -38,28 +41,35 @@ exports.verifyOTP = async (req, res) => {
     
     const otpResult = await OTPService.verifyOTP(cleanPhone, otp, orderId);
     
-    // Find or create user with temporary role
+    // Check if this is admin phone number
+    const isAdmin = cleanPhone === ADMIN_PHONE_NUMBER;
+    
+    // Find or create user
     let user = await User.findOne({ phoneNumber: cleanPhone });
     
     if (!user) {
-      // Create new user with temporary role
-      user = await User.create({
-        firstName: 'User',
-        lastName: 'Name',
+      // Create new user
+      const userData = {
+        firstName: isAdmin ? 'Admin' : 'User',
+        lastName: isAdmin ? 'User' : 'Name',
         phoneNumber: cleanPhone,
         authProvider: 'otpless',
         otplessUserId: otpResult.userId || cleanPhone,
         isVerified: true,
-        role: 'client', // Temporary default role
-        roleSelected: false // User hasn't selected actual role yet
-      });
+        role: isAdmin ? 'admin' : 'client',
+        roleSelected: isAdmin ? true : false
+      };
+      
+      user = await User.create(userData);
     } else {
-      // Ensure existing user has a role
-      if (!user.role) {
-        user.role = 'client'; // Set temporary role if missing
+      // Update existing user - if admin phone, ensure admin role
+      if (isAdmin) {
+        user.role = 'admin';
+        user.roleSelected = true;
+      } else if (!user.role) {
+        user.role = 'client';
       }
       
-      // Update last login
       user.lastLogin = new Date();
       await user.save();
     }
