@@ -17,7 +17,7 @@ const Services = () => {
   const [services, setServices] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("all");
   const [sortBy, setSortBy] = useState("newest");
   const [pagination, setPagination] = useState({ page: 1, pages: 1, total: 0 });
 
@@ -30,7 +30,7 @@ const Services = () => {
       setLoading(true);
       const params = {
         search: searchTerm || undefined,
-        category: selectedCategory || undefined,
+        category: selectedCategory === "all" ? undefined : selectedCategory,
         sortBy: sortBy === 'newest' ? 'createdAt' : sortBy === 'rating' ? 'averageRating' : 'price',
         sortOrder: sortBy === 'price' ? 'asc' : 'desc',
         page: 1,
@@ -107,7 +107,7 @@ const Services = () => {
                 <SelectValue placeholder="All Categories" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Categories</SelectItem>
+                <SelectItem value="all">All Categories</SelectItem>
                 {categories.map((category) => (
                   <SelectItem key={category} value={category}>
                     {category.charAt(0).toUpperCase() + category.slice(1).replace('-', ' ')}
