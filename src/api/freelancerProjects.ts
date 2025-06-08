@@ -25,10 +25,11 @@ export const freelancerProjectAPI = {
       return response.data;
     } catch (error: any) {
       console.error('Get all freelancer projects error:', error);
-      return {
+      const errorResponse: ApiResponse = {
         success: false,
         message: error.response?.data?.message || 'Failed to fetch projects'
-      } as ApiResponse;
+      };
+      return errorResponse;
     }
   },
 
@@ -39,10 +40,11 @@ export const freelancerProjectAPI = {
       return response.data;
     } catch (error: any) {
       console.error('Get freelancer project error:', error);
-      return {
+      const errorResponse: ApiResponse = {
         success: false,
         message: error.response?.data?.message || 'Failed to fetch project'
-      } as ApiResponse;
+      };
+      return errorResponse;
     }
   },
 
@@ -53,10 +55,11 @@ export const freelancerProjectAPI = {
       return response.data;
     } catch (error: any) {
       console.error('Get my freelancer projects error:', error);
-      return {
+      const errorResponse: ApiResponse = {
         success: false,
         message: error.response?.data?.message || 'Failed to fetch my projects'
-      } as ApiResponse;
+      };
+      return errorResponse;
     }
   },
 
@@ -71,10 +74,11 @@ export const freelancerProjectAPI = {
       return response.data;
     } catch (error: any) {
       console.error('Create freelancer project error:', error);
-      return {
+      const errorResponse: ApiResponse = {
         success: false,
         message: error.response?.data?.message || 'Failed to create project'
-      } as ApiResponse;
+      };
+      return errorResponse;
     }
   },
 
@@ -89,10 +93,11 @@ export const freelancerProjectAPI = {
       return response.data;
     } catch (error: any) {
       console.error('Update freelancer project error:', error);
-      return {
+      const errorResponse: ApiResponse = {
         success: false,
         message: error.response?.data?.message || 'Failed to update project'
-      } as ApiResponse;
+      };
+      return errorResponse;
     }
   },
 
@@ -103,10 +108,11 @@ export const freelancerProjectAPI = {
       return response.data;
     } catch (error: any) {
       console.error('Delete freelancer project error:', error);
-      return {
+      const errorResponse: ApiResponse = {
         success: false,
         message: error.response?.data?.message || 'Failed to delete project'
-      } as ApiResponse;
+      };
+      return errorResponse;
     }
   }
 };
