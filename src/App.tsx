@@ -28,10 +28,7 @@ import ClientOrderHistory from '@/pages/ClientOrderHistory';
 import FreelancerOrders from '@/pages/FreelancerOrders';
 import FreelancerOrderDashboard from '@/pages/FreelancerOrderDashboard';
 import FreelancerProfile from '@/pages/FreelancerProfile';
-import AdminLayout from '@/pages/admin/AdminLayout';
-import AdminDashboard from '@/pages/admin/AdminDashboard';
-import AdminUsers from '@/pages/admin/AdminUsers';
-import AdminCategories from '@/pages/admin/AdminCategories';
+import AdminDashboard from '@/pages/AdminDashboard';
 import NotFound from '@/pages/NotFound';
 
 function App() {
@@ -42,7 +39,7 @@ function App() {
           <Routes>
             {/* Public routes */}
             <Route path="/" element={<Index />} />
-            <Route path="/login" element={<Login />} />
+            <Route path="/login" element={<OTPLogin />} />
             <Route path="/signup" element={<SignUp />} />
             <Route path="/otp-login" element={<OTPLogin />} />
             <Route path="/services" element={<Services />} />
@@ -64,6 +61,11 @@ function App() {
             
             {/* Client Routes */}
             <Route path="/client/dashboard" element={
+              <ProtectedRoute allowedRoles={['client']}>
+                <ClientDashboard />
+              </ProtectedRoute>
+            } />
+            <Route path="/dashboard/client" element={
               <ProtectedRoute allowedRoles={['client']}>
                 <ClientDashboard />
               </ProtectedRoute>
@@ -91,6 +93,11 @@ function App() {
             
             {/* Freelancer Routes */}
             <Route path="/freelancer/dashboard" element={
+              <ProtectedRoute allowedRoles={['freelancer']}>
+                <FreelancerDashboard />
+              </ProtectedRoute>
+            } />
+            <Route path="/dashboard/freelancer" element={
               <ProtectedRoute allowedRoles={['freelancer']}>
                 <FreelancerDashboard />
               </ProtectedRoute>
@@ -136,14 +143,14 @@ function App() {
             {/* Admin Routes */}
             <Route path="/admin" element={
               <ProtectedRoute allowedRoles={['admin']}>
-                <AdminLayout />
+                <AdminDashboard />
               </ProtectedRoute>
-            }>
-              <Route index element={<AdminDashboard />} />
-              <Route path="dashboard" element={<AdminDashboard />} />
-              <Route path="users" element={<AdminUsers />} />
-              <Route path="categories" element={<AdminCategories />} />
-            </Route>
+            } />
+            <Route path="/admin/dashboard" element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                <AdminDashboard />
+              </ProtectedRoute>
+            } />
             
             {/* Catch all route */}
             <Route path="*" element={<NotFound />} />

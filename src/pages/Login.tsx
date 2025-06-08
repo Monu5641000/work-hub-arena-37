@@ -7,7 +7,7 @@ const Login = () => {
 
   useEffect(() => {
     // Redirect to OTP login page
-    navigate('/login', { replace: true });
+    navigate('/otp-login', { replace: true });
   }, [navigate]);
 
   return null;

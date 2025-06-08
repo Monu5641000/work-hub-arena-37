@@ -82,10 +82,10 @@ const Navbar = () => {
           <div className="flex items-center space-x-4">
             {!token ? (
               <>
-                <Button variant="ghost" onClick={() => navigate('/login')} className="text-gray-900 border-gray-300 hover:bg-gray-100 btn-3d">
+                <Button variant="ghost" onClick={() => navigate('/otp-login')} className="text-gray-900 border-gray-300 hover:bg-gray-100 btn-3d">
                   Login
                 </Button>
-                <Button onClick={() => navigate('/login')} className="bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 btn-3d group">
+                <Button onClick={() => navigate('/otp-login')} className="bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 btn-3d group">
                   Get Started
                   <ChevronRight className="ml-2 h-4 w-4 arrow-hover" />
                 </Button>

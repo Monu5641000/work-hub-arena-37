@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { ArrowLeft, Users, Briefcase, DollarSign, TrendingUp, Plus, Settings, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -35,7 +36,7 @@ const AdminDashboard = () => {
     try {
       const currentUser = authAPI.getCurrentUser();
       if (!currentUser || currentUser.role !== 'admin') {
-        navigate('/login');
+        navigate('/otp-login');
         return;
       }
       setUser(currentUser);
