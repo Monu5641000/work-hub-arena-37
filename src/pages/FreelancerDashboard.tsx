@@ -24,15 +24,10 @@ import { formatCurrency } from '@/utils/currency';
 import Navbar from '@/components/Navbar';
 import { serviceAPI } from '@/api/services';
 import { freelancerProjectAPI } from '@/api/freelancerProjects';
+import { ApiResponse } from '@/types/api';
 import axios from 'axios';
 
 const API_BASE_URL = 'http://localhost:5000/api';
-
-interface ApiResponse {
-  success: boolean;
-  data?: any;
-  message?: string;
-}
 
 const FreelancerDashboard = () => {
   const navigate = useNavigate();
@@ -62,11 +57,11 @@ const FreelancerDashboard = () => {
       setLoading(true);
       
       // Fetch services
-      const servicesResponse = await serviceAPI.getMyServices();
+      const servicesResponse: ApiResponse = await serviceAPI.getMyServices();
       setServices(servicesResponse.data || []);
       
       // Fetch freelancer projects
-      const projectsResponse = await freelancerProjectAPI.getMyProjects();
+      const projectsResponse: ApiResponse = await freelancerProjectAPI.getMyProjects();
       setProjects(projectsResponse.data || []);
       
       // Calculate stats

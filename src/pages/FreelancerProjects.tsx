@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { freelancerProjectAPI } from "@/api/freelancerProjects";
+import { ApiResponse } from "@/types/api";
 import Navbar from "@/components/Navbar";
 
 const FreelancerProjects = () => {
@@ -22,7 +23,7 @@ const FreelancerProjects = () => {
   const fetchProjects = async () => {
     try {
       setLoading(true);
-      const response = await freelancerProjectAPI.getMyProjects();
+      const response: ApiResponse = await freelancerProjectAPI.getMyProjects();
       if (response.success) {
         setProjects(response.data || []);
       }

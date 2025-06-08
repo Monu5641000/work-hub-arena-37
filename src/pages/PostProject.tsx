@@ -10,6 +10,7 @@ import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { authAPI } from '@/api/auth';
 import { freelancerProjectAPI } from '@/api/freelancerProjects';
+import { ApiResponse } from '@/types/api';
 
 const PostProject = () => {
   const navigate = useNavigate();
@@ -191,14 +192,14 @@ const PostProject = () => {
         formDataToSend.append('images', image);
       });
 
-      const response = await freelancerProjectAPI.createProject(formDataToSend);
+      const response: ApiResponse = await freelancerProjectAPI.createProject(formDataToSend);
       
       if (response.success) {
         toast({
           title: "Project Posted",
           description: "Your project has been posted successfully!",
         });
-        navigate('/dashboard/freelancer');
+        navigate('/freelancer/dashboard');
       }
 
     } catch (error: any) {
@@ -222,7 +223,7 @@ const PostProject = () => {
               <Button 
                 variant="ghost" 
                 size="sm" 
-                onClick={() => navigate('/dashboard/freelancer')}
+                onClick={() => navigate('/freelancer/dashboard')}
                 className="flex items-center space-x-2"
               >
                 <ArrowLeft className="h-4 w-4" />
@@ -525,7 +526,7 @@ const PostProject = () => {
                 <Button 
                   type="button" 
                   variant="outline" 
-                  onClick={() => navigate('/dashboard/freelancer')}
+                  onClick={() => navigate('/freelancer/dashboard')}
                   disabled={loading}
                 >
                   Cancel
