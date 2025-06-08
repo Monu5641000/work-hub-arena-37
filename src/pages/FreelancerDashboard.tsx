@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { 
   DollarSign, 
@@ -205,7 +204,7 @@ const FreelancerDashboard = () => {
                 <Plus className="w-4 h-4 mr-2" />
                 New Service
               </Button>
-              <Button onClick={() => navigate('/freelancer-projects/create')} variant="outline" className="border-purple-600 text-purple-600">
+              <Button onClick={() => navigate('/post-project')} variant="outline" className="border-purple-600 text-purple-600">
                 <Plus className="w-4 h-4 mr-2" />
                 Post Project
               </Button>
@@ -295,7 +294,7 @@ const FreelancerDashboard = () => {
               {projects.length === 0 ? (
                 <div className="text-center py-8">
                   <p className="text-gray-500 mb-4">You haven't posted any projects yet</p>
-                  <Button onClick={() => navigate('/freelancer-projects/create')} variant="outline">
+                  <Button onClick={() => navigate('/post-project')} variant="outline">
                     Post Your First Project
                   </Button>
                 </div>

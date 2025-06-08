@@ -1,6 +1,5 @@
 
 import axios from 'axios';
-import { ApiResponse } from '@/types/api';
 
 const API_BASE_URL = 'http://localhost:5000/api';
 
@@ -8,6 +7,7 @@ const api = axios.create({
   baseURL: API_BASE_URL,
 });
 
+// Add auth token to requests
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
   if (token) {
@@ -16,82 +16,78 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-export interface FreelancerProject {
-  _id: string;
-  title: string;
-  description: string;
-  category: string;
-  subcategory: string;
-  skills: string[];
-  hashtags: string[];
-  budget?: {
-    type: 'fixed' | 'hourly';
-    amount: {
-      min: number;
-      max: number;
-    };
-    currency: string;
-  };
-  duration?: string;
-  experienceLevel: 'entry' | 'intermediate' | 'expert';
-  freelancer: {
-    _id: string;
-    firstName: string;
-    lastName: string;
-    profilePicture?: string;
-    rating?: number;
-    location?: string;
-  };
-  images: Array<{
-    url: string;
-    filename: string;
-    originalName: string;
-    size: number;
-  }>;
-  status: 'active' | 'inactive' | 'pending' | 'rejected';
-  views: number;
-  likes: number;
-  likedBy: string[];
-  createdAt: string;
-  updatedAt: string;
-}
-
 export const freelancerProjectAPI = {
-  async getAllProjects(params?: any): Promise<ApiResponse<FreelancerProject[]>> {
-    const response = await api.get('/freelancer-projects', { params });
-    return response.data as ApiResponse<FreelancerProject[]>;
+  // Get all freelancer projects (public)
+  getAllProjects: async (params?: any) => {
+    try {
+      const response = await api.get('/freelancer-projects', { params });
+      return response.data;
+    } catch (error: any) {
+      console.error('Get all freelancer projects error:', error);
+      throw error;
+    }
   },
 
-  async getProject(id: string): Promise<ApiResponse<FreelancerProject>> {
-    const response = await api.get(`/freelancer-projects/${id}`);
-    return response.data as ApiResponse<FreelancerProject>;
+  // Get single freelancer project
+  getProject: async (id: string) => {
+    try {
+      const response = await api.get(`/freelancer-projects/${id}`);
+      return response.data;
+    } catch (error: any) {
+      console.error('Get freelancer project error:', error);
+      throw error;
+    }
   },
 
-  async createProject(projectData: FormData): Promise<ApiResponse<FreelancerProject>> {
-    const response = await api.post('/freelancer-projects', projectData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
-    return response.data as ApiResponse<FreelancerProject>;
+  // Get my freelancer projects
+  getMyProjects: async (params?: any) => {
+    try {
+      const response = await api.get('/freelancer-projects/my/projects', { params });
+      return response.data;
+    } catch (error: any) {
+      console.error('Get my freelancer projects error:', error);
+      throw error;
+    }
   },
 
-  async updateProject(id: string, projectData: FormData): Promise<ApiResponse<FreelancerProject>> {
-    const response = await api.put(`/freelancer-projects/${id}`, projectData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
-    return response.data as ApiResponse<FreelancerProject>;
+  // Create freelancer project
+  createProject: async (formData: FormData) => {
+    try {
+      const response = await api.post('/freelancer-projects', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      return response.data;
+    } catch (error: any) {
+      console.error('Create freelancer project error:', error);
+      throw error;
+    }
   },
 
-  async deleteProject(id: string): Promise<ApiResponse> {
-    const response = await api.delete(`/freelancer-projects/${id}`);
-    return response.data as ApiResponse;
+  // Update freelancer project
+  updateProject: async (id: string, formData: FormData) => {
+    try {
+      const response = await api.put(`/freelancer-projects/${id}`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      return response.data;
+    } catch (error: any) {
+      console.error('Update freelancer project error:', error);
+      throw error;
+    }
   },
 
-  async getMyProjects(params?: any): Promise<ApiResponse<FreelancerProject[]>> {
-    const response = await api.get('/freelancer-projects/my/projects', { params });
-    return response.data as ApiResponse<FreelancerProject[]>;
+  // Delete freelancer project
+  deleteProject: async (id: string) => {
+    try {
+      const response = await api.delete(`/freelancer-projects/${id}`);
+      return response.data;
+    } catch (error: any) {
+      console.error('Delete freelancer project error:', error);
+      throw error;
+    }
   }
 };

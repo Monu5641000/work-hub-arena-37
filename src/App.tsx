@@ -18,6 +18,7 @@ import CreateService from '@/pages/CreateService';
 import MyServices from '@/pages/MyServices';
 import CreateProject from '@/pages/CreateProject';
 import PostProject from '@/pages/PostProject';
+import FreelancerProjects from '@/pages/FreelancerProjects';
 import MyProposals from '@/pages/MyProposals';
 import Messages from '@/pages/Messages';
 import ClientDashboard from '@/pages/ClientDashboard';
@@ -78,7 +79,7 @@ function App() {
               </ProtectedRoute>
             } />
             <Route path="/post-project" element={
-              <ProtectedRoute allowedRoles={['client']}>
+              <ProtectedRoute allowedRoles={['client', 'freelancer']}>
                 <PostProject />
               </ProtectedRoute>
             } />
@@ -112,6 +113,11 @@ function App() {
             <Route path="/create-service" element={
               <ProtectedRoute allowedRoles={['freelancer']}>
                 <CreateService />
+              </ProtectedRoute>
+            } />
+            <Route path="/freelancer-projects" element={
+              <ProtectedRoute allowedRoles={['freelancer']}>
+                <FreelancerProjects />
               </ProtectedRoute>
             } />
             <Route path="/my-proposals" element={
