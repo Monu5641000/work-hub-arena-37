@@ -28,7 +28,7 @@ export const freelancerProjectAPI = {
       return {
         success: false,
         message: error.response?.data?.message || 'Failed to fetch projects'
-      } as ApiResponse;
+      };
     }
   },
 
@@ -42,7 +42,7 @@ export const freelancerProjectAPI = {
       return {
         success: false,
         message: error.response?.data?.message || 'Failed to fetch project'
-      } as ApiResponse;
+      };
     }
   },
 
@@ -56,7 +56,7 @@ export const freelancerProjectAPI = {
       return {
         success: false,
         message: error.response?.data?.message || 'Failed to fetch my projects'
-      } as ApiResponse;
+      };
     }
   },
 
@@ -74,7 +74,7 @@ export const freelancerProjectAPI = {
       return {
         success: false,
         message: error.response?.data?.message || 'Failed to create project'
-      } as ApiResponse;
+      };
     }
   },
 
@@ -92,7 +92,7 @@ export const freelancerProjectAPI = {
       return {
         success: false,
         message: error.response?.data?.message || 'Failed to update project'
-      } as ApiResponse;
+      };
     }
   },
 
@@ -106,7 +106,7 @@ export const freelancerProjectAPI = {
       return {
         success: false,
         message: error.response?.data?.message || 'Failed to delete project'
-      } as ApiResponse;
+      };
     }
   }
 };
