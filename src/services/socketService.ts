@@ -4,6 +4,7 @@ import io, { Socket } from 'socket.io-client';
 class SocketService {
   private socket: Socket | null = null;
   private token: string | null = null;
+  private messageCallbacks: ((message: any) => void)[] = [];
 
   connect() {
     this.token = localStorage.getItem('token');
@@ -23,6 +24,11 @@ class SocketService {
       console.log('Disconnected from server');
     });
 
+    this.socket.on('newMessage', (message) => {
+      console.log('New message received:', message);
+      this.messageCallbacks.forEach(callback => callback(message));
+    });
+
     return this.socket;
   }
 
@@ -31,6 +37,7 @@ class SocketService {
       this.socket.disconnect();
       this.socket = null;
     }
+    this.messageCallbacks = [];
   }
 
   getSocket() {
@@ -56,14 +63,42 @@ class SocketService {
   }
 
   onNewMessage(callback: (message: any) => void) {
-    if (this.socket) {
-      this.socket.on('new_message', callback);
-    }
+    this.messageCallbacks.push(callback);
+    
+    // Clean up function
+    return () => {
+      this.messageCallbacks = this.messageCallbacks.filter(cb => cb !== callback);
+    };
   }
 
   onProposalUpdate(callback: (proposal: any) => void) {
     if (this.socket) {
       this.socket.on('proposal_updated', callback);
+    }
+  }
+
+  // Typing indicators
+  startTyping(recipientId: string) {
+    if (this.socket) {
+      this.socket.emit('typing_start', { recipientId });
+    }
+  }
+
+  stopTyping(recipientId: string) {
+    if (this.socket) {
+      this.socket.emit('typing_stop', { recipientId });
+    }
+  }
+
+  onUserTyping(callback: (data: any) => void) {
+    if (this.socket) {
+      this.socket.on('user_typing', callback);
+    }
+  }
+
+  onUserStoppedTyping(callback: (data: any) => void) {
+    if (this.socket) {
+      this.socket.on('user_stopped_typing', callback);
     }
   }
 }

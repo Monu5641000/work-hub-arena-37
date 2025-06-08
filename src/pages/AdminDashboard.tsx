@@ -1,6 +1,5 @@
-
 import { useState, useEffect } from "react";
-import { ArrowLeft, Users, Briefcase, DollarSign, TrendingUp, Plus, Settings } from "lucide-react";
+import { ArrowLeft, Users, Briefcase, DollarSign, TrendingUp, Plus, Settings, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -9,6 +8,7 @@ import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { authAPI } from "@/api/auth";
 import AdminCategories from "./admin/AdminCategories";
+import AdminMessaging from "@/components/AdminMessaging";
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
@@ -186,8 +186,9 @@ const AdminDashboard = () => {
 
         {/* Main Content Tabs */}
         <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-6">
+          <TabsList className="grid w-full grid-cols-7">
             <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="messaging">Messaging</TabsTrigger>
             <TabsTrigger value="categories">Categories</TabsTrigger>
             <TabsTrigger value="services">Services</TabsTrigger>
             <TabsTrigger value="orders">Orders</TabsTrigger>
@@ -205,6 +206,10 @@ const AdminDashboard = () => {
                   <Button className="w-full justify-start" onClick={() => navigate('/admin/categories')}>
                     <Plus className="h-4 w-4 mr-2" />
                     Manage Categories
+                  </Button>
+                  <Button variant="outline" className="w-full justify-start">
+                    <MessageSquare className="h-4 w-4 mr-2" />
+                    Admin Messaging
                   </Button>
                   <Button variant="outline" className="w-full justify-start">
                     <Settings className="h-4 w-4 mr-2" />
@@ -235,6 +240,10 @@ const AdminDashboard = () => {
                 </CardContent>
               </Card>
             </div>
+          </TabsContent>
+
+          <TabsContent value="messaging">
+            <AdminMessaging />
           </TabsContent>
 
           <TabsContent value="categories">

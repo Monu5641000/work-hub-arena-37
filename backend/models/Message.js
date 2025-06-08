@@ -41,7 +41,11 @@ const messageSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
-  readAt: Date
+  readAt: Date,
+  isFiltered: {
+    type: Boolean,
+    default: false
+  }
 }, {
   timestamps: true
 });

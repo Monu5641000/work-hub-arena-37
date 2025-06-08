@@ -5,7 +5,9 @@ const {
   getConversation,
   getConversationsList,
   markAsRead,
-  getUnreadCount
+  getUnreadCount,
+  getAdminUsers,
+  adminSendMessage
 } = require('../controllers/messageController');
 const { protect } = require('../middleware/auth');
 
@@ -19,5 +21,9 @@ router.get('/conversations', getConversationsList);
 router.get('/conversation/:userId', getConversation);
 router.put('/mark-read', markAsRead);
 router.get('/unread-count', getUnreadCount);
+
+// Admin routes
+router.get('/admin/users', getAdminUsers);
+router.post('/admin/send', adminSendMessage);
 
 module.exports = router;

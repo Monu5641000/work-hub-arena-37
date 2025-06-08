@@ -8,6 +8,11 @@ export interface MessageData {
   files?: any[];
 }
 
+export interface AdminMessageData {
+  recipientId: string;
+  content: string;
+}
+
 class MessageAPI {
   private getAuthHeader() {
     const token = localStorage.getItem('token');
@@ -40,14 +45,14 @@ class MessageAPI {
     return response.json();
   }
 
-  async markAsRead(messageIds: string[]) {
+  async markAsRead(conversationId: string) {
     const response = await fetch(`${API_BASE_URL}/messages/mark-read`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
         ...this.getAuthHeader(),
       },
-      body: JSON.stringify({ messageIds }),
+      body: JSON.stringify({ conversationId }),
     });
     return response.json();
   }
@@ -55,6 +60,26 @@ class MessageAPI {
   async getUnreadCount() {
     const response = await fetch(`${API_BASE_URL}/messages/unread-count`, {
       headers: this.getAuthHeader(),
+    });
+    return response.json();
+  }
+
+  // Admin methods
+  async getAdminUsers(page = 1, limit = 20, search = '') {
+    const response = await fetch(`${API_BASE_URL}/messages/admin/users?page=${page}&limit=${limit}&search=${search}`, {
+      headers: this.getAuthHeader(),
+    });
+    return response.json();
+  }
+
+  async adminSendMessage(messageData: AdminMessageData) {
+    const response = await fetch(`${API_BASE_URL}/messages/admin/send`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...this.getAuthHeader(),
+      },
+      body: JSON.stringify(messageData),
     });
     return response.json();
   }

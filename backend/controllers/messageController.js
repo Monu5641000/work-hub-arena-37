@@ -2,10 +2,43 @@
 const Message = require('../models/Message');
 const User = require('../models/User');
 
+// Content filtering patterns
+const RESTRICTED_PATTERNS = [
+  // Phone numbers
+  /\b(\+?\d{1,4}[-.\s]?)?\(?\d{1,4}\)?[-.\s]?\d{1,4}[-.\s]?\d{1,9}\b/g,
+  // Email addresses
+  /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/g,
+  // Social media handles
+  /@[A-Za-z0-9_]+/g,
+  // URLs
+  /https?:\/\/[^\s]+/g,
+  // Common address keywords
+  /\b(address|location|meet\s+at|come\s+to|visit\s+me)\b/gi,
+  // WhatsApp, Telegram, etc.
+  /\b(whatsapp|telegram|instagram|facebook|twitter|linkedin|snapchat|tiktok)\b/gi
+];
+
+const filterContent = (content) => {
+  let filteredContent = content;
+  let hasViolation = false;
+
+  RESTRICTED_PATTERNS.forEach(pattern => {
+    if (pattern.test(filteredContent)) {
+      hasViolation = true;
+      filteredContent = filteredContent.replace(pattern, '[CONTENT FILTERED]');
+    }
+  });
+
+  return { filteredContent, hasViolation };
+};
+
 // Send message
 exports.sendMessage = async (req, res) => {
   try {
     const { recipientId, content, attachments = [], orderId } = req.body;
+
+    // Filter content for restricted information
+    const { filteredContent, hasViolation } = filterContent(content);
 
     // Generate conversation ID
     const conversationId = [req.user.id, recipientId].sort().join('_');
@@ -13,25 +46,28 @@ exports.sendMessage = async (req, res) => {
     const message = await Message.create({
       sender: req.user.id,
       recipient: recipientId,
-      content,
+      content: filteredContent,
       attachments,
       conversationId,
-      order: orderId || null
+      order: orderId || null,
+      isFiltered: hasViolation
     });
 
     const populatedMessage = await Message.findById(message._id)
-      .populate('sender', 'firstName lastName profilePicture')
-      .populate('recipient', 'firstName lastName profilePicture');
+      .populate('sender', 'firstName lastName profilePicture role')
+      .populate('recipient', 'firstName lastName profilePicture role');
 
     // Emit real-time message via Socket.IO
     const io = req.app.get('io');
     if (io) {
       io.to(`user_${recipientId}`).emit('newMessage', populatedMessage);
+      io.to(`user_${req.user.id}`).emit('newMessage', populatedMessage);
     }
 
     res.status(201).json({
       success: true,
-      data: populatedMessage
+      data: populatedMessage,
+      warning: hasViolation ? 'Some content was filtered due to policy violations' : null
     });
   } catch (error) {
     console.error('Send message error:', error);
@@ -53,17 +89,30 @@ exports.getConversation = async (req, res) => {
     const conversationId = [req.user.id, userId].sort().join('_');
 
     const messages = await Message.find({ conversationId })
-      .populate('sender', 'firstName lastName profilePicture')
-      .populate('recipient', 'firstName lastName profilePicture')
+      .populate('sender', 'firstName lastName profilePicture role')
+      .populate('recipient', 'firstName lastName profilePicture role')
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(Number(limit));
 
     const total = await Message.countDocuments({ conversationId });
 
+    // Mark messages as read
+    await Message.updateMany(
+      {
+        conversationId,
+        recipient: req.user.id,
+        isRead: false
+      },
+      {
+        isRead: true,
+        readAt: new Date()
+      }
+    );
+
     res.status(200).json({
       success: true,
-      data: messages.reverse(), // Reverse to show oldest first
+      data: messages.reverse(),
       pagination: {
         page: Number(page),
         limit: Number(limit),
@@ -131,11 +180,11 @@ exports.getConversationsList = async (req, res) => {
     const populatedConversations = await Message.populate(conversations, [
       {
         path: 'lastMessage.sender',
-        select: 'firstName lastName profilePicture'
+        select: 'firstName lastName profilePicture role'
       },
       {
         path: 'lastMessage.recipient',
-        select: 'firstName lastName profilePicture'
+        select: 'firstName lastName profilePicture role'
       }
     ]);
 
@@ -197,6 +246,103 @@ exports.getUnreadCount = async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Error fetching unread count'
+    });
+  }
+};
+
+// Admin: Get all users for messaging
+exports.getAdminUsers = async (req, res) => {
+  try {
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied. Admin only.'
+      });
+    }
+
+    const { page = 1, limit = 20, search = '' } = req.query;
+    const skip = (page - 1) * limit;
+
+    let query = { role: { $in: ['client', 'freelancer'] } };
+    if (search) {
+      query.$or = [
+        { firstName: { $regex: search, $options: 'i' } },
+        { lastName: { $regex: search, $options: 'i' } },
+        { email: { $regex: search, $options: 'i' } }
+      ];
+    }
+
+    const users = await User.find(query)
+      .select('firstName lastName email profilePicture role createdAt')
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(Number(limit));
+
+    const total = await User.countDocuments(query);
+
+    res.status(200).json({
+      success: true,
+      data: users,
+      pagination: {
+        page: Number(page),
+        limit: Number(limit),
+        total,
+        pages: Math.ceil(total / limit)
+      }
+    });
+  } catch (error) {
+    console.error('Get admin users error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching users'
+    });
+  }
+};
+
+// Admin: Send message to any user
+exports.adminSendMessage = async (req, res) => {
+  try {
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied. Admin only.'
+      });
+    }
+
+    const { recipientId, content } = req.body;
+
+    // Generate conversation ID (admin messages use special format)
+    const conversationId = `admin_${req.user.id}_${recipientId}`;
+
+    const message = await Message.create({
+      sender: req.user.id,
+      recipient: recipientId,
+      content,
+      conversationId,
+      type: 'system'
+    });
+
+    const populatedMessage = await Message.findById(message._id)
+      .populate('sender', 'firstName lastName profilePicture role')
+      .populate('recipient', 'firstName lastName profilePicture role');
+
+    // Emit real-time message via Socket.IO
+    const io = req.app.get('io');
+    if (io) {
+      io.to(`user_${recipientId}`).emit('newMessage', populatedMessage);
+      io.to(`user_${req.user.id}`).emit('newMessage', populatedMessage);
+    }
+
+    res.status(201).json({
+      success: true,
+      data: populatedMessage
+    });
+  } catch (error) {
+    console.error('Admin send message error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error sending admin message',
+      error: error.message
     });
   }
 };
