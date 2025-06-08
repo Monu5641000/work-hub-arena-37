@@ -1,4 +1,3 @@
-
 import axios from 'axios';
 import { ApiResponse, User } from '@/types/api';
 
@@ -89,13 +88,14 @@ export const authAPI = {
     return response.data as ApiResponse<User>;
   },
 
-  async updateProfile(profileData: any): Promise<ApiResponse<User>> {
-    const response = await api.put('/users/profile', profileData);
-    const data = response.data as ApiResponse<User>;
-    if (data.success) {
-      localStorage.setItem('user', JSON.stringify(data.data!));
+  async updateProfile(profileData: any) {
+    try {
+      const response = await api.put('/users/profile', profileData);
+      return response.data;
+    } catch (error: any) {
+      console.error('Update profile error:', error);
+      throw new Error(error.response?.data?.message || 'Failed to update profile');
     }
-    return data;
   },
 
   async changePassword(passwordData: any): Promise<ApiResponse> {
@@ -112,3 +112,5 @@ export const authAPI = {
     return data;
   }
 };
+
+export { authAPI };

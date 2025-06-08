@@ -1,4 +1,3 @@
-
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from '@/contexts/AuthContext';
 import ProtectedRoute from '@/components/ProtectedRoute';
@@ -30,6 +29,7 @@ import FreelancerOrderDashboard from '@/pages/FreelancerOrderDashboard';
 import FreelancerProfile from '@/pages/FreelancerProfile';
 import AdminDashboard from '@/pages/AdminDashboard';
 import NotFound from '@/pages/NotFound';
+import ProfileCompletion from '@/pages/ProfileCompletion';
 
 function App() {
   return (
@@ -48,6 +48,11 @@ function App() {
             <Route path="/@:username" element={<FreelancerProfile />} />
             
             {/* Protected Routes */}
+            <Route path="/profile-completion" element={
+              <ProtectedRoute>
+                <ProfileCompletion />
+              </ProtectedRoute>
+            } />
             <Route path="/role-selection" element={
               <ProtectedRoute>
                 <RoleSelection />

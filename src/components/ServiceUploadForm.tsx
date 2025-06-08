@@ -27,7 +27,7 @@ const ServiceUploadForm = ({ onSubmit, onCancel }: {
   });
   const [newTag, setNewTag] = useState('');
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     setFormData({
       ...formData,
       [e.target.name]: e.target.value
@@ -36,10 +36,39 @@ const ServiceUploadForm = ({ onSubmit, onCancel }: {
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+
+    // Validate file types
+    const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+    const invalidFiles = files.filter(file => !validTypes.includes(file.type));
+    
+    if (invalidFiles.length > 0) {
+      toast({
+        title: "Invalid File Type",
+        description: "Please upload only JPEG, PNG, or WebP images",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validate file sizes (max 5MB each)
+    const oversizedFiles = files.filter(file => file.size > 5 * 1024 * 1024);
+    if (oversizedFiles.length > 0) {
+      toast({
+        title: "File Too Large",
+        description: "Each image must be less than 5MB",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setFormData(prev => ({
       ...prev,
       images: [...prev.images, ...files].slice(0, 5) // Max 5 images
     }));
+
+    // Reset the input
+    e.target.value = '';
   };
 
   const removeImage = (index: number) => {
@@ -68,11 +97,60 @@ const ServiceUploadForm = ({ onSubmit, onCancel }: {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit(formData);
-    toast({
-      title: "Service Created",
-      description: "Your service has been uploaded successfully!",
+    
+    if (!formData.title || !formData.description || !formData.category || !formData.basicPrice) {
+      toast({
+        title: "Missing Required Fields",
+        description: "Please fill in all required fields",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Create FormData for file upload
+    const submitData = new FormData();
+    submitData.append('title', formData.title);
+    submitData.append('description', formData.description);
+    submitData.append('category', formData.category);
+    submitData.append('tags', JSON.stringify(formData.tags));
+    submitData.append('deliveryTime', formData.deliveryDays);
+    
+    // Add pricing plans
+    const pricingPlans = {
+      basic: {
+        name: 'Basic',
+        price: Number(formData.basicPrice),
+        deliveryTime: Number(formData.deliveryDays),
+        features: ['Basic features']
+      }
+    };
+    
+    if (formData.standardPrice) {
+      pricingPlans.standard = {
+        name: 'Standard',
+        price: Number(formData.standardPrice),
+        deliveryTime: Math.ceil(Number(formData.deliveryDays) * 1.5),
+        features: ['Basic features', 'Additional features']
+      };
+    }
+    
+    if (formData.premiumPrice) {
+      pricingPlans.premium = {
+        name: 'Premium',
+        price: Number(formData.premiumPrice),
+        deliveryTime: Number(formData.deliveryDays) * 2,
+        features: ['Basic features', 'Additional features', 'Premium support']
+      };
+    }
+    
+    submitData.append('pricingPlans', JSON.stringify(pricingPlans));
+    
+    // Add images
+    formData.images.forEach((image, index) => {
+      submitData.append('images', image);
     });
+
+    onSubmit(submitData);
   };
 
   return (
@@ -83,7 +161,7 @@ const ServiceUploadForm = ({ onSubmit, onCancel }: {
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-2">
-            <Label htmlFor="title">Service Title</Label>
+            <Label htmlFor="title">Service Title *</Label>
             <Input
               id="title"
               name="title"
@@ -95,7 +173,7 @@ const ServiceUploadForm = ({ onSubmit, onCancel }: {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="description">Description</Label>
+            <Label htmlFor="description">Description *</Label>
             <Textarea
               id="description"
               name="description"
@@ -109,22 +187,36 @@ const ServiceUploadForm = ({ onSubmit, onCancel }: {
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="category">Category</Label>
-              <Input
+              <Label htmlFor="category">Category *</Label>
+              <select
                 id="category"
                 name="category"
                 value={formData.category}
                 onChange={handleInputChange}
-                placeholder="Web Development"
+                className="w-full p-2 border border-gray-300 rounded-md"
                 required
-              />
+              >
+                <option value="">Select Category</option>
+                <option value="web-development">Web Development</option>
+                <option value="mobile-development">Mobile Development</option>
+                <option value="design">Design</option>
+                <option value="writing">Writing</option>
+                <option value="marketing">Marketing</option>
+                <option value="video-animation">Video & Animation</option>
+                <option value="music-audio">Music & Audio</option>
+                <option value="programming">Programming</option>
+                <option value="business">Business</option>
+                <option value="lifestyle">Lifestyle</option>
+              </select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="deliveryDays">Delivery Time (Days)</Label>
+              <Label htmlFor="deliveryDays">Delivery Time (Days) *</Label>
               <Input
                 id="deliveryDays"
                 name="deliveryDays"
                 type="number"
+                min="1"
+                max="365"
                 value={formData.deliveryDays}
                 onChange={handleInputChange}
                 placeholder="7"
@@ -166,37 +258,40 @@ const ServiceUploadForm = ({ onSubmit, onCancel }: {
 
           <div className="grid grid-cols-3 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="basicPrice">Basic Price ($)</Label>
+              <Label htmlFor="basicPrice">Basic Price (₹) *</Label>
               <Input
                 id="basicPrice"
                 name="basicPrice"
                 type="number"
+                min="1"
                 value={formData.basicPrice}
                 onChange={handleInputChange}
-                placeholder="50"
+                placeholder="500"
                 required
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="standardPrice">Standard Price ($)</Label>
+              <Label htmlFor="standardPrice">Standard Price (₹)</Label>
               <Input
                 id="standardPrice"
                 name="standardPrice"
                 type="number"
+                min="1"
                 value={formData.standardPrice}
                 onChange={handleInputChange}
-                placeholder="100"
+                placeholder="1000"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="premiumPrice">Premium Price ($)</Label>
+              <Label htmlFor="premiumPrice">Premium Price (₹)</Label>
               <Input
                 id="premiumPrice"
                 name="premiumPrice"
                 type="number"
+                min="1"
                 value={formData.premiumPrice}
                 onChange={handleInputChange}
-                placeholder="200"
+                placeholder="2000"
               />
             </div>
           </div>
@@ -204,20 +299,21 @@ const ServiceUploadForm = ({ onSubmit, onCancel }: {
           <div className="space-y-2">
             <Label>Service Images (Max 5)</Label>
             <div className="border-2 border-dashed border-gray-300 rounded-lg p-4">
-              <input
+              <Input
                 type="file"
                 multiple
-                accept="image/*"
+                accept="image/jpeg,image/jpg,image/png,image/webp"
                 onChange={handleImageUpload}
                 className="hidden"
                 id="image-upload"
               />
-              <label htmlFor="image-upload" className="cursor-pointer">
+              <Label htmlFor="image-upload" className="cursor-pointer block">
                 <div className="text-center">
                   <Upload className="h-8 w-8 text-gray-400 mx-auto mb-2" />
                   <p className="text-sm text-gray-600">Click to upload images</p>
+                  <p className="text-xs text-gray-500 mt-1">JPEG, PNG, WebP (max 5MB each)</p>
                 </div>
-              </label>
+              </Label>
               
               {formData.images.length > 0 && (
                 <div className="grid grid-cols-3 gap-2 mt-4">
