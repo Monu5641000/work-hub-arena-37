@@ -25,7 +25,10 @@ export const freelancerProjectAPI = {
       return response.data;
     } catch (error: any) {
       console.error('Get all freelancer projects error:', error);
-      throw error;
+      return {
+        success: false,
+        message: error.response?.data?.message || 'Failed to fetch projects'
+      };
     }
   },
 
@@ -36,7 +39,10 @@ export const freelancerProjectAPI = {
       return response.data;
     } catch (error: any) {
       console.error('Get freelancer project error:', error);
-      throw error;
+      return {
+        success: false,
+        message: error.response?.data?.message || 'Failed to fetch project'
+      };
     }
   },
 
@@ -47,7 +53,10 @@ export const freelancerProjectAPI = {
       return response.data;
     } catch (error: any) {
       console.error('Get my freelancer projects error:', error);
-      throw error;
+      return {
+        success: false,
+        message: error.response?.data?.message || 'Failed to fetch my projects'
+      };
     }
   },
 
@@ -62,7 +71,10 @@ export const freelancerProjectAPI = {
       return response.data;
     } catch (error: any) {
       console.error('Create freelancer project error:', error);
-      throw error;
+      return {
+        success: false,
+        message: error.response?.data?.message || 'Failed to create project'
+      };
     }
   },
 
@@ -77,7 +89,10 @@ export const freelancerProjectAPI = {
       return response.data;
     } catch (error: any) {
       console.error('Update freelancer project error:', error);
-      throw error;
+      return {
+        success: false,
+        message: error.response?.data?.message || 'Failed to update project'
+      };
     }
   },
 
@@ -88,7 +103,10 @@ export const freelancerProjectAPI = {
       return response.data;
     } catch (error: any) {
       console.error('Delete freelancer project error:', error);
-      throw error;
+      return {
+        success: false,
+        message: error.response?.data?.message || 'Failed to delete project'
+      };
     }
   }
 };
