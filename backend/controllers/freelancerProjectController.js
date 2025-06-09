@@ -2,6 +2,14 @@ const FreelancerProject = require('../models/FreelancerProject');
 const fs = require('fs');
 const path = require('path');
 
+// Ensure upload directory exists
+const ensureUploadDir = () => {
+  const uploadDir = path.join(__dirname, '../uploads/freelancer-projects');
+  if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir, { recursive: true });
+  }
+};
+
 // Get all freelancer projects
 exports.getAllFreelancerProjects = async (req, res) => {
   try {
@@ -114,6 +122,9 @@ exports.getFreelancerProject = async (req, res) => {
 // Create freelancer project
 exports.createFreelancerProject = async (req, res) => {
   try {
+    // Ensure upload directory exists
+    ensureUploadDir();
+
     const projectData = {
       ...req.body,
       freelancer: req.user.id,

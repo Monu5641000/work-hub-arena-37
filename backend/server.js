@@ -1,4 +1,3 @@
-
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
@@ -66,11 +65,13 @@ const uploadDirs = [
   'uploads/services', 
   'uploads/portfolio', 
   'uploads/deliverables',
-  'uploads/general'
+  'uploads/general',
+  'uploads/freelancer-projects'
 ];
 uploadDirs.forEach(dir => {
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir, { recursive: true });
+    console.log(`Created upload directory: ${dir}`);
   }
 });
 

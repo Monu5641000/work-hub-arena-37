@@ -42,7 +42,7 @@ const ServiceDetail = () => {
           clicks: response.data.clicks || 0,
           images: response.data.images?.map((img: any) => ({
             url: img.url,
-            alt: img.alt || service?.title || 'Service image',
+            alt: img.alt || response.data.title || 'Service image',
             isPrimary: img.isPrimary ?? false
           })) || [],
           pricingPlans: {

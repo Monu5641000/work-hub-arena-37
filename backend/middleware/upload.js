@@ -24,10 +24,13 @@ const storage = multer.diskStorage({
       uploadPath += 'portfolio/';
     } else if (file.fieldname === 'orderDeliverables') {
       uploadPath += 'deliverables/';
+    } else if (file.fieldname === 'images') {
+      uploadPath += 'freelancer-projects/';
     } else {
       uploadPath += 'general/';
     }
     
+    // Ensure directory exists before proceeding
     ensureDirExists(uploadPath);
     cb(null, uploadPath);
   },
