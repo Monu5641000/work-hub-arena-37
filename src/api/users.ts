@@ -47,6 +47,20 @@ export const userAPI = {
     }
   },
 
+  // Check username availability
+  checkUsername: async (username: string): Promise<ApiResponse> => {
+    try {
+      const response = await api.get(`/users/check-username/${username}`);
+      return response.data;
+    } catch (error: any) {
+      console.error('Check username error:', error);
+      return {
+        success: false,
+        message: error.response?.data?.message || 'Failed to check username'
+      };
+    }
+  },
+
   // Upload profile picture
   uploadProfilePicture: async (file: FormData): Promise<ApiResponse> => {
     try {

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Send, Search, MessageSquare, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -26,9 +25,9 @@ const AdminMessaging: React.FC = () => {
   const fetchUsers = async () => {
     try {
       setLoading(true);
-      const response = await messageAPI.getAdminUsers(1, 20, searchTerm);
+      const response = await messageAPI.getAdminUsers();
       if (response.success) {
-        setUsers(response.data);
+        setUsers(response.data || []);
       }
     } catch (error) {
       toast({

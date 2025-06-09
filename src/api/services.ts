@@ -32,6 +32,11 @@ export const serviceAPI = {
     }
   },
 
+  // Alias for compatibility
+  getAllServices: async (params?: any): Promise<ApiResponse<Service[]>> => {
+    return serviceAPI.getServices(params);
+  },
+
   // Get single service
   getService: async (id: string): Promise<ApiResponse<Service>> => {
     try {
@@ -47,9 +52,22 @@ export const serviceAPI = {
   },
 
   // Create service
-  createService: async (serviceData: FormData): Promise<ApiResponse<Service>> => {
+  createService: async (serviceData: any): Promise<ApiResponse<Service>> => {
     try {
-      const response = await api.post('/services', serviceData, {
+      // Convert plain object to FormData if needed
+      let formData = serviceData;
+      if (!(serviceData instanceof FormData)) {
+        formData = new FormData();
+        Object.keys(serviceData).forEach(key => {
+          if (typeof serviceData[key] === 'object' && serviceData[key] !== null) {
+            formData.append(key, JSON.stringify(serviceData[key]));
+          } else {
+            formData.append(key, serviceData[key]);
+          }
+        });
+      }
+
+      const response = await api.post('/services', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
