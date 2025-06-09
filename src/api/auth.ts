@@ -18,98 +18,87 @@ api.interceptors.request.use((config) => {
 });
 
 export const authAPI = {
-  // OTPless authentication
-  async sendOTP(phoneNumber: string): Promise<ApiResponse<{ orderId: string }>> {
-    const response = await api.post('/auth/send-otp', { phoneNumber });
-    return response.data as ApiResponse<{ orderId: string }>;
-  },
-
-  async verifyOTP(phoneNumber: string, otp: string, orderId: string): Promise<ApiResponse<User>> {
-    const response = await api.post('/auth/verify-otp', { phoneNumber, otp, orderId });
-    const data = response.data as ApiResponse<User>;
-    if (data.success) {
-      localStorage.setItem('token', data.token!);
-      localStorage.setItem('user', JSON.stringify(data.user!));
-    }
-    return data;
-  },
-
-  async googleLogin(idToken: string): Promise<ApiResponse<User>> {
-    const response = await api.post('/auth/google-login', { idToken });
-    const data = response.data as ApiResponse<User>;
-    if (data.success) {
-      localStorage.setItem('token', data.token!);
-      localStorage.setItem('user', JSON.stringify(data.user!));
-    }
-    return data;
-  },
-
-  async selectRole(role: 'client' | 'freelancer'): Promise<ApiResponse<User>> {
-    const response = await api.post('/auth/select-role', { role });
-    const data = response.data as ApiResponse<User>;
-    if (data.success) {
-      localStorage.setItem('user', JSON.stringify(data.user!));
-    }
-    return data;
-  },
-
-  // Traditional authentication
-  async register(userData: any): Promise<ApiResponse<User>> {
-    const response = await api.post('/auth/register', userData);
-    const data = response.data as ApiResponse<User>;
-    if (data.success) {
-      localStorage.setItem('token', data.token!);
-      localStorage.setItem('user', JSON.stringify(data.user!));
-    }
-    return data;
-  },
-
-  async login(credentials: any): Promise<ApiResponse<User>> {
-    const response = await api.post('/auth/login', credentials);
-    const data = response.data as ApiResponse<User>;
-    if (data.success) {
-      localStorage.setItem('token', data.token!);
-      localStorage.setItem('user', JSON.stringify(data.user!));
-    }
-    return data;
-  },
-
-  logout() {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-  },
-
-  getCurrentUser(): User | null {
-    const user = localStorage.getItem('user');
-    return user ? JSON.parse(user) : null;
-  },
-
-  async getMe(): Promise<ApiResponse<User>> {
-    const response = await api.get('/auth/me');
-    return response.data as ApiResponse<User>;
-  },
-
-  async updateProfile(profileData: any) {
+  // Login with email/password
+  login: async (email: string, password: string): Promise<ApiResponse<User>> => {
     try {
-      const response = await api.put('/users/profile', profileData);
+      const response = await api.post('/auth/login', { email, password });
       return response.data;
     } catch (error: any) {
-      console.error('Update profile error:', error);
-      throw new Error(error.response?.data?.message || 'Failed to update profile');
+      console.error('Login error:', error);
+      return {
+        success: false,
+        message: error.response?.data?.message || 'Login failed'
+      };
     }
   },
 
-  async changePassword(passwordData: any): Promise<ApiResponse> {
-    const response = await api.put('/auth/change-password', passwordData);
-    return response.data as ApiResponse;
+  // Register with email/password
+  register: async (userData: any): Promise<ApiResponse<User>> => {
+    try {
+      const response = await api.post('/auth/register', userData);
+      return response.data;
+    } catch (error: any) {
+      console.error('Register error:', error);
+      return {
+        success: false,
+        message: error.response?.data?.message || 'Registration failed'
+      };
+    }
   },
 
-  async updateRequirements(requirements: any): Promise<ApiResponse<User>> {
-    const response = await api.put('/auth/requirements', { requirements });
-    const data = response.data as ApiResponse<User>;
-    if (data.success) {
-      localStorage.setItem('user', JSON.stringify(data.user!));
+  // Get current user
+  getMe: async (): Promise<ApiResponse<User>> => {
+    try {
+      const response = await api.get('/auth/me');
+      return response.data;
+    } catch (error: any) {
+      console.error('Get me error:', error);
+      return {
+        success: false,
+        message: error.response?.data?.message || 'Failed to get user info'
+      };
     }
-    return data;
+  },
+
+  // Select role
+  selectRole: async (role: 'client' | 'freelancer'): Promise<ApiResponse<User>> => {
+    try {
+      const response = await api.put('/auth/select-role', { role });
+      return response.data;
+    } catch (error: any) {
+      console.error('Select role error:', error);
+      return {
+        success: false,
+        message: error.response?.data?.message || 'Failed to select role'
+      };
+    }
+  },
+
+  // Logout
+  logout: async (): Promise<ApiResponse> => {
+    try {
+      const response = await api.post('/auth/logout');
+      return response.data;
+    } catch (error: any) {
+      console.error('Logout error:', error);
+      return {
+        success: false,
+        message: error.response?.data?.message || 'Logout failed'
+      };
+    }
+  },
+
+  // OTPless auth
+  verifyOTPless: async (token: string): Promise<ApiResponse<User>> => {
+    try {
+      const response = await api.post('/auth/otpless/verify', { token });
+      return response.data;
+    } catch (error: any) {
+      console.error('OTPless verify error:', error);
+      return {
+        success: false,
+        message: error.response?.data?.message || 'OTPless verification failed'
+      };
+    }
   }
 };

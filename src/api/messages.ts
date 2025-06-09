@@ -21,7 +21,7 @@ export const messageAPI = {
   // Send message
   sendMessage: async (messageData: any): Promise<ApiResponse> => {
     try {
-      const response = await api.post('/messages/send', messageData);
+      const response = await api.post('/messages', messageData);
       return response.data;
     } catch (error: any) {
       console.error('Send message error:', error);
@@ -32,22 +32,8 @@ export const messageAPI = {
     }
   },
 
-  // Get conversation
-  getConversation: async (userId: string): Promise<ApiResponse> => {
-    try {
-      const response = await api.get(`/messages/conversation/${userId}`);
-      return response.data;
-    } catch (error: any) {
-      console.error('Get conversation error:', error);
-      return {
-        success: false,
-        message: error.response?.data?.message || 'Failed to fetch conversation'
-      };
-    }
-  },
-
-  // Get conversations list
-  getConversationsList: async (): Promise<ApiResponse> => {
+  // Get conversations
+  getConversations: async (): Promise<ApiResponse> => {
     try {
       const response = await api.get('/messages/conversations');
       return response.data;
@@ -55,7 +41,21 @@ export const messageAPI = {
       console.error('Get conversations error:', error);
       return {
         success: false,
-        message: error.response?.data?.message || 'Failed to fetch conversations'
+        message: error.response?.data?.message || 'Failed to get conversations'
+      };
+    }
+  },
+
+  // Get messages
+  getMessages: async (conversationId: string): Promise<ApiResponse> => {
+    try {
+      const response = await api.get(`/messages/${conversationId}`);
+      return response.data;
+    } catch (error: any) {
+      console.error('Get messages error:', error);
+      return {
+        success: false,
+        message: error.response?.data?.message || 'Failed to get messages'
       };
     }
   },
@@ -63,7 +63,7 @@ export const messageAPI = {
   // Mark as read
   markAsRead: async (conversationId: string): Promise<ApiResponse> => {
     try {
-      const response = await api.put('/messages/mark-read', { conversationId });
+      const response = await api.put(`/messages/${conversationId}/read`);
       return response.data;
     } catch (error: any) {
       console.error('Mark as read error:', error);
@@ -74,21 +74,7 @@ export const messageAPI = {
     }
   },
 
-  // Get unread count
-  getUnreadCount: async (): Promise<ApiResponse> => {
-    try {
-      const response = await api.get('/messages/unread-count');
-      return response.data;
-    } catch (error: any) {
-      console.error('Get unread count error:', error);
-      return {
-        success: false,
-        message: error.response?.data?.message || 'Failed to fetch unread count'
-      };
-    }
-  },
-
-  // Get admin users (for admin messaging)
+  // Get admin users
   getAdminUsers: async (): Promise<ApiResponse> => {
     try {
       const response = await api.get('/messages/admin/users');
@@ -97,21 +83,7 @@ export const messageAPI = {
       console.error('Get admin users error:', error);
       return {
         success: false,
-        message: error.response?.data?.message || 'Failed to fetch users'
-      };
-    }
-  },
-
-  // Admin send message
-  adminSendMessage: async (messageData: any): Promise<ApiResponse> => {
-    try {
-      const response = await api.post('/messages/admin/send', messageData);
-      return response.data;
-    } catch (error: any) {
-      console.error('Admin send message error:', error);
-      return {
-        success: false,
-        message: error.response?.data?.message || 'Failed to send message'
+        message: error.response?.data?.message || 'Failed to get users'
       };
     }
   }
