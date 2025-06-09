@@ -5,37 +5,66 @@ class SocketService {
   private socket: Socket | null = null;
   private token: string | null = null;
   private messageCallbacks: ((message: any) => void)[] = [];
+  private connected: boolean = false;
 
   connect() {
     this.token = localStorage.getItem('token');
-    if (!this.token) return;
+    if (!this.token) {
+      console.warn('No token found, cannot connect to socket');
+      return;
+    }
 
-    this.socket = io('http://localhost:5000', {
-      auth: {
-        token: this.token
-      }
-    });
+    if (this.socket && this.connected) {
+      console.log('Socket already connected');
+      return this.socket;
+    }
 
-    this.socket.on('connect', () => {
-      console.log('Connected to server');
-    });
+    try {
+      this.socket = io('http://localhost:5000', {
+        auth: {
+          token: this.token
+        },
+        transports: ['websocket', 'polling']
+      });
 
-    this.socket.on('disconnect', () => {
-      console.log('Disconnected from server');
-    });
+      this.socket.on('connect', () => {
+        console.log('Connected to server');
+        this.connected = true;
+      });
 
-    this.socket.on('newMessage', (message) => {
-      console.log('New message received:', message);
-      this.messageCallbacks.forEach(callback => callback(message));
-    });
+      this.socket.on('disconnect', () => {
+        console.log('Disconnected from server');
+        this.connected = false;
+      });
 
-    return this.socket;
+      this.socket.on('connect_error', (error) => {
+        console.error('Socket connection error:', error);
+        this.connected = false;
+      });
+
+      this.socket.on('newMessage', (message) => {
+        console.log('New message received:', message);
+        this.messageCallbacks.forEach(callback => {
+          try {
+            callback(message);
+          } catch (error) {
+            console.error('Error in message callback:', error);
+          }
+        });
+      });
+
+      return this.socket;
+    } catch (error) {
+      console.error('Failed to create socket connection:', error);
+      return null;
+    }
   }
 
   disconnect() {
     if (this.socket) {
       this.socket.disconnect();
       this.socket = null;
+      this.connected = false;
     }
     this.messageCallbacks = [];
   }
@@ -44,21 +73,31 @@ class SocketService {
     return this.socket;
   }
 
+  isConnected() {
+    return this.connected && this.socket?.connected;
+  }
+
   joinRoom(roomId: string) {
-    if (this.socket) {
+    if (this.socket && this.connected) {
       this.socket.emit('join_room', roomId);
+    } else {
+      console.warn('Socket not connected, cannot join room');
     }
   }
 
   leaveRoom(roomId: string) {
-    if (this.socket) {
+    if (this.socket && this.connected) {
       this.socket.emit('leave_room', roomId);
+    } else {
+      console.warn('Socket not connected, cannot leave room');
     }
   }
 
   sendMessage(messageData: any) {
-    if (this.socket) {
+    if (this.socket && this.connected) {
       this.socket.emit('send_message', messageData);
+    } else {
+      console.warn('Socket not connected, cannot send message');
     }
   }
 
@@ -79,13 +118,13 @@ class SocketService {
 
   // Typing indicators
   startTyping(recipientId: string) {
-    if (this.socket) {
+    if (this.socket && this.connected) {
       this.socket.emit('typing_start', { recipientId });
     }
   }
 
   stopTyping(recipientId: string) {
-    if (this.socket) {
+    if (this.socket && this.connected) {
       this.socket.emit('typing_stop', { recipientId });
     }
   }

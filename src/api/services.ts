@@ -8,6 +8,7 @@ const api = axios.create({
   baseURL: API_BASE_URL,
 });
 
+// Add auth token to requests
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
   if (token) {
@@ -17,45 +18,105 @@ api.interceptors.request.use((config) => {
 });
 
 export const serviceAPI = {
-  async getAllServices(params?: any): Promise<ApiResponse<Service[]>> {
-    const response = await api.get<ApiResponse<Service[]>>('/services', { params });
-    return response.data;
+  // Get all services
+  getAllServices: async (params?: any): Promise<ApiResponse<Service[]>> => {
+    try {
+      const response = await api.get('/services', { params });
+      return response.data;
+    } catch (error: any) {
+      console.error('Get services error:', error);
+      return {
+        success: false,
+        message: error.response?.data?.message || 'Failed to fetch services'
+      };
+    }
   },
 
-  async getService(id: string): Promise<ApiResponse<Service>> {
-    const response = await api.get<ApiResponse<Service>>(`/services/${id}`);
-    return response.data;
+  // Get single service
+  getService: async (id: string): Promise<ApiResponse<Service>> => {
+    try {
+      const response = await api.get(`/services/${id}`);
+      return response.data;
+    } catch (error: any) {
+      console.error('Get service error:', error);
+      return {
+        success: false,
+        message: error.response?.data?.message || 'Failed to fetch service'
+      };
+    }
   },
 
-  async createService(serviceData: any): Promise<ApiResponse<Service>> {
-    const response = await api.post<ApiResponse<Service>>('/services', serviceData);
-    return response.data;
+  // Create service
+  createService: async (serviceData: any): Promise<ApiResponse<Service>> => {
+    try {
+      const response = await api.post('/services', serviceData);
+      return response.data;
+    } catch (error: any) {
+      console.error('Create service error:', error);
+      return {
+        success: false,
+        message: error.response?.data?.message || 'Failed to create service'
+      };
+    }
   },
 
-  async updateService(id: string, serviceData: any): Promise<ApiResponse<Service>> {
-    const response = await api.put<ApiResponse<Service>>(`/services/${id}`, serviceData);
-    return response.data;
+  // Update service
+  updateService: async (id: string, serviceData: any): Promise<ApiResponse<Service>> => {
+    try {
+      const response = await api.put(`/services/${id}`, serviceData);
+      return response.data;
+    } catch (error: any) {
+      console.error('Update service error:', error);
+      return {
+        success: false,
+        message: error.response?.data?.message || 'Failed to update service'
+      };
+    }
   },
 
-  async deleteService(id: string): Promise<ApiResponse<void>> {
-    const response = await api.delete<ApiResponse<void>>(`/services/${id}`);
-    return response.data;
+  // Delete service
+  deleteService: async (id: string): Promise<ApiResponse> => {
+    try {
+      const response = await api.delete(`/services/${id}`);
+      return response.data;
+    } catch (error: any) {
+      console.error('Delete service error:', error);
+      return {
+        success: false,
+        message: error.response?.data?.message || 'Failed to delete service'
+      };
+    }
   },
 
-  async getMyServices(params?: any): Promise<ApiResponse<Service[]>> {
-    const response = await api.get<ApiResponse<Service[]>>('/services/my/services', { params });
-    return response.data;
+  // Get my services
+  getMyServices: async (): Promise<ApiResponse<Service[]>> => {
+    try {
+      const response = await api.get('/services/my/services');
+      return response.data;
+    } catch (error: any) {
+      console.error('Get my services error:', error);
+      return {
+        success: false,
+        message: error.response?.data?.message || 'Failed to fetch your services'
+      };
+    }
   },
 
-  async uploadServiceImages(id: string, images: FormData): Promise<ApiResponse<any>> {
-    const response = await api.post<ApiResponse<any>>(`/services/${id}/images`, images, {
-      headers: { 'Content-Type': 'multipart/form-data' }
-    });
-    return response.data;
-  },
-
-  async getServiceAnalytics(id: string): Promise<ApiResponse<any>> {
-    const response = await api.get<ApiResponse<any>>(`/services/${id}/analytics`);
-    return response.data;
+  // Upload service images
+  uploadServiceImages: async (id: string, images: FormData): Promise<ApiResponse> => {
+    try {
+      const response = await api.post(`/services/${id}/images`, images, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      return response.data;
+    } catch (error: any) {
+      console.error('Upload service images error:', error);
+      return {
+        success: false,
+        message: error.response?.data?.message || 'Failed to upload images'
+      };
+    }
   }
 };

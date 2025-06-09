@@ -7,18 +7,19 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
-import { authAPI } from '@/api/auth';
+import { userAPI } from '@/api/users';
 
 const ProfileCompletion = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { user, token } = useAuth();
+  const { user, token, updateUser } = useAuth();
   const [loading, setLoading] = useState(false);
   const [usernameAvailable, setUsernameAvailable] = useState<boolean | null>(null);
+  const [checkingUsername, setCheckingUsername] = useState(false);
   const [formData, setFormData] = useState({
     username: '',
-    email: '',
-    whatsappNumber: ''
+    email: user?.email || '',
+    whatsappNumber: user?.whatsappNumber || ''
   });
 
   useEffect(() => {
@@ -35,6 +36,8 @@ const ProfileCompletion = () => {
         navigate('/freelancer/dashboard');
       } else if (user.role === 'admin') {
         navigate('/admin/dashboard');
+      } else {
+        navigate('/role-selection');
       }
     }
   }, [user, token, navigate]);
@@ -45,12 +48,15 @@ const ProfileCompletion = () => {
       return;
     }
 
+    setCheckingUsername(true);
     try {
-      const response = await fetch(`http://localhost:5000/api/users/check-username/${username}`);
-      const data = await response.json();
-      setUsernameAvailable(data.data.available);
+      const response = await userAPI.checkUsername(username);
+      setUsernameAvailable(response.data?.available || false);
     } catch (error) {
       console.error('Username check error:', error);
+      setUsernameAvailable(null);
+    } finally {
+      setCheckingUsername(false);
     }
   };
 
@@ -59,7 +65,10 @@ const ProfileCompletion = () => {
     setFormData(prev => ({ ...prev, [name]: value }));
 
     if (name === 'username') {
-      checkUsernameAvailability(value);
+      setUsernameAvailable(null);
+      if (value.length >= 3) {
+        checkUsernameAvailability(value);
+      }
     }
   };
 
@@ -87,8 +96,14 @@ const ProfileCompletion = () => {
     setLoading(true);
 
     try {
-      const response = await authAPI.updateProfile(formData);
+      const response = await userAPI.updateProfile(formData);
       if (response.success) {
+        updateUser({ 
+          username: formData.username, 
+          email: formData.email,
+          whatsappNumber: formData.whatsappNumber
+        });
+        
         toast({
           title: "Profile Updated",
           description: "Your profile has been completed successfully!",
@@ -101,7 +116,11 @@ const ProfileCompletion = () => {
           navigate('/freelancer/dashboard');
         } else if (user?.role === 'admin') {
           navigate('/admin/dashboard');
+        } else {
+          navigate('/role-selection');
         }
+      } else {
+        throw new Error(response.message || 'Failed to update profile');
       }
     } catch (error: any) {
       toast({
@@ -140,10 +159,18 @@ const ProfileCompletion = () => {
                 title="Username can only contain letters, numbers, and underscores"
               />
               {formData.username.length >= 3 && (
-                <p className={`text-sm ${usernameAvailable === true ? 'text-green-600' : usernameAvailable === false ? 'text-red-600' : 'text-gray-500'}`}>
-                  {usernameAvailable === true && '✓ Username is available'}
-                  {usernameAvailable === false && '✗ Username is taken'}
-                  {usernameAvailable === null && 'Checking availability...'}
+                <p className={`text-sm ${
+                  checkingUsername 
+                    ? 'text-gray-500' 
+                    : usernameAvailable === true 
+                      ? 'text-green-600' 
+                      : usernameAvailable === false 
+                        ? 'text-red-600' 
+                        : 'text-gray-500'
+                }`}>
+                  {checkingUsername && 'Checking availability...'}
+                  {!checkingUsername && usernameAvailable === true && '✓ Username is available'}
+                  {!checkingUsername && usernameAvailable === false && '✗ Username is taken'}
                 </p>
               )}
             </div>
@@ -175,7 +202,7 @@ const ProfileCompletion = () => {
             <Button 
               type="submit" 
               className="w-full"
-              disabled={loading || usernameAvailable === false}
+              disabled={loading || usernameAvailable === false || checkingUsername}
             >
               {loading ? "Updating..." : "Complete Profile"}
             </Button>

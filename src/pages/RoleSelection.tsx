@@ -11,7 +11,7 @@ import { useAuth } from "@/contexts/AuthContext";
 const RoleSelection = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { updateUser } = useAuth();
+  const { updateUser, user } = useAuth();
   const [selectedRole, setSelectedRole] = useState<'client' | 'freelancer' | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -27,19 +27,25 @@ const RoleSelection = () => {
     try {
       const response = await authAPI.selectRole(selectedRole);
       
-      if (response.success) {
-        updateUser({ role: selectedRole, roleSelected: true, needsRoleSelection: false });
+      if (response.success && response.user) {
+        updateUser({ 
+          role: selectedRole, 
+          roleSelected: true, 
+          needsRoleSelection: false 
+        });
         
         toast({
           title: "Role Selected",
           description: `Welcome to Servpe as a ${selectedRole}!`,
         });
 
-        // Navigate to appropriate dashboard
-        if (selectedRole === 'client') {
-          navigate('/dashboard/client');
+        // Check if user needs to complete profile
+        if (!user?.username) {
+          navigate('/profile-completion');
+        } else if (selectedRole === 'client') {
+          navigate('/client/dashboard');
         } else {
-          navigate('/dashboard/freelancer');
+          navigate('/freelancer/dashboard');
         }
       } else {
         throw new Error(response.message || 'Failed to select role');

@@ -1,3 +1,4 @@
+
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from '@/contexts/AuthContext';
 import ProtectedRoute from '@/components/ProtectedRoute';
@@ -9,6 +10,7 @@ import Login from '@/pages/Login';
 import SignUp from '@/pages/SignUp';
 import OTPLogin from '@/pages/OTPLogin';
 import RoleSelection from '@/pages/RoleSelection';
+import ProfileCompletion from '@/pages/ProfileCompletion';
 import Onboarding from '@/pages/Onboarding';
 import Services from '@/pages/Services';
 import ServiceDetail from '@/pages/ServiceDetail';
@@ -29,17 +31,16 @@ import FreelancerOrderDashboard from '@/pages/FreelancerOrderDashboard';
 import FreelancerProfile from '@/pages/FreelancerProfile';
 import AdminDashboard from '@/pages/AdminDashboard';
 import NotFound from '@/pages/NotFound';
-import ProfileCompletion from '@/pages/ProfileCompletion';
 
 function App() {
   return (
     <AuthProvider>
       <Router>
-        <div className="App">
+        <div className="App min-h-screen bg-background">
           <Routes>
             {/* Public routes */}
             <Route path="/" element={<Index />} />
-            <Route path="/login" element={<OTPLogin />} />
+            <Route path="/login" element={<Navigate to="/otp-login" replace />} />
             <Route path="/signup" element={<SignUp />} />
             <Route path="/otp-login" element={<OTPLogin />} />
             <Route path="/services" element={<Services />} />
@@ -47,7 +48,7 @@ function App() {
             <Route path="/find-freelancers" element={<FindFreelancers />} />
             <Route path="/@:username" element={<FreelancerProfile />} />
             
-            {/* Protected Routes */}
+            {/* Protected Routes - General */}
             <Route path="/profile-completion" element={
               <ProtectedRoute>
                 <ProfileCompletion />
@@ -83,11 +84,6 @@ function App() {
             <Route path="/client/order-history" element={
               <ProtectedRoute allowedRoles={['client']}>
                 <ClientOrderHistory />
-              </ProtectedRoute>
-            } />
-            <Route path="/post-project" element={
-              <ProtectedRoute allowedRoles={['client', 'freelancer']}>
-                <PostProject />
               </ProtectedRoute>
             } />
             <Route path="/create-project" element={
@@ -139,6 +135,11 @@ function App() {
             } />
             
             {/* Shared Routes */}
+            <Route path="/post-project" element={
+              <ProtectedRoute allowedRoles={['client', 'freelancer']}>
+                <PostProject />
+              </ProtectedRoute>
+            } />
             <Route path="/messages" element={
               <ProtectedRoute>
                 <Messages />
