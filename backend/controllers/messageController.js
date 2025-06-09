@@ -1,6 +1,6 @@
-
 const Message = require('../models/Message');
 const User = require('../models/User');
+const Order = require('../models/Order');
 
 // Content filtering patterns
 const RESTRICTED_PATTERNS = [
@@ -40,8 +40,32 @@ exports.sendMessage = async (req, res) => {
     // Filter content for restricted information
     const { filteredContent, hasViolation } = filterContent(content);
 
-    // Generate conversation ID
-    const conversationId = [req.user.id, recipientId].sort().join('_');
+    // Generate conversation ID - check if there's an existing order between users
+    let conversationId = [req.user.id, recipientId].sort().join('_');
+    let relatedOrder = null;
+
+    // If orderId is provided, use that order's conversation
+    if (orderId) {
+      relatedOrder = await Order.findById(orderId);
+      if (relatedOrder && 
+          ((relatedOrder.client.toString() === req.user.id && relatedOrder.freelancer.toString() === recipientId) ||
+           (relatedOrder.freelancer.toString() === req.user.id && relatedOrder.client.toString() === recipientId))) {
+        conversationId = relatedOrder.conversationId;
+      }
+    } else {
+      // Check if there's an active order between these users
+      relatedOrder = await Order.findOne({
+        $or: [
+          { client: req.user.id, freelancer: recipientId },
+          { client: recipientId, freelancer: req.user.id }
+        ],
+        status: { $in: ['pending', 'accepted', 'in_progress', 'delivered', 'revision_requested'] }
+      }).sort({ createdAt: -1 });
+
+      if (relatedOrder) {
+        conversationId = relatedOrder.conversationId;
+      }
+    }
 
     const message = await Message.create({
       sender: req.user.id,
@@ -49,13 +73,20 @@ exports.sendMessage = async (req, res) => {
       content: filteredContent,
       attachments,
       conversationId,
-      order: orderId || null,
+      order: relatedOrder?._id || null,
       isFiltered: hasViolation
     });
 
     const populatedMessage = await Message.findById(message._id)
       .populate('sender', 'firstName lastName profilePicture role')
-      .populate('recipient', 'firstName lastName profilePicture role');
+      .populate('recipient', 'firstName lastName profilePicture role')
+      .populate('order', 'orderNumber status');
+
+    // Update last message time for the order if applicable
+    if (relatedOrder) {
+      relatedOrder.lastMessageAt = new Date();
+      await relatedOrder.save();
+    }
 
     // Emit real-time message via Socket.IO
     const io = req.app.get('io');
@@ -86,11 +117,20 @@ exports.getConversation = async (req, res) => {
     const { page = 1, limit = 50 } = req.query;
     const skip = (page - 1) * limit;
 
-    const conversationId = [req.user.id, userId].sort().join('_');
+    // Check if there's an order-based conversation
+    const order = await Order.findOne({
+      $or: [
+        { client: req.user.id, freelancer: userId },
+        { client: userId, freelancer: req.user.id }
+      ]
+    }).sort({ createdAt: -1 });
+
+    const conversationId = order?.conversationId || [req.user.id, userId].sort().join('_');
 
     const messages = await Message.find({ conversationId })
       .populate('sender', 'firstName lastName profilePicture role')
       .populate('recipient', 'firstName lastName profilePicture role')
+      .populate('order', 'orderNumber status')
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(Number(limit));
@@ -118,7 +158,12 @@ exports.getConversation = async (req, res) => {
         limit: Number(limit),
         total,
         pages: Math.ceil(total / limit)
-      }
+      },
+      order: order ? {
+        _id: order._id,
+        orderNumber: order.orderNumber,
+        status: order.status
+      } : null
     });
   } catch (error) {
     console.error('Get conversation error:', error);
@@ -135,7 +180,7 @@ exports.getConversationsList = async (req, res) => {
     const { page = 1, limit = 20 } = req.query;
     const skip = (page - 1) * limit;
 
-    // Get all unique conversation partners
+    // Get all unique conversation partners with order context
     const conversations = await Message.aggregate([
       {
         $match: {
@@ -165,7 +210,8 @@ exports.getConversationsList = async (req, res) => {
                 0
               ]
             }
-          }
+          },
+          orderId: { $first: '$order' }
         }
       },
       {
@@ -176,7 +222,7 @@ exports.getConversationsList = async (req, res) => {
       }
     ]);
 
-    // Populate user details
+    // Populate user details and order information
     const populatedConversations = await Message.populate(conversations, [
       {
         path: 'lastMessage.sender',
@@ -185,6 +231,14 @@ exports.getConversationsList = async (req, res) => {
       {
         path: 'lastMessage.recipient',
         select: 'firstName lastName profilePicture role'
+      },
+      {
+        path: 'orderId',
+        select: 'orderNumber status service',
+        populate: {
+          path: 'service',
+          select: 'title'
+        }
       }
     ]);
 

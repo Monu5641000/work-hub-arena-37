@@ -1,4 +1,3 @@
-
 const mongoose = require('mongoose');
 
 const orderSchema = new mongoose.Schema({
@@ -117,6 +116,10 @@ const orderSchema = new mongoose.Schema({
     type: Boolean,
     default: true
   },
+  conversationId: {
+    type: String,
+    index: true
+  },
   lastMessageAt: Date,
   priority: {
     type: String,
@@ -136,13 +139,40 @@ const orderSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Pre-save middleware to generate order number
+// Pre-save middleware to generate order number and conversation ID
 orderSchema.pre('save', async function(next) {
   if (!this.orderNumber) {
     const count = await mongoose.model('Order').countDocuments();
     this.orderNumber = `ORD${Date.now()}${count.toString().padStart(4, '0')}`;
   }
+  
+  // Generate conversation ID when order is created
+  if (!this.conversationId) {
+    this.conversationId = [this.client, this.freelancer].sort().join('_');
+  }
+  
   next();
+});
+
+// Post-save middleware to create initial chat message when order is created
+orderSchema.post('save', async function(doc) {
+  if (doc.isNew) {
+    try {
+      const Message = mongoose.model('Message');
+      
+      // Create initial system message
+      await Message.create({
+        sender: doc.client,
+        recipient: doc.freelancer,
+        content: `Order #${doc.orderNumber} has been created. You can now discuss the project details here.`,
+        conversationId: doc.conversationId,
+        type: 'system',
+        order: doc._id
+      });
+    } catch (error) {
+      console.error('Error creating initial chat message:', error);
+    }
+  }
 });
 
 // Virtual for days remaining
@@ -183,5 +213,6 @@ orderSchema.index({ createdAt: -1 });
 orderSchema.index({ orderNumber: 1 });
 orderSchema.index({ deliveryDate: 1 });
 orderSchema.index({ 'dispute.isDisputed': 1 });
+orderSchema.index({ conversationId: 1 });
 
 module.exports = mongoose.model('Order', orderSchema);

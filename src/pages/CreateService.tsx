@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { ArrowLeft, Upload, Plus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -9,9 +8,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
+import { serviceAPI } from "@/api/services";
+import { useToast } from "@/hooks/use-toast";
 
 const CreateService = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -20,40 +24,38 @@ const CreateService = () => {
     tags: [],
     pricingPlans: {
       basic: {
-        title: '',
+        title: 'Basic',
         description: '',
         price: '',
-        deliveryDays: '',
-        revisions: '',
+        deliveryTime: '',
+        revisions: '1',
         features: []
       },
       standard: {
-        title: '',
+        title: 'Standard',
         description: '',
         price: '',
-        deliveryDays: '',
-        revisions: '',
+        deliveryTime: '',
+        revisions: '2',
         features: []
       },
       premium: {
-        title: '',
+        title: 'Premium',
         description: '',
         price: '',
-        deliveryDays: '',
-        revisions: '',
+        deliveryTime: '',
+        revisions: '3',
         features: []
       }
-    },
-    requirements: [],
-    faqs: []
+    }
   });
 
   const [currentTag, setCurrentTag] = useState('');
   const [images, setImages] = useState([]);
 
   const categories = [
-    'Design', 'Development', 'Marketing', 'Writing', 'Video Editing', 
-    'Data Entry', 'Translation', 'Other'
+    'web-development', 'mobile-development', 'design', 'writing', 
+    'marketing', 'data-science', 'consulting', 'other'
   ];
 
   const handleInputChange = (field, value) => {
@@ -108,11 +110,61 @@ const CreateService = () => {
     handlePricingPlanChange(plan, 'features', newFeatures);
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log('Service data:', formData);
-    // Here you would send the data to your backend
-    navigate('/dashboard/freelancer');
+    setIsSubmitting(true);
+
+    try {
+      // Prepare service data for backend
+      const serviceData = {
+        title: formData.title,
+        description: formData.description,
+        category: formData.category,
+        subcategory: formData.subcategory,
+        tags: formData.tags,
+        pricingPlans: {
+          basic: {
+            ...formData.pricingPlans.basic,
+            price: Number(formData.pricingPlans.basic.price),
+            deliveryTime: Number(formData.pricingPlans.basic.deliveryTime),
+            revisions: Number(formData.pricingPlans.basic.revisions)
+          },
+          standard: formData.pricingPlans.standard.price ? {
+            ...formData.pricingPlans.standard,
+            price: Number(formData.pricingPlans.standard.price),
+            deliveryTime: Number(formData.pricingPlans.standard.deliveryTime),
+            revisions: Number(formData.pricingPlans.standard.revisions)
+          } : undefined,
+          premium: formData.pricingPlans.premium.price ? {
+            ...formData.pricingPlans.premium,
+            price: Number(formData.pricingPlans.premium.price),
+            deliveryTime: Number(formData.pricingPlans.premium.deliveryTime),
+            revisions: Number(formData.pricingPlans.premium.revisions)
+          } : undefined
+        }
+      };
+
+      const response = await serviceAPI.createService(serviceData);
+      
+      if (response.success) {
+        toast({
+          title: "Success!",
+          description: "Service created successfully",
+        });
+        navigate('/dashboard/freelancer');
+      } else {
+        throw new Error(response.message || 'Failed to create service');
+      }
+    } catch (error) {
+      console.error('Create service error:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to create service",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -178,7 +230,9 @@ const CreateService = () => {
                     <SelectContent>
                       {categories.map((category) => (
                         <SelectItem key={category} value={category}>
-                          {category}
+                          {category.split('-').map(word => 
+                            word.charAt(0).toUpperCase() + word.slice(1)
+                          ).join(' ')}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -225,24 +279,6 @@ const CreateService = () => {
             </CardContent>
           </Card>
 
-          {/* Media Upload */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Service Media</CardTitle>
-              <CardDescription>Upload images to showcase your work</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
-                <Upload className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-600 mb-2">Drag and drop images here, or click to browse</p>
-                <p className="text-sm text-gray-500">PNG, JPG up to 5MB each (max 5 images)</p>
-                <Button type="button" variant="outline" className="mt-4">
-                  Choose Files
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-
           {/* Pricing Plans */}
           <Card>
             <CardHeader>
@@ -257,21 +293,13 @@ const CreateService = () => {
                     
                     <div className="space-y-3">
                       <div>
-                        <Label>Package Title</Label>
-                        <Input
-                          placeholder={`${plan} package`}
-                          value={formData.pricingPlans[plan].title}
-                          onChange={(e) => handlePricingPlanChange(plan, 'title', e.target.value)}
-                        />
-                      </div>
-
-                      <div>
-                        <Label>Description</Label>
+                        <Label>Package Description</Label>
                         <Textarea
                           placeholder="Describe what's included"
                           rows={3}
                           value={formData.pricingPlans[plan].description}
                           onChange={(e) => handlePricingPlanChange(plan, 'description', e.target.value)}
+                          required={plan === 'basic'}
                         />
                       </div>
 
@@ -283,6 +311,7 @@ const CreateService = () => {
                             placeholder="2500"
                             value={formData.pricingPlans[plan].price}
                             onChange={(e) => handlePricingPlanChange(plan, 'price', e.target.value)}
+                            required={plan === 'basic'}
                           />
                         </div>
                         <div>
@@ -290,8 +319,9 @@ const CreateService = () => {
                           <Input
                             type="number"
                             placeholder="3"
-                            value={formData.pricingPlans[plan].deliveryDays}
-                            onChange={(e) => handlePricingPlanChange(plan, 'deliveryDays', e.target.value)}
+                            value={formData.pricingPlans[plan].deliveryTime}
+                            onChange={(e) => handlePricingPlanChange(plan, 'deliveryTime', e.target.value)}
+                            required={plan === 'basic'}
                           />
                         </div>
                       </div>
@@ -342,8 +372,8 @@ const CreateService = () => {
             <Button type="button" variant="outline" onClick={() => navigate('/dashboard/freelancer')}>
               Cancel
             </Button>
-            <Button type="submit" className="bg-blue-600 hover:bg-blue-700">
-              Create Service
+            <Button type="submit" className="bg-blue-600 hover:bg-blue-700" disabled={isSubmitting}>
+              {isSubmitting ? 'Creating...' : 'Create Service'}
             </Button>
           </div>
         </form>
