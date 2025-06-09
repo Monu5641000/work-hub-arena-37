@@ -16,6 +16,16 @@ const userSchema = new mongoose.Schema({
     trim: true,
     maxlength: [50, 'Last name cannot exceed 50 characters']
   },
+  username: {
+    type: String,
+    unique: true,
+    sparse: true,
+    trim: true,
+    lowercase: true,
+    minlength: [3, 'Username must be at least 3 characters'],
+    maxlength: [30, 'Username cannot exceed 30 characters'],
+    match: [/^[a-zA-Z0-9_]+$/, 'Username can only contain letters, numbers, and underscores']
+  },
   email: {
     type: String,
     required: function() {
@@ -38,6 +48,16 @@ const userSchema = new mongoose.Schema({
         return !v || /^\+91[6-9]\d{9}$/.test(v.replace(/\s/g, ''));
       },
       message: 'Please provide a valid Indian phone number'
+    }
+  },
+  whatsappNumber: {
+    type: String,
+    sparse: true,
+    validate: {
+      validator: function(v) {
+        return !v || /^\+91[6-9]\d{9}$/.test(v.replace(/\s/g, ''));
+      },
+      message: 'Please provide a valid WhatsApp number'
     }
   },
   password: {
@@ -158,6 +178,7 @@ const userSchema = new mongoose.Schema({
 // Indexes for better performance
 userSchema.index({ email: 1 });
 userSchema.index({ phoneNumber: 1 });
+userSchema.index({ username: 1 });
 userSchema.index({ otplessUserId: 1 });
 userSchema.index({ googleId: 1 });
 userSchema.index({ role: 1 });

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Star, Clock, RefreshCw, Check, ArrowLeft, MessageSquare } from 'lucide-react';
@@ -40,9 +41,36 @@ const ServiceDetail = () => {
           isActive: response.data.isActive ?? true,
           clicks: response.data.clicks || 0,
           images: response.data.images?.map((img: any) => ({
-            ...img,
+            url: img.url,
+            alt: img.alt || service?.title || 'Service image',
             isPrimary: img.isPrimary ?? false
-          })) || []
+          })) || [],
+          pricingPlans: {
+            basic: {
+              title: response.data.pricingPlans?.basic?.title || 'Basic',
+              description: response.data.pricingPlans?.basic?.description || 'Basic plan',
+              price: response.data.pricingPlans?.basic?.price || 0,
+              deliveryTime: response.data.pricingPlans?.basic?.deliveryTime || 1,
+              revisions: response.data.pricingPlans?.basic?.revisions || 1,
+              features: response.data.pricingPlans?.basic?.features || []
+            },
+            standard: response.data.pricingPlans?.standard ? {
+              title: response.data.pricingPlans.standard.title || 'Standard',
+              description: response.data.pricingPlans.standard.description || 'Standard plan',
+              price: response.data.pricingPlans.standard.price || 0,
+              deliveryTime: response.data.pricingPlans.standard.deliveryTime || 1,
+              revisions: response.data.pricingPlans.standard.revisions || 1,
+              features: response.data.pricingPlans.standard.features || []
+            } : undefined,
+            premium: response.data.pricingPlans?.premium ? {
+              title: response.data.pricingPlans.premium.title || 'Premium',
+              description: response.data.pricingPlans.premium.description || 'Premium plan',
+              price: response.data.pricingPlans.premium.price || 0,
+              deliveryTime: response.data.pricingPlans.premium.deliveryTime || 1,
+              revisions: response.data.pricingPlans.premium.revisions || 1,
+              features: response.data.pricingPlans.premium.features || []
+            } : undefined
+          }
         };
         setService(serviceData);
       } else {

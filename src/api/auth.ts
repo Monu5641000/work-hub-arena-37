@@ -90,7 +90,7 @@ export const authAPI = {
   },
 
   async updateProfile(profileData: any): Promise<ApiResponse<User>> {
-    const response = await api.put('/users/profile', profileData);
+    const response = await api.put('/auth/profile', profileData);
     const data = response.data as ApiResponse<User>;
     if (data.success) {
       localStorage.setItem('user', JSON.stringify(data.data!));
