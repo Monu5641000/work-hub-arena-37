@@ -9,15 +9,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
-import { useToast } from "@/hooks/use-toast";
-import { serviceAPI } from "@/api/services";
-import { useAuth } from "@/contexts/AuthContext";
 
 const CreateService = () => {
   const navigate = useNavigate();
-  const { toast } = useToast();
-  const { user } = useAuth();
-  const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -26,27 +20,27 @@ const CreateService = () => {
     tags: [],
     pricingPlans: {
       basic: {
-        title: 'Basic',
+        title: '',
         description: '',
         price: '',
         deliveryDays: '',
-        revisions: '1',
+        revisions: '',
         features: []
       },
       standard: {
-        title: 'Standard',
+        title: '',
         description: '',
         price: '',
         deliveryDays: '',
-        revisions: '2',
+        revisions: '',
         features: []
       },
       premium: {
-        title: 'Premium',
+        title: '',
         description: '',
         price: '',
         deliveryDays: '',
-        revisions: '3',
+        revisions: '',
         features: []
       }
     },
@@ -62,35 +56,20 @@ const CreateService = () => {
     'Data Entry', 'Translation', 'Other'
   ];
 
-  if (!user || user.role !== 'freelancer') {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <Card>
-          <CardContent className="text-center py-12">
-            <p className="text-gray-500">You must be logged in as a freelancer to create services.</p>
-            <Button onClick={() => navigate('/otp-login')} className="mt-4">
-              Login
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
-  const handleInputChange = (field: string, value: any) => {
+  const handleInputChange = (field, value) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
     }));
   };
 
-  const handlePricingPlanChange = (plan: string, field: string, value: any) => {
+  const handlePricingPlanChange = (plan, field, value) => {
     setFormData(prev => ({
       ...prev,
       pricingPlans: {
         ...prev.pricingPlans,
         [plan]: {
-          ...prev.pricingPlans[plan as keyof typeof prev.pricingPlans],
+          ...prev.pricingPlans[plan],
           [field]: value
         }
       }
@@ -107,104 +86,33 @@ const CreateService = () => {
     }
   };
 
-  const removeTag = (tagToRemove: string) => {
+  const removeTag = (tagToRemove) => {
     setFormData(prev => ({
       ...prev,
       tags: prev.tags.filter(tag => tag !== tagToRemove)
     }));
   };
 
-  const addFeature = (plan: string) => {
+  const addFeature = (plan) => {
     const feature = prompt('Enter feature:');
     if (feature) {
-      const currentFeatures = formData.pricingPlans[plan as keyof typeof formData.pricingPlans].features;
       handlePricingPlanChange(plan, 'features', [
-        ...currentFeatures,
+        ...formData.pricingPlans[plan].features,
         feature
       ]);
     }
   };
 
-  const removeFeature = (plan: string, index: number) => {
-    const currentFeatures = formData.pricingPlans[plan as keyof typeof formData.pricingPlans].features;
-    const newFeatures = currentFeatures.filter((_, i) => i !== index);
+  const removeFeature = (plan, index) => {
+    const newFeatures = formData.pricingPlans[plan].features.filter((_, i) => i !== index);
     handlePricingPlanChange(plan, 'features', newFeatures);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
-    
-    if (!formData.title || !formData.description || !formData.category) {
-      toast({
-        title: "Missing Information",
-        description: "Please fill in all required fields",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // Validate at least one pricing plan
-    const hasValidPlan = Object.values(formData.pricingPlans).some(
-      plan => plan.price && plan.deliveryDays && plan.description
-    );
-
-    if (!hasValidPlan) {
-      toast({
-        title: "Pricing Required",
-        description: "Please complete at least one pricing plan",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setLoading(true);
-
-    try {
-      // Prepare service data
-      const serviceData = {
-        ...formData,
-        pricingPlans: {
-          basic: {
-            ...formData.pricingPlans.basic,
-            price: Number(formData.pricingPlans.basic.price) || 0,
-            deliveryDays: Number(formData.pricingPlans.basic.deliveryDays) || 0,
-            revisions: Number(formData.pricingPlans.basic.revisions) || 0,
-          },
-          standard: {
-            ...formData.pricingPlans.standard,
-            price: Number(formData.pricingPlans.standard.price) || 0,
-            deliveryDays: Number(formData.pricingPlans.standard.deliveryDays) || 0,
-            revisions: Number(formData.pricingPlans.standard.revisions) || 0,
-          },
-          premium: {
-            ...formData.pricingPlans.premium,
-            price: Number(formData.pricingPlans.premium.price) || 0,
-            deliveryDays: Number(formData.pricingPlans.premium.deliveryDays) || 0,
-            revisions: Number(formData.pricingPlans.premium.revisions) || 0,
-          }
-        }
-      };
-
-      const response = await serviceAPI.createService(serviceData);
-      
-      if (response.success) {
-        toast({
-          title: "Service Created",
-          description: "Your service has been created successfully!",
-        });
-        navigate('/my-services');
-      } else {
-        throw new Error(response.message || 'Failed to create service');
-      }
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to create service",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
+    console.log('Service data:', formData);
+    // Here you would send the data to your backend
+    navigate('/dashboard/freelancer');
   };
 
   return (
@@ -214,7 +122,7 @@ const CreateService = () => {
         <div className="max-w-4xl mx-auto px-4 py-4">
           <Button 
             variant="ghost" 
-            onClick={() => navigate('/freelancer/dashboard')}
+            onClick={() => navigate('/dashboard/freelancer')}
             className="flex items-center space-x-2"
           >
             <ArrowLeft className="h-4 w-4" />
@@ -238,7 +146,7 @@ const CreateService = () => {
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <Label htmlFor="title">Service Title *</Label>
+                <Label htmlFor="title">Service Title</Label>
                 <Input
                   id="title"
                   placeholder="I will create a professional logo design..."
@@ -249,7 +157,7 @@ const CreateService = () => {
               </div>
 
               <div>
-                <Label htmlFor="description">Description *</Label>
+                <Label htmlFor="description">Description</Label>
                 <Textarea
                   id="description"
                   placeholder="Describe what you'll deliver, your experience, and why clients should choose you..."
@@ -262,7 +170,7 @@ const CreateService = () => {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label>Category *</Label>
+                  <Label>Category</Label>
                   <Select onValueChange={(value) => handleInputChange('category', value)}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select category" />
@@ -317,6 +225,24 @@ const CreateService = () => {
             </CardContent>
           </Card>
 
+          {/* Media Upload */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Service Media</CardTitle>
+              <CardDescription>Upload images to showcase your work</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
+                <Upload className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <p className="text-gray-600 mb-2">Drag and drop images here, or click to browse</p>
+                <p className="text-sm text-gray-500">PNG, JPG up to 5MB each (max 5 images)</p>
+                <Button type="button" variant="outline" className="mt-4">
+                  Choose Files
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
           {/* Pricing Plans */}
           <Card>
             <CardHeader>
@@ -334,7 +260,7 @@ const CreateService = () => {
                         <Label>Package Title</Label>
                         <Input
                           placeholder={`${plan} package`}
-                          value={formData.pricingPlans[plan as keyof typeof formData.pricingPlans].title}
+                          value={formData.pricingPlans[plan].title}
                           onChange={(e) => handlePricingPlanChange(plan, 'title', e.target.value)}
                         />
                       </div>
@@ -344,7 +270,7 @@ const CreateService = () => {
                         <Textarea
                           placeholder="Describe what's included"
                           rows={3}
-                          value={formData.pricingPlans[plan as keyof typeof formData.pricingPlans].description}
+                          value={formData.pricingPlans[plan].description}
                           onChange={(e) => handlePricingPlanChange(plan, 'description', e.target.value)}
                         />
                       </div>
@@ -355,7 +281,7 @@ const CreateService = () => {
                           <Input
                             type="number"
                             placeholder="2500"
-                            value={formData.pricingPlans[plan as keyof typeof formData.pricingPlans].price}
+                            value={formData.pricingPlans[plan].price}
                             onChange={(e) => handlePricingPlanChange(plan, 'price', e.target.value)}
                           />
                         </div>
@@ -364,7 +290,7 @@ const CreateService = () => {
                           <Input
                             type="number"
                             placeholder="3"
-                            value={formData.pricingPlans[plan as keyof typeof formData.pricingPlans].deliveryDays}
+                            value={formData.pricingPlans[plan].deliveryDays}
                             onChange={(e) => handlePricingPlanChange(plan, 'deliveryDays', e.target.value)}
                           />
                         </div>
@@ -375,7 +301,7 @@ const CreateService = () => {
                         <Input
                           type="number"
                           placeholder="2"
-                          value={formData.pricingPlans[plan as keyof typeof formData.pricingPlans].revisions}
+                          value={formData.pricingPlans[plan].revisions}
                           onChange={(e) => handlePricingPlanChange(plan, 'revisions', e.target.value)}
                         />
                       </div>
@@ -393,7 +319,7 @@ const CreateService = () => {
                           </Button>
                         </div>
                         <div className="space-y-1">
-                          {formData.pricingPlans[plan as keyof typeof formData.pricingPlans].features.map((feature, index) => (
+                          {formData.pricingPlans[plan].features.map((feature, index) => (
                             <div key={index} className="flex items-center justify-between text-sm bg-gray-50 px-2 py-1 rounded">
                               <span>{feature}</span>
                               <X 
@@ -413,11 +339,11 @@ const CreateService = () => {
 
           {/* Submit */}
           <div className="flex justify-end space-x-4">
-            <Button type="button" variant="outline" onClick={() => navigate('/freelancer/dashboard')}>
+            <Button type="button" variant="outline" onClick={() => navigate('/dashboard/freelancer')}>
               Cancel
             </Button>
-            <Button type="submit" className="bg-blue-600 hover:bg-blue-700" disabled={loading}>
-              {loading ? "Creating..." : "Create Service"}
+            <Button type="submit" className="bg-blue-600 hover:bg-blue-700">
+              Create Service
             </Button>
           </div>
         </form>

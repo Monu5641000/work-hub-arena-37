@@ -1,27 +1,32 @@
 
 import React, { useState, useEffect } from 'react';
-import { Calendar, Clock, User, Package, MessageSquare, Download } from 'lucide-react';
+import { Clock, MessageCircle, Download, AlertCircle, CheckCircle, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { orderAPI } from '@/api/orders';
 import { useAuth } from '@/contexts/AuthContext';
+import { orderAPI } from '@/api/orders';
+import Chat from './Chat';
 
 interface OrderDetailProps {
   orderId: string;
   onOrderUpdate?: (order: any) => void;
 }
 
-const OrderDetail = ({ orderId, onOrderUpdate }: OrderDetailProps) => {
+const OrderDetail: React.FC<OrderDetailProps> = ({ orderId, onOrderUpdate }) => {
   const [order, setOrder] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [showChat, setShowChat] = useState(false);
   const [revisionReason, setRevisionReason] = useState('');
-  const [submitting, setSubmitting] = useState(false);
-  const { toast } = useToast();
+  const [isSubmittingRevision, setIsSubmittingRevision] = useState(false);
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
   const { user } = useAuth();
+  const { toast } = useToast();
 
   useEffect(() => {
     loadOrder();
@@ -29,15 +34,10 @@ const OrderDetail = ({ orderId, onOrderUpdate }: OrderDetailProps) => {
 
   const loadOrder = async () => {
     try {
-      setLoading(true);
       const response = await orderAPI.getOrder(orderId);
       if (response.success) {
         setOrder(response.data);
-        if (onOrderUpdate) {
-          onOrderUpdate(response.data);
-        }
-      } else {
-        throw new Error(response.message);
+        onOrderUpdate?.(response.data);
       }
     } catch (error: any) {
       toast({
@@ -50,18 +50,17 @@ const OrderDetail = ({ orderId, onOrderUpdate }: OrderDetailProps) => {
     }
   };
 
-  const handleStatusUpdate = async (status: string, note?: string) => {
+  const updateOrderStatus = async (newStatus: string, note?: string) => {
+    setIsUpdatingStatus(true);
     try {
-      setSubmitting(true);
-      const response = await orderAPI.updateOrderStatus(orderId, { status, note });
+      const response = await orderAPI.updateOrderStatus(orderId, { status: newStatus, note });
       if (response.success) {
+        setOrder(response.data);
         toast({
           title: "Success",
-          description: "Order status updated successfully",
+          description: `Order status updated to ${newStatus}`,
         });
-        loadOrder();
-      } else {
-        throw new Error(response.message);
+        onOrderUpdate?.(response.data);
       }
     } catch (error: any) {
       toast({
@@ -70,11 +69,11 @@ const OrderDetail = ({ orderId, onOrderUpdate }: OrderDetailProps) => {
         variant: "destructive",
       });
     } finally {
-      setSubmitting(false);
+      setIsUpdatingStatus(false);
     }
   };
 
-  const handleRequestRevision = async () => {
+  const requestRevision = async () => {
     if (!revisionReason.trim()) {
       toast({
         title: "Error",
@@ -84,18 +83,17 @@ const OrderDetail = ({ orderId, onOrderUpdate }: OrderDetailProps) => {
       return;
     }
 
+    setIsSubmittingRevision(true);
     try {
-      setSubmitting(true);
       const response = await orderAPI.requestRevision(orderId, { reason: revisionReason });
       if (response.success) {
+        setOrder(response.data);
+        setRevisionReason('');
         toast({
           title: "Success",
           description: "Revision requested successfully",
         });
-        setRevisionReason('');
-        loadOrder();
-      } else {
-        throw new Error(response.message);
+        onOrderUpdate?.(response.data);
       }
     } catch (error: any) {
       toast({
@@ -104,7 +102,7 @@ const OrderDetail = ({ orderId, onOrderUpdate }: OrderDetailProps) => {
         variant: "destructive",
       });
     } finally {
-      setSubmitting(false);
+      setIsSubmittingRevision(false);
     }
   };
 
@@ -125,36 +123,50 @@ const OrderDetail = ({ orderId, onOrderUpdate }: OrderDetailProps) => {
     return status.replace('_', ' ').toUpperCase();
   };
 
+  const canUpdateStatus = (currentStatus: string, userRole: string) => {
+    if (userRole === 'freelancer') {
+      return ['pending', 'accepted', 'in_progress', 'revision_requested'].includes(currentStatus);
+    }
+    if (userRole === 'client') {
+      return ['delivered'].includes(currentStatus);
+    }
+    return false;
+  };
+
   if (loading) {
     return (
-      <div className="space-y-6">
-        {[...Array(3)].map((_, index) => (
-          <Card key={index} className="animate-pulse">
-            <CardHeader>
-              <div className="h-4 bg-gray-200 rounded w-1/3"></div>
-              <div className="h-3 bg-gray-200 rounded w-1/2"></div>
-            </CardHeader>
-            <CardContent>
-              <div className="h-20 bg-gray-200 rounded"></div>
-            </CardContent>
-          </Card>
-        ))}
+      <div className="flex items-center justify-center p-8">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
       </div>
     );
   }
 
   if (!order) {
     return (
-      <Card>
-        <CardContent className="text-center py-12">
-          <p className="text-gray-500">Order not found</p>
-        </CardContent>
-      </Card>
+      <div className="text-center p-8">
+        <p className="text-gray-500">Order not found</p>
+      </div>
     );
   }
 
   const isClient = order.userRole === 'client';
   const isFreelancer = order.userRole === 'freelancer';
+  const otherUser = isClient ? order.freelancer : order.client;
+
+  if (showChat) {
+    return (
+      <div className="space-y-4">
+        <Button variant="outline" onClick={() => setShowChat(false)}>
+          Back to Order Details
+        </Button>
+        <Chat
+          recipientId={otherUser._id}
+          recipientName={`${otherUser.firstName} ${otherUser.lastName}`}
+          onClose={() => setShowChat(false)}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -163,193 +175,213 @@ const OrderDetail = ({ orderId, onOrderUpdate }: OrderDetailProps) => {
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle className="text-2xl">Order #{order.orderNumber}</CardTitle>
+              <CardTitle className="text-xl">Order #{order.orderNumber}</CardTitle>
               <CardDescription>{order.service?.title}</CardDescription>
             </div>
-            <Badge className={getStatusColor(order.status)}>
-              {getStatusText(order.status)}
-            </Badge>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="flex items-center space-x-3">
-              <User className="h-5 w-5 text-gray-400" />
-              <div>
-                <p className="text-sm text-gray-500">
-                  {isClient ? 'Freelancer' : 'Client'}
-                </p>
-                <p className="font-medium">
-                  {isClient 
-                    ? `${order.freelancer?.firstName} ${order.freelancer?.lastName}`
-                    : `${order.client?.firstName} ${order.client?.lastName}`
-                  }
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center space-x-3">
-              <Calendar className="h-5 w-5 text-gray-400" />
-              <div>
-                <p className="text-sm text-gray-500">Delivery Date</p>
-                <p className="font-medium">
-                  {new Date(order.deliveryDate).toLocaleDateString()}
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center space-x-3">
-              <Package className="h-5 w-5 text-gray-400" />
-              <div>
-                <p className="text-sm text-gray-500">Total Amount</p>
-                <p className="font-medium">₹{order.totalAmount?.toLocaleString()}</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="mt-6">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-medium">Progress</span>
-              <span className="text-sm text-gray-500">{order.progress}%</span>
-            </div>
-            <Progress value={order.progress} />
-          </div>
-
-          {order.isOverdue && (
-            <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-              <p className="text-red-800 text-sm">
-                <Clock className="h-4 w-4 inline mr-1" />
-                This order is overdue by {Math.abs(order.daysRemaining)} days
+            <div className="text-right">
+              <Badge className={getStatusColor(order.status)}>
+                {getStatusText(order.status)}
+              </Badge>
+              <p className="text-sm text-gray-500 mt-1">
+                Progress: {order.progress}%
               </p>
             </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Order Requirements */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Requirements</CardTitle>
+          </div>
+          <Progress value={order.progress} className="mt-4" />
         </CardHeader>
         <CardContent>
-          <p className="text-gray-700">{order.requirements}</p>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <p className="text-sm font-medium text-gray-700">Amount</p>
+              <p className="text-lg font-semibold text-green-600">₹{order.totalAmount?.toLocaleString()}</p>
+            </div>
+            <div>
+              <p className="text-sm font-medium text-gray-700">Delivery Date</p>
+              <p className="text-sm">{new Date(order.deliveryDate).toLocaleDateString()}</p>
+              {order.isOverdue && (
+                <Badge variant="destructive" className="mt-1">Overdue</Badge>
+              )}
+            </div>
+            <div>
+              <p className="text-sm font-medium text-gray-700">Days Remaining</p>
+              <p className="text-sm">{order.daysRemaining > 0 ? order.daysRemaining : 0} days</p>
+            </div>
+          </div>
         </CardContent>
       </Card>
 
-      {/* Deliverables */}
-      {order.deliverables && order.deliverables.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Deliverables</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {order.deliverables.map((deliverable: any, index: number) => (
-              <div key={index} className="border rounded-lg p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <p className="font-medium">Submission {index + 1}</p>
-                  <p className="text-sm text-gray-500">
-                    {new Date(deliverable.submittedAt).toLocaleDateString()}
-                  </p>
-                </div>
-                {deliverable.message && (
-                  <p className="text-gray-700 mb-3">{deliverable.message}</p>
-                )}
-                {deliverable.files && deliverable.files.length > 0 && (
-                  <div className="space-y-2">
-                    <p className="text-sm font-medium">Files:</p>
-                    {deliverable.files.map((file: any, fileIndex: number) => (
-                      <div key={fileIndex} className="flex items-center space-x-2">
-                        <Download className="h-4 w-4 text-gray-400" />
-                        <a 
-                          href={file.fileUrl} 
-                          className="text-blue-600 hover:underline text-sm"
-                          download
-                        >
-                          {file.fileName}
-                        </a>
-                        <span className="text-xs text-gray-500">
-                          ({(file.fileSize / 1024 / 1024).toFixed(2)} MB)
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Actions */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Actions</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {/* Client Actions */}
-          {isClient && order.status === 'delivered' && (
-            <div className="space-y-4">
-              <div>
-                <Button 
-                  onClick={() => handleStatusUpdate('completed')}
-                  disabled={submitting}
-                  className="mr-2"
-                >
-                  Accept Delivery
-                </Button>
-              </div>
-              
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Request Revision</label>
-                <Textarea
-                  placeholder="Please describe what changes are needed..."
-                  value={revisionReason}
-                  onChange={(e) => setRevisionReason(e.target.value)}
-                />
-                <Button 
-                  variant="outline"
-                  onClick={handleRequestRevision}
-                  disabled={submitting || !revisionReason.trim()}
-                >
-                  Request Revision
-                </Button>
-              </div>
-            </div>
-          )}
-
-          {/* Freelancer Actions */}
-          {isFreelancer && order.status === 'pending' && (
-            <div className="space-x-2">
+      {/* Action Buttons */}
+      <div className="flex space-x-4">
+        <Button onClick={() => setShowChat(true)}>
+          <MessageCircle className="h-4 w-4 mr-2" />
+          Chat with {isClient ? 'Freelancer' : 'Client'}
+        </Button>
+        
+        {isFreelancer && canUpdateStatus(order.status, 'freelancer') && (
+          <>
+            {order.status === 'pending' && (
               <Button 
-                onClick={() => handleStatusUpdate('accepted')}
-                disabled={submitting}
+                onClick={() => updateOrderStatus('accepted')}
+                disabled={isUpdatingStatus}
               >
                 Accept Order
               </Button>
+            )}
+            {order.status === 'accepted' && (
               <Button 
-                variant="outline"
-                onClick={() => handleStatusUpdate('cancelled', 'Order cancelled by freelancer')}
-                disabled={submitting}
+                onClick={() => updateOrderStatus('in_progress')}
+                disabled={isUpdatingStatus}
               >
-                Decline Order
+                Start Work
               </Button>
-            </div>
-          )}
+            )}
+            {(order.status === 'in_progress' || order.status === 'revision_requested') && (
+              <Button 
+                onClick={() => updateOrderStatus('delivered')}
+                disabled={isUpdatingStatus}
+              >
+                Mark as Delivered
+              </Button>
+            )}
+          </>
+        )}
 
-          {isFreelancer && order.status === 'accepted' && (
+        {isClient && order.status === 'delivered' && (
+          <>
             <Button 
-              onClick={() => handleStatusUpdate('in_progress')}
-              disabled={submitting}
+              onClick={() => updateOrderStatus('completed')}
+              disabled={isUpdatingStatus}
             >
-              Start Working
+              <CheckCircle className="h-4 w-4 mr-2" />
+              Accept Delivery
             </Button>
-          )}
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button variant="outline">
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Request Revision
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Request Revision</DialogTitle>
+                  <DialogDescription>
+                    Please explain what changes you need
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <Textarea
+                    placeholder="Describe the changes needed..."
+                    value={revisionReason}
+                    onChange={(e) => setRevisionReason(e.target.value)}
+                  />
+                  <Button 
+                    onClick={requestRevision}
+                    disabled={isSubmittingRevision}
+                    className="w-full"
+                  >
+                    Submit Revision Request
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+          </>
+        )}
+      </div>
 
-          {/* Chat Button */}
-          <Button variant="outline" className="flex items-center">
-            <MessageSquare className="h-4 w-4 mr-2" />
-            Open Chat
-          </Button>
-        </CardContent>
-      </Card>
+      <Tabs defaultValue="details" className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="details">Order Details</TabsTrigger>
+          <TabsTrigger value="deliverables">Deliverables</TabsTrigger>
+          <TabsTrigger value="history">Status History</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="details" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Requirements</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-gray-700">{order.requirements}</p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>{isClient ? 'Freelancer' : 'Client'} Information</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center space-x-4">
+                <img 
+                  src={otherUser.profilePicture || "/placeholder.svg"}
+                  alt={`${otherUser.firstName} ${otherUser.lastName}`}
+                  className="w-12 h-12 rounded-full"
+                />
+                <div>
+                  <p className="font-medium">{otherUser.firstName} {otherUser.lastName}</p>
+                  <p className="text-sm text-gray-500">{otherUser.email}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="deliverables" className="space-y-4">
+          {order.deliverables?.length > 0 ? (
+            order.deliverables.map((deliverable: any, index: number) => (
+              <Card key={index}>
+                <CardHeader>
+                  <CardTitle className="text-lg">Delivery #{index + 1}</CardTitle>
+                  <CardDescription>
+                    Submitted on {new Date(deliverable.submittedAt).toLocaleDateString()}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <p className="mb-4">{deliverable.message}</p>
+                  {deliverable.files?.length > 0 && (
+                    <div className="space-y-2">
+                      <p className="font-medium">Files:</p>
+                      {deliverable.files.map((file: any, fileIndex: number) => (
+                        <div key={fileIndex} className="flex items-center justify-between p-2 border rounded">
+                          <span className="text-sm">{file.fileName}</span>
+                          <Button size="sm" variant="outline">
+                            <Download className="h-3 w-3 mr-1" />
+                            Download
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            ))
+          ) : (
+            <Card>
+              <CardContent className="text-center py-8">
+                <p className="text-gray-500">No deliverables submitted yet</p>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+
+        <TabsContent value="history" className="space-y-4">
+          {order.statusHistory?.map((entry: any, index: number) => (
+            <Card key={index}>
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-medium">{getStatusText(entry.status)}</p>
+                    {entry.note && <p className="text-sm text-gray-600">{entry.note}</p>}
+                  </div>
+                  <p className="text-xs text-gray-500">
+                    {new Date(entry.updatedAt).toLocaleString()}
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };

@@ -16,21 +16,6 @@ const userSchema = new mongoose.Schema({
     trim: true,
     maxlength: [50, 'Last name cannot exceed 50 characters']
   },
-  username: {
-    type: String,
-    unique: true,
-    sparse: true,
-    trim: true,
-    lowercase: true,
-    minlength: [3, 'Username must be at least 3 characters'],
-    maxlength: [30, 'Username cannot exceed 30 characters'],
-    validate: {
-      validator: function(v) {
-        return !v || /^[a-zA-Z0-9_]+$/.test(v);
-      },
-      message: 'Username can only contain letters, numbers, and underscores'
-    }
-  },
   email: {
     type: String,
     required: function() {
@@ -53,16 +38,6 @@ const userSchema = new mongoose.Schema({
         return !v || /^\+91[6-9]\d{9}$/.test(v.replace(/\s/g, ''));
       },
       message: 'Please provide a valid Indian phone number'
-    }
-  },
-  whatsappNumber: {
-    type: String,
-    sparse: true,
-    validate: {
-      validator: function(v) {
-        return !v || /^\+91[6-9]\d{9}$/.test(v.replace(/\s/g, ''));
-      },
-      message: 'Please provide a valid Indian WhatsApp number'
     }
   },
   password: {
@@ -129,10 +104,6 @@ const userSchema = new mongoose.Schema({
     address: String
   },
   // Freelancer specific fields
-  title: {
-    type: String,
-    maxlength: [100, 'Title cannot exceed 100 characters']
-  },
   skills: [{
     name: String,
     level: {
@@ -165,17 +136,6 @@ const userSchema = new mongoose.Schema({
     startYear: Number,
     endYear: Number
   }],
-  languages: [String],
-  certifications: [{
-    name: String,
-    issuer: String,
-    year: Number
-  }],
-  availability: {
-    type: String,
-    enum: ['full-time', 'part-time', 'weekends', 'flexible'],
-    default: 'flexible'
-  },
   // Rating and reviews
   rating: {
     average: { type: Number, default: 0 },
@@ -198,7 +158,6 @@ const userSchema = new mongoose.Schema({
 // Indexes for better performance
 userSchema.index({ email: 1 });
 userSchema.index({ phoneNumber: 1 });
-userSchema.index({ username: 1 });
 userSchema.index({ otplessUserId: 1 });
 userSchema.index({ googleId: 1 });
 userSchema.index({ role: 1 });

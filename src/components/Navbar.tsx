@@ -2,107 +2,96 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/contexts/AuthContext';
-import { LogOut, User, Settings, Plus } from 'lucide-react';
+import UserMenu from '@/components/UserMenu';
+import { Sparkles, ChevronRight } from 'lucide-react';
 
 const Navbar = () => {
-  const { user, logout } = useAuth();
+  const { user, token } = useAuth();
   const navigate = useNavigate();
 
-  const handleLogout = () => {
-    logout();
-    navigate('/');
+  const getNavItems = () => {
+    if (!user || !token) {
+      return [
+        { label: 'Services', href: '/services' },
+        { label: 'Find Freelancers', href: '/find-freelancers' },
+      ];
+    }
+
+    const baseItems = [
+      { label: 'Services', href: '/services' },
+      { label: 'Find Freelancers', href: '/find-freelancers' },
+    ];
+
+    if (user.role === 'client') {
+      return [
+        ...baseItems,
+        { label: 'Dashboard', href: '/client/dashboard' },
+        { label: 'My Orders', href: '/client/orders' },
+        { label: 'Post Project', href: '/post-project' },
+        { label: 'Messages', href: '/messages' },
+      ];
+    }
+
+    if (user.role === 'freelancer') {
+      return [
+        ...baseItems,
+        { label: 'Dashboard', href: '/freelancer/dashboard' },
+        { label: 'My Services', href: '/my-services' },
+        { label: 'Orders', href: '/freelancer/orders' },
+        { label: 'Proposals', href: '/my-proposals' },
+        { label: 'Messages', href: '/messages' },
+      ];
+    }
+
+    if (user.role === 'admin') {
+      return [
+        { label: 'Admin Dashboard', href: '/admin/dashboard' },
+        { label: 'Users', href: '/admin/users' },
+        { label: 'Categories', href: '/admin/categories' },
+      ];
+    }
+
+    return baseItems;
   };
 
   return (
-    <nav className="bg-white border-b border-gray-200">
+    <nav className="glass border-b border-gray-200 sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
-          {/* Logo */}
-          <Link to="/" className="flex items-center">
-            <span className="text-2xl font-bold text-orange-600">Servpe</span>
-          </Link>
-
-          {/* Navigation Links */}
-          <div className="hidden md:flex items-center space-x-8">
-            <Link to="/services" className="text-gray-700 hover:text-gray-900">
-              Browse Services
+        <div className="flex justify-between h-16">
+          <div className="flex items-center">
+            <Link to="/" className="flex items-center group">
+              <Sparkles className="w-6 h-6 text-purple-400 animate-pulse-glow mr-2" />
+              <span className="text-2xl font-bold text-gradient-purple hover:scale-105 transition-all duration-300">Servpe</span>
             </Link>
-            {user?.role === 'client' && (
-              <>
-                <Link to="/client/orders" className="text-gray-700 hover:text-gray-900">
-                  My Orders
-                </Link>
-                <Link to="/projects" className="text-gray-700 hover:text-gray-900">
-                  Projects
-                </Link>
-              </>
-            )}
-            {user?.role === 'freelancer' && (
-              <>
-                <Link to="/my-services" className="text-gray-700 hover:text-gray-900">
-                  My Services
-                </Link>
-                <Link to="/freelancer/orders" className="text-gray-700 hover:text-gray-900">
-                  Orders
-                </Link>
-              </>
-            )}
           </div>
 
-          {/* User Menu */}
+          <div className="hidden md:flex items-center space-x-8">
+            {getNavItems().map((item) => (
+              <Link
+                key={item.href}
+                to={item.href}
+                className="text-gray-700 hover:text-gray-900 px-3 py-2 text-sm font-medium transition-all duration-300 hover:scale-105 relative group"
+              >
+                {item.label}
+                <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-purple-400 to-pink-600 group-hover:w-full transition-all duration-300"></span>
+              </Link>
+            ))}
+          </div>
+
           <div className="flex items-center space-x-4">
-            {user ? (
+            {!token ? (
               <>
-                {user.role === 'freelancer' && (
-                  <Button 
-                    onClick={() => navigate('/create-service')}
-                    size="sm"
-                    className="bg-blue-600 hover:bg-blue-700"
-                  >
-                    <Plus className="h-4 w-4 mr-1" />
-                    Create Service
-                  </Button>
-                )}
-                
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-                      <Avatar className="h-8 w-8">
-                        <AvatarImage src={user.profilePicture} alt={user.firstName} />
-                        <AvatarFallback>
-                          {user.firstName?.[0]}{user.lastName?.[0]}
-                        </AvatarFallback>
-                      </Avatar>
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent className="w-56" align="end">
-                    <DropdownMenuItem onClick={() => navigate('/profile')}>
-                      <User className="mr-2 h-4 w-4" />
-                      Profile
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => navigate('/settings')}>
-                      <Settings className="mr-2 h-4 w-4" />
-                      Settings
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={handleLogout}>
-                      <LogOut className="mr-2 h-4 w-4" />
-                      Logout
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </>
-            ) : (
-              <div className="flex items-center space-x-2">
-                <Button variant="ghost" onClick={() => navigate('/login')}>
+                <Button variant="ghost" onClick={() => navigate('/otp-login')} className="text-gray-900 border-gray-300 hover:bg-gray-100 btn-3d">
                   Login
                 </Button>
-                <Button onClick={() => navigate('/register')}>
-                  Sign Up
+                <Button onClick={() => navigate('/otp-login')} className="bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 btn-3d group">
+                  Get Started
+                  <ChevronRight className="ml-2 h-4 w-4 arrow-hover" />
                 </Button>
-              </div>
+              </>
+            ) : (
+              <UserMenu />
             )}
           </div>
         </div>

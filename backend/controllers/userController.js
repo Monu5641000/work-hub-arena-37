@@ -30,129 +30,16 @@ exports.getProfile = async (req, res) => {
   }
 };
 
-// Get all freelancers
-exports.getAllFreelancers = async (req, res) => {
-  try {
-    const { 
-      search, 
-      skills, 
-      minRate, 
-      maxRate, 
-      location, 
-      sort = 'rating',
-      page = 1, 
-      limit = 12 
-    } = req.query;
-
-    const filter = { 
-      role: 'freelancer', 
-      isActive: true,
-      username: { $exists: true, $ne: null }
-    };
-    
-    if (search) {
-      filter.$or = [
-        { firstName: { $regex: search, $options: 'i' } },
-        { lastName: { $regex: search, $options: 'i' } },
-        { title: { $regex: search, $options: 'i' } },
-        { 'skills.name': { $in: [new RegExp(search, 'i')] } }
-      ];
-    }
-    
-    if (skills) {
-      filter['skills.name'] = { $in: skills.split(',') };
-    }
-    
-    if (minRate || maxRate) {
-      filter.hourlyRate = {};
-      if (minRate) filter.hourlyRate.$gte = Number(minRate);
-      if (maxRate) filter.hourlyRate.$lte = Number(maxRate);
-    }
-    
-    if (location) {
-      filter['location.city'] = { $regex: location, $options: 'i' };
-    }
-
-    const skip = (page - 1) * limit;
-
-    let sortQuery = {};
-    switch (sort) {
-      case 'rating':
-        sortQuery = { 'rating.average': -1, 'rating.count': -1 };
-        break;
-      case 'rate_low':
-        sortQuery = { hourlyRate: 1 };
-        break;
-      case 'rate_high':
-        sortQuery = { hourlyRate: -1 };
-        break;
-      case 'newest':
-        sortQuery = { createdAt: -1 };
-        break;
-      default:
-        sortQuery = { 'rating.average': -1 };
-    }
-
-    const freelancers = await User.find(filter)
-      .select('-password -email -phoneNumber -whatsappNumber')
-      .sort(sortQuery)
-      .skip(skip)
-      .limit(Number(limit));
-
-    const total = await User.countDocuments(filter);
-
-    res.status(200).json({
-      success: true,
-      data: freelancers,
-      pagination: {
-        page: Number(page),
-        limit: Number(limit),
-        total,
-        pages: Math.ceil(total / limit)
-      }
-    });
-  } catch (error) {
-    console.error('Get freelancers error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error fetching freelancers'
-    });
-  }
-};
-
-// Check username availability
-exports.checkUsernameAvailability = async (req, res) => {
-  try {
-    const { username } = req.params;
-    
-    const existingUser = await User.findOne({ username: username.toLowerCase() });
-    
-    res.status(200).json({
-      success: true,
-      data: {
-        available: !existingUser,
-        username: username.toLowerCase()
-      }
-    });
-  } catch (error) {
-    console.error('Check username error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error checking username availability'
-    });
-  }
-};
-
 // Get freelancer public profile by username
 exports.getFreelancerProfile = async (req, res) => {
   try {
     const { username } = req.params;
     
     const user = await User.findOne({ 
-      username: username.toLowerCase(), 
+      username, 
       role: 'freelancer',
       isActive: true 
-    }).select('-password -email -phoneNumber -whatsappNumber');
+    }).select('-password -email -phoneNumber');
 
     if (!user) {
       return res.status(404).json({
@@ -211,9 +98,9 @@ exports.getFreelancerProfile = async (req, res) => {
 exports.updateProfile = async (req, res) => {
   try {
     const allowedFields = [
-      'firstName', 'lastName', 'username', 'email', 'whatsappNumber',
-      'bio', 'location', 'skills', 'experience', 'education', 'portfolio', 
-      'hourlyRate', 'title', 'languages', 'certifications', 'availability'
+      'firstName', 'lastName', 'bio', 'location', 'skills', 
+      'experience', 'education', 'portfolio', 'hourlyRate',
+      'title', 'languages', 'certifications'
     ];
     
     const updates = {};
@@ -222,24 +109,6 @@ exports.updateProfile = async (req, res) => {
         updates[key] = req.body[key];
       }
     });
-
-    // Convert username to lowercase
-    if (updates.username) {
-      updates.username = updates.username.toLowerCase();
-      
-      // Check if username is already taken
-      const existingUser = await User.findOne({ 
-        username: updates.username,
-        _id: { $ne: req.user.id }
-      });
-      
-      if (existingUser) {
-        return res.status(400).json({
-          success: false,
-          message: 'Username is already taken'
-        });
-      }
-    }
 
     const user = await User.findByIdAndUpdate(
       req.user.id,

@@ -1,46 +1,54 @@
 
-import { ReactNode } from 'react';
+import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 
 interface ProtectedRouteProps {
-  children: ReactNode;
-  allowedRoles?: string[];
+  children: React.ReactNode;
+  requiredRole?: 'client' | 'freelancer' | 'admin';
+  allowedRoles?: ('client' | 'freelancer' | 'admin')[];
+  requireRoleSelection?: boolean;
 }
 
-const ProtectedRoute = ({ children, allowedRoles }: ProtectedRouteProps) => {
-  const { user, token, loading } = useAuth();
+const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ 
+  children, 
+  requiredRole,
+  allowedRoles,
+  requireRoleSelection = true 
+}) => {
+  const { user, token, isLoading } = useAuth();
   const location = useLocation();
 
-  if (loading) {
+  if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-orange-500"></div>
       </div>
     );
   }
 
   if (!token || !user) {
-    return <Navigate to="/otp-login" state={{ from: location }} replace />;
+    return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  // Check if user needs to select a role
-  if (!user.role || !user.roleSelected) {
-    if (location.pathname !== '/role-selection') {
-      return <Navigate to="/role-selection" replace />;
-    }
+  if (requireRoleSelection && (!user.role || !user.roleSelected)) {
+    return <Navigate to="/role-selection" replace />;
   }
 
-  // Check if user needs to complete profile
-  if (!user.username && location.pathname !== '/profile-completion' && location.pathname !== '/role-selection') {
-    return <Navigate to="/profile-completion" replace />;
+  // Check if user has required role (single role check)
+  if (requiredRole && user.role !== requiredRole) {
+    const redirectPath = user.role === 'admin' ? '/admin' : 
+                        user.role === 'freelancer' ? '/dashboard/freelancer' : 
+                        '/dashboard/client';
+    return <Navigate to={redirectPath} replace />;
   }
 
-  // Check role permissions
-  if (allowedRoles && allowedRoles.length > 0) {
-    if (!user.role || !allowedRoles.includes(user.role)) {
-      return <Navigate to="/" replace />;
-    }
+  // Check if user has one of the allowed roles (multiple roles check)
+  if (allowedRoles && !allowedRoles.includes(user.role as any)) {
+    const redirectPath = user.role === 'admin' ? '/admin' : 
+                        user.role === 'freelancer' ? '/dashboard/freelancer' : 
+                        '/dashboard/client';
+    return <Navigate to={redirectPath} replace />;
   }
 
   return <>{children}</>;

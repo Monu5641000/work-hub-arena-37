@@ -1,12 +1,38 @@
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 import { authAPI } from '@/api/auth';
-import { User } from '@/types/api';
+
+interface User {
+  _id: string;
+  firstName: string;
+  lastName: string;
+  fullName?: string;
+  email?: string;
+  phoneNumber?: string;
+  role?: 'client' | 'freelancer' | 'admin';
+  profilePicture?: string;
+  needsRoleSelection?: boolean;
+  roleSelected?: boolean;
+  isVerified: boolean;
+  location?: string;
+  bio?: string;
+  skills?: Array<{
+    name: string;
+    level: 'beginner' | 'intermediate' | 'expert';
+  }>;
+  hourlyRate?: number;
+  rating?: {
+    average: number;
+    count: number;
+  };
+  createdAt: string;
+  updatedAt: string;
+}
 
 interface AuthContextType {
   user: User | null;
   token: string | null;
-  loading: boolean;
+  isLoading: boolean;
   login: (token: string, userData: User) => void;
   logout: () => void;
   updateUser: (userData: Partial<User>) => void;
@@ -14,68 +40,35 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
-};
-
-interface AuthProviderProps {
-  children: ReactNode;
-}
-
-export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const initializeAuth = async () => {
-      try {
-        const storedToken = localStorage.getItem('token');
-        const storedUser = localStorage.getItem('user');
-        
-        if (storedToken && storedUser) {
-          setToken(storedToken);
-          setUser(JSON.parse(storedUser));
-          
-          // Verify token is still valid
-          try {
-            const response = await authAPI.getMe();
-            if (response.success && response.user) {
-              setUser(response.user);
-              localStorage.setItem('user', JSON.stringify(response.user));
-            }
-          } catch (error) {
-            // Token is invalid, clear auth state
-            logout();
-          }
-        }
-      } catch (error) {
-        console.error('Auth initialization error:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    initializeAuth();
+    // Check for stored auth data on mount
+    const storedToken = localStorage.getItem('token');
+    const storedUser = localStorage.getItem('user');
+    
+    if (storedToken && storedUser) {
+      setToken(storedToken);
+      setUser(JSON.parse(storedUser));
+    }
+    setIsLoading(false);
   }, []);
 
   const login = (authToken: string, userData: User) => {
-    setUser(userData);
-    setToken(authToken);
     localStorage.setItem('token', authToken);
     localStorage.setItem('user', JSON.stringify(userData));
+    setToken(authToken);
+    setUser(userData);
   };
 
   const logout = () => {
-    setUser(null);
-    setToken(null);
     localStorage.removeItem('token');
     localStorage.removeItem('user');
-    authAPI.logout();
+    setToken(null);
+    setUser(null);
   };
 
   const updateUser = (userData: Partial<User>) => {
@@ -86,14 +79,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  const value = {
-    user,
-    token,
-    loading,
-    login,
-    logout,
-    updateUser,
-  };
+  return (
+    <AuthContext.Provider value={{ user, token, isLoading, login, logout, updateUser }}>
+      {children}
+    </AuthContext.Provider>
+  );
+};
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
 };
