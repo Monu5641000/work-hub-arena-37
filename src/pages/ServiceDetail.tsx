@@ -38,7 +38,11 @@ const ServiceDetail = () => {
           ...response.data,
           addOns: response.data.addOns || [],
           isActive: response.data.isActive ?? true,
-          clicks: response.data.clicks || 0
+          clicks: response.data.clicks || 0,
+          images: response.data.images?.map((img: any) => ({
+            ...img,
+            isPrimary: img.isPrimary ?? false
+          })) || []
         };
         setService(serviceData);
       } else {
