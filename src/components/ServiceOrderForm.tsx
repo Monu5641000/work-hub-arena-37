@@ -7,9 +7,10 @@ import { Badge } from '@/components/ui/badge';
 import { Check, Clock, RefreshCw } from 'lucide-react';
 import { orderAPI } from '@/api/orders';
 import { useToast } from '@/hooks/use-toast';
+import { Service, PricingPlan } from '@/types/service';
 
 interface ServiceOrderFormProps {
-  service: any;
+  service: Service;
   onOrderPlaced: (order: any) => void;
 }
 
@@ -49,7 +50,7 @@ const ServiceOrderForm: React.FC<ServiceOrderFormProps> = ({ service, onOrderPla
       } else {
         throw new Error(response.message || 'Failed to place order');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Order submission error:', error);
       toast({
         title: "Error",
@@ -61,7 +62,11 @@ const ServiceOrderForm: React.FC<ServiceOrderFormProps> = ({ service, onOrderPla
     }
   };
 
-  const availablePlans = Object.entries(service.pricingPlans).filter(([_, plan]) => plan && plan.price);
+  const availablePlans: [string, PricingPlan][] = Object.entries(service.pricingPlans).filter(
+    ([_, plan]) => plan && plan.price
+  ) as [string, PricingPlan][];
+
+  const currentPlan = service.pricingPlans[selectedPlan as keyof typeof service.pricingPlans];
 
   return (
     <Card className="w-full">
@@ -132,27 +137,29 @@ const ServiceOrderForm: React.FC<ServiceOrderFormProps> = ({ service, onOrderPla
         </div>
 
         {/* Order Summary */}
-        <div className="bg-gray-50 rounded-lg p-4">
-          <h3 className="font-semibold mb-2">Order Summary</h3>
-          <div className="space-y-2">
-            <div className="flex justify-between">
-              <span>Package:</span>
-              <span className="capitalize font-medium">{selectedPlan}</span>
-            </div>
-            <div className="flex justify-between">
-              <span>Price:</span>
-              <span className="font-medium">₹{service.pricingPlans[selectedPlan]?.price}</span>
-            </div>
-            <div className="flex justify-between">
-              <span>Delivery:</span>
-              <span>{service.pricingPlans[selectedPlan]?.deliveryTime} days</span>
-            </div>
-            <div className="border-t pt-2 flex justify-between font-semibold">
-              <span>Total:</span>
-              <span>₹{service.pricingPlans[selectedPlan]?.price}</span>
+        {currentPlan && (
+          <div className="bg-gray-50 rounded-lg p-4">
+            <h3 className="font-semibold mb-2">Order Summary</h3>
+            <div className="space-y-2">
+              <div className="flex justify-between">
+                <span>Package:</span>
+                <span className="capitalize font-medium">{selectedPlan}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Price:</span>
+                <span className="font-medium">₹{currentPlan.price}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Delivery:</span>
+                <span>{currentPlan.deliveryTime} days</span>
+              </div>
+              <div className="border-t pt-2 flex justify-between font-semibold">
+                <span>Total:</span>
+                <span>₹{currentPlan.price}</span>
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
         {/* Submit Button */}
         <Button 

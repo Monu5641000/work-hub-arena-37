@@ -8,7 +8,6 @@ const api = axios.create({
   baseURL: API_BASE_URL,
 });
 
-// Add auth token to requests
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
   if (token) {
@@ -18,95 +17,61 @@ api.interceptors.request.use((config) => {
 });
 
 export const freelancerProjectAPI = {
-  // Get all freelancer projects (public)
-  getAllProjects: async (params?: any): Promise<ApiResponse> => {
+  async getProjects(params?: any): Promise<ApiResponse> {
     try {
-      const response = await api.get('/freelancer-projects', { params });
+      const response = await api.get<ApiResponse>('/freelancer-projects', { params });
       return response.data;
-    } catch (error: any) {
-      console.error('Get all freelancer projects error:', error);
-      return {
-        success: false,
-        message: error.response?.data?.message || 'Failed to fetch projects'
-      };
+    } catch (error) {
+      return { success: false, message: 'Failed to fetch projects' };
     }
   },
 
-  // Get single freelancer project
-  getProject: async (id: string): Promise<ApiResponse> => {
+  async createProject(projectData: any): Promise<ApiResponse> {
     try {
-      const response = await api.get(`/freelancer-projects/${id}`);
+      const response = await api.post<ApiResponse>('/freelancer-projects', projectData);
       return response.data;
-    } catch (error: any) {
-      console.error('Get freelancer project error:', error);
-      return {
-        success: false,
-        message: error.response?.data?.message || 'Failed to fetch project'
-      };
+    } catch (error) {
+      return { success: false, message: 'Failed to create project' };
     }
   },
 
-  // Get my freelancer projects
-  getMyProjects: async (params?: any): Promise<ApiResponse> => {
+  async updateProject(id: string, projectData: any): Promise<ApiResponse> {
     try {
-      const response = await api.get('/freelancer-projects/my/projects', { params });
+      const response = await api.put<ApiResponse>(`/freelancer-projects/${id}`, projectData);
       return response.data;
-    } catch (error: any) {
-      console.error('Get my freelancer projects error:', error);
-      return {
-        success: false,
-        message: error.response?.data?.message || 'Failed to fetch my projects'
-      };
+    } catch (error) {
+      return { success: false, message: 'Failed to update project' };
     }
   },
 
-  // Create freelancer project
-  createProject: async (formData: FormData): Promise<ApiResponse> => {
+  async deleteProject(id: string): Promise<ApiResponse> {
     try {
-      const response = await api.post('/freelancer-projects', formData, {
+      const response = await api.delete<ApiResponse>(`/freelancer-projects/${id}`);
+      return response.data;
+    } catch (error) {
+      return { success: false, message: 'Failed to delete project' };
+    }
+  },
+
+  async getProject(id: string): Promise<ApiResponse> {
+    try {
+      const response = await api.get<ApiResponse>(`/freelancer-projects/${id}`);
+      return response.data;
+    } catch (error) {
+      return { success: false, message: 'Failed to fetch project' };
+    }
+  },
+
+  async uploadImage(formData: FormData): Promise<ApiResponse> {
+    try {
+      const response = await api.post<ApiResponse>('/freelancer-projects/upload', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
       });
       return response.data;
-    } catch (error: any) {
-      console.error('Create freelancer project error:', error);
-      return {
-        success: false,
-        message: error.response?.data?.message || 'Failed to create project'
-      };
-    }
-  },
-
-  // Update freelancer project
-  updateProject: async (id: string, formData: FormData): Promise<ApiResponse> => {
-    try {
-      const response = await api.put(`/freelancer-projects/${id}`, formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
-      return response.data;
-    } catch (error: any) {
-      console.error('Update freelancer project error:', error);
-      return {
-        success: false,
-        message: error.response?.data?.message || 'Failed to update project'
-      };
-    }
-  },
-
-  // Delete freelancer project
-  deleteProject: async (id: string): Promise<ApiResponse> => {
-    try {
-      const response = await api.delete(`/freelancer-projects/${id}`);
-      return response.data;
-    } catch (error: any) {
-      console.error('Delete freelancer project error:', error);
-      return {
-        success: false,
-        message: error.response?.data?.message || 'Failed to delete project'
-      };
+    } catch (error) {
+      return { success: false, message: 'Failed to upload image' };
     }
   }
 };

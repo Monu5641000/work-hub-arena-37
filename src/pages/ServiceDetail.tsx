@@ -1,46 +1,48 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Star, Clock, RefreshCw, User, MessageCircle } from 'lucide-react';
+import { Star, Clock, RefreshCw, Check, ArrowLeft, MessageSquare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { serviceAPI } from '@/api/services';
-import ServiceOrderForm from '@/components/ServiceOrderForm';
-import Chat from '@/components/Chat';
-import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
+import ServiceOrderForm from '@/components/ServiceOrderForm';
+import { Service, PricingPlan } from '@/types/service';
 
 const ServiceDetail = () => {
-  const { id } = useParams();
+  const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { user } = useAuth();
   const { toast } = useToast();
-  const [service, setService] = useState(null);
+  const { user } = useAuth();
+  const [service, setService] = useState<Service | null>(null);
   const [loading, setLoading] = useState(true);
   const [showOrderForm, setShowOrderForm] = useState(false);
-  const [showChat, setShowChat] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState<string>('basic');
 
   useEffect(() => {
     if (id) {
-      loadService();
+      loadService(id);
     }
   }, [id]);
 
-  const loadService = async () => {
+  const loadService = async (serviceId: string) => {
     try {
-      const response = await serviceAPI.getService(id);
+      setLoading(true);
+      const response = await serviceAPI.getService(serviceId);
+      
       if (response.success) {
         setService(response.data);
       } else {
         throw new Error(response.message);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Load service error:', error);
       toast({
         title: "Error",
-        description: "Failed to load service details",
+        description: "Failed to load service",
         variant: "destructive",
       });
       navigate('/services');
@@ -49,104 +51,129 @@ const ServiceDetail = () => {
     }
   };
 
-  const handleOrderPlaced = (order) => {
+  const handleOrderPlaced = (order: any) => {
     setShowOrderForm(false);
-    setShowChat(true);
-    toast({
-      title: "Order placed successfully!",
-      description: "You can now chat with the freelancer about your project.",
-    });
-  };
-
-  const handleContactFreelancer = () => {
-    if (!user) {
-      toast({
-        title: "Login required",
-        description: "Please log in to contact the freelancer",
-        variant: "destructive",
-      });
-      return;
-    }
-    setShowChat(true);
+    navigate('/client/orders');
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-500"></div>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
       </div>
     );
   }
 
   if (!service) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">Service not found</h1>
-          <Button onClick={() => navigate('/services')}>Browse Services</Button>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Service not found</h2>
+          <Button onClick={() => navigate('/services')}>
+            Browse Services
+          </Button>
         </div>
       </div>
     );
   }
 
+  const isOwner = user?.id === service.freelancer._id;
+  const availablePlans: [string, PricingPlan][] = Object.entries(service.pricingPlans).filter(
+    ([_, plan]) => plan && plan.price
+  ) as [string, PricingPlan][];
+
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white border-b">
-        <div className="max-w-7xl mx-auto px-4 py-4">
-          <Button 
-            variant="ghost" 
-            onClick={() => navigate('/services')}
-            className="flex items-center space-x-2"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            <span>Back to Services</span>
-          </Button>
-        </div>
-      </div>
-
       <div className="max-w-7xl mx-auto px-4 py-8">
+        {/* Back Button */}
+        <Button
+          variant="ghost"
+          onClick={() => navigate('/services')}
+          className="mb-6"
+        >
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Back to Services
+        </Button>
+
         <div className="grid lg:grid-cols-3 gap-8">
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-6">
-            {/* Service Header */}
+            {/* Service Images */}
             <Card>
-              <CardContent className="p-6">
-                <div className="flex items-start gap-4">
-                  <Avatar className="h-16 w-16">
-                    <AvatarImage src={service.freelancer?.profilePicture} />
-                    <AvatarFallback>
-                      {service.freelancer?.firstName?.[0]}{service.freelancer?.lastName?.[0]}
-                    </AvatarFallback>
-                  </Avatar>
-                  
-                  <div className="flex-1">
-                    <h1 className="text-2xl font-bold text-gray-900 mb-2">{service.title}</h1>
-                    <p className="text-gray-600 mb-4">{service.description}</p>
+              <CardContent className="p-0">
+                <div className="aspect-video bg-gray-200 rounded-t-lg overflow-hidden">
+                  {service.images?.[0]?.url ? (
+                    <img 
+                      src={service.images[0].url} 
+                      alt={service.title}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center bg-gray-100">
+                      <span className="text-gray-400">No Image</span>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Service Info */}
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="text-2xl mb-2">{service.title}</CardTitle>
                     
-                    <div className="flex items-center gap-4 text-sm text-gray-600">
-                      <div className="flex items-center gap-1">
-                        <User className="h-4 w-4" />
-                        <span>{service.freelancer?.firstName} {service.freelancer?.lastName}</span>
+                    {/* Freelancer Info */}
+                    <div className="flex items-center gap-3 mb-4">
+                      <Avatar className="h-10 w-10">
+                        <AvatarImage src={service.freelancer.profilePicture} />
+                        <AvatarFallback>
+                          {service.freelancer.firstName[0]}{service.freelancer.lastName[0]}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <p className="font-medium">
+                          {service.freelancer.firstName} {service.freelancer.lastName}
+                        </p>
+                        {service.averageRating > 0 && (
+                          <div className="flex items-center gap-1">
+                            <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                            <span className="text-sm font-medium">{service.averageRating.toFixed(1)}</span>
+                            <span className="text-sm text-gray-500">({service.totalReviews} reviews)</span>
+                          </div>
+                        )}
                       </div>
-                      {service.averageRating > 0 && (
-                        <div className="flex items-center gap-1">
-                          <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                          <span>{service.averageRating.toFixed(1)} ({service.totalReviews} reviews)</span>
-                        </div>
-                      )}
                     </div>
                   </div>
-                </div>
-
-                <div className="mt-4 flex flex-wrap gap-2">
-                  <Badge variant="secondary">{service.category.replace('-', ' ')}</Badge>
-                  {service.subcategory && (
-                    <Badge variant="outline">{service.subcategory}</Badge>
+                  
+                  {!isOwner && (
+                    <Button variant="outline">
+                      <MessageSquare className="h-4 w-4 mr-2" />
+                      Contact
+                    </Button>
                   )}
+                </div>
+                
+                {/* Tags */}
+                <div className="flex flex-wrap gap-2">
+                  <Badge variant="secondary">
+                    {service.category.replace('-', ' ')}
+                  </Badge>
                   {service.tags?.map((tag) => (
-                    <Badge key={tag} variant="outline">{tag}</Badge>
+                    <Badge key={tag} variant="outline">
+                      {tag}
+                    </Badge>
                   ))}
+                </div>
+              </CardHeader>
+              
+              <CardContent>
+                <div className="space-y-4">
+                  <div>
+                    <h3 className="font-semibold mb-2">About This Service</h3>
+                    <p className="text-gray-600 leading-relaxed">{service.description}</p>
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -154,73 +181,49 @@ const ServiceDetail = () => {
             {/* Pricing Plans */}
             <Card>
               <CardHeader>
-                <CardTitle>Service Packages</CardTitle>
+                <CardTitle>Pricing Plans</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="grid md:grid-cols-3 gap-4">
-                  {Object.entries(service.pricingPlans).map(([planName, plan]) => {
-                    if (!plan || !plan.price) return null;
-                    
-                    return (
-                      <div key={planName} className="border rounded-lg p-4">
-                        <h3 className="font-semibold text-lg capitalize mb-2">{planName}</h3>
-                        <p className="text-2xl font-bold text-green-600 mb-2">₹{plan.price}</p>
-                        <p className="text-gray-600 text-sm mb-4">{plan.description}</p>
-                        
-                        <div className="space-y-2 mb-4">
-                          <div className="flex items-center gap-2 text-sm">
-                            <Clock className="h-4 w-4" />
-                            <span>{plan.deliveryTime} days delivery</span>
-                          </div>
-                          <div className="flex items-center gap-2 text-sm">
-                            <RefreshCw className="h-4 w-4" />
-                            <span>{plan.revisions} revisions</span>
-                          </div>
+                  {availablePlans.map(([planName, plan]) => (
+                    <div 
+                      key={planName}
+                      className={`border rounded-lg p-4 cursor-pointer transition-colors ${
+                        selectedPlan === planName 
+                          ? 'border-blue-500 bg-blue-50' 
+                          : 'border-gray-200 hover:border-gray-300'
+                      }`}
+                      onClick={() => setSelectedPlan(planName)}
+                    >
+                      <div className="text-center mb-4">
+                        <h4 className="font-semibold capitalize text-lg mb-1">{planName}</h4>
+                        <p className="text-3xl font-bold text-green-600">₹{plan.price}</p>
+                        <p className="text-sm text-gray-600">{plan.description}</p>
+                      </div>
+                      
+                      <div className="space-y-2 text-sm">
+                        <div className="flex items-center gap-2">
+                          <Clock className="h-4 w-4 text-gray-500" />
+                          <span>{plan.deliveryTime} days delivery</span>
                         </div>
-
+                        <div className="flex items-center gap-2">
+                          <RefreshCw className="h-4 w-4 text-gray-500" />
+                          <span>{plan.revisions} revisions</span>
+                        </div>
+                        
                         {plan.features && plan.features.length > 0 && (
-                          <div className="space-y-1">
+                          <div className="space-y-1 mt-3">
                             {plan.features.map((feature, index) => (
-                              <div key={index} className="text-sm text-gray-600">
-                                ✓ {feature}
+                              <div key={index} className="flex items-center gap-2">
+                                <Check className="h-4 w-4 text-green-500" />
+                                <span>{feature}</span>
                               </div>
                             ))}
                           </div>
                         )}
                       </div>
-                    );
-                  })}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* About Freelancer */}
-            <Card>
-              <CardHeader>
-                <CardTitle>About the Freelancer</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-start gap-4">
-                  <Avatar className="h-12 w-12">
-                    <AvatarImage src={service.freelancer?.profilePicture} />
-                    <AvatarFallback>
-                      {service.freelancer?.firstName?.[0]}{service.freelancer?.lastName?.[0]}
-                    </AvatarFallback>
-                  </Avatar>
-                  
-                  <div>
-                    <h3 className="font-semibold">{service.freelancer?.firstName} {service.freelancer?.lastName}</h3>
-                    {service.freelancer?.bio && (
-                      <p className="text-gray-600 mt-2">{service.freelancer.bio}</p>
-                    )}
-                    {service.freelancer?.skills && service.freelancer.skills.length > 0 && (
-                      <div className="mt-3 flex flex-wrap gap-1">
-                        {service.freelancer.skills.map((skill) => (
-                          <Badge key={skill} variant="outline" className="text-xs">{skill}</Badge>
-                        ))}
-                      </div>
-                    )}
-                  </div>
+                    </div>
+                  ))}
                 </div>
               </CardContent>
             </Card>
@@ -228,95 +231,66 @@ const ServiceDetail = () => {
 
           {/* Sidebar */}
           <div className="space-y-6">
-            {/* Action Buttons */}
-            <Card>
-              <CardContent className="p-6 space-y-4">
-                {user?.role === 'client' && service.freelancer?._id !== user._id && (
-                  <>
-                    <Button 
-                      onClick={() => setShowOrderForm(true)}
-                      className="w-full bg-blue-600 hover:bg-blue-700"
-                    >
-                      Order Now
-                    </Button>
-                    <Button 
-                      onClick={handleContactFreelancer}
-                      variant="outline"
-                      className="w-full"
-                    >
-                      <MessageCircle className="h-4 w-4 mr-2" />
-                      Contact Freelancer
-                    </Button>
-                  </>
+            {!isOwner && (
+              <>
+                {showOrderForm ? (
+                  <ServiceOrderForm 
+                    service={service} 
+                    onOrderPlaced={handleOrderPlaced}
+                  />
+                ) : (
+                  <Card>
+                    <CardContent className="p-6">
+                      <div className="text-center space-y-4">
+                        <div>
+                          <p className="text-2xl font-bold text-green-600">
+                            ₹{service.pricingPlans[selectedPlan as keyof typeof service.pricingPlans]?.price}
+                          </p>
+                          <p className="text-sm text-gray-600 capitalize">{selectedPlan} Plan</p>
+                        </div>
+                        
+                        <Button 
+                          onClick={() => setShowOrderForm(true)}
+                          className="w-full bg-blue-600 hover:bg-blue-700"
+                          size="lg"
+                        >
+                          Continue
+                        </Button>
+                        
+                        <Button variant="outline" className="w-full">
+                          <MessageSquare className="h-4 w-4 mr-2" />
+                          Contact Seller
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
                 )}
-                
-                {!user && (
-                  <div className="text-center text-gray-600">
-                    <p className="mb-4">Sign in to order this service</p>
-                    <Button onClick={() => navigate('/login')} className="w-full">
-                      Sign In
-                    </Button>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+              </>
+            )}
 
             {/* Service Stats */}
             <Card>
               <CardHeader>
-                <CardTitle>Service Stats</CardTitle>
+                <CardTitle className="text-lg">Service Stats</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Orders in queue</span>
-                  <span className="font-medium">{service.orders || 0}</span>
+                  <span className="text-gray-600">Orders Completed</span>
+                  <span className="font-medium">{service.orders}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Total reviews</span>
-                  <span className="font-medium">{service.totalReviews || 0}</span>
+                  <span className="text-gray-600">Average Rating</span>
+                  <span className="font-medium">{service.averageRating.toFixed(1)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Response time</span>
-                  <span className="font-medium">Within 24 hours</span>
+                  <span className="text-gray-600">Response Time</span>
+                  <span className="font-medium">Within 1 hour</span>
                 </div>
               </CardContent>
             </Card>
           </div>
         </div>
       </div>
-
-      {/* Order Form Modal */}
-      {showOrderForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-4 border-b flex justify-between items-center">
-              <h2 className="text-xl font-semibold">Place Order</h2>
-              <Button variant="ghost" onClick={() => setShowOrderForm(false)}>
-                ×
-              </Button>
-            </div>
-            <div className="p-4">
-              <ServiceOrderForm 
-                service={service}
-                onOrderPlaced={handleOrderPlaced}
-              />
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Chat Modal */}
-      {showChat && service.freelancer && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-hidden">
-            <Chat
-              recipientId={service.freelancer._id}
-              recipientName={`${service.freelancer.firstName} ${service.freelancer.lastName}`}
-              onClose={() => setShowChat(false)}
-            />
-          </div>
-        </div>
-      )}
     </div>
   );
 };

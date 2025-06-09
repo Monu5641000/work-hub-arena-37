@@ -150,12 +150,12 @@ const Services = () => {
               </form>
             </div>
             
-            <Select value={filters.category} onValueChange={(value) => handleFilterChange('category', value)}>
+            <Select value={filters.category || undefined} onValueChange={(value) => handleFilterChange('category', value || '')}>
               <SelectTrigger>
                 <SelectValue placeholder="Category" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Categories</SelectItem>
+                <SelectItem value="all">All Categories</SelectItem>
                 {categories.map(category => (
                   <SelectItem key={category} value={category}>
                     {category.split('-').map(word => 
