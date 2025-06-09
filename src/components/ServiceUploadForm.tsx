@@ -1,353 +1,337 @@
-
-import { useState } from "react";
-import { Upload, X, Plus } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import React, { useState } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+import { serviceAPI } from '@/api/services';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
 
-const ServiceUploadForm = ({ onSubmit, onCancel }: { 
-  onSubmit: (serviceData: any) => void; 
-  onCancel: () => void; 
-}) => {
+interface ServiceUploadFormProps {
+  onSuccess: () => void;
+}
+
+const ServiceUploadForm = ({ onSuccess }: ServiceUploadFormProps) => {
   const { toast } = useToast();
-  const [formData, setFormData] = useState({
-    title: '',
-    description: '',
-    category: '',
-    tags: [] as string[],
-    basicPrice: '',
-    standardPrice: '',
-    premiumPrice: '',
-    deliveryDays: '',
-    images: [] as File[]
+  const navigate = useNavigate();
+  const { user } = useAuth();
+
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [category, setCategory] = useState('');
+  const [subcategory, setSubcategory] = useState('');
+  const [tags, setTags] = useState('');
+  const [images, setImages] = useState<File[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const [pricingPlans, setPricingPlans] = useState({
+    basic: {
+      name: '',
+      price: 0,
+      deliveryTime: 0,
+      features: ['']
+    },
+    standard: {
+      name: '',
+      price: 0,
+      deliveryTime: 0,
+      features: ['']
+    },
+    premium: {
+      name: '',
+      price: 0,
+      deliveryTime: 0,
+      features: ['']
+    }
   });
-  const [newTag, setNewTag] = useState('');
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
-  };
-
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
-    if (files.length === 0) return;
-
-    // Validate file types
-    const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
-    const invalidFiles = files.filter(file => !validTypes.includes(file.type));
-    
-    if (invalidFiles.length > 0) {
-      toast({
-        title: "Invalid File Type",
-        description: "Please upload only JPEG, PNG, or WebP images",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // Validate file sizes (max 5MB each)
-    const oversizedFiles = files.filter(file => file.size > 5 * 1024 * 1024);
-    if (oversizedFiles.length > 0) {
-      toast({
-        title: "File Too Large",
-        description: "Each image must be less than 5MB",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setFormData(prev => ({
-      ...prev,
-      images: [...prev.images, ...files].slice(0, 5) // Max 5 images
-    }));
-
-    // Reset the input
-    e.target.value = '';
-  };
-
-  const removeImage = (index: number) => {
-    setFormData(prev => ({
-      ...prev,
-      images: prev.images.filter((_, i) => i !== index)
-    }));
-  };
-
-  const addTag = () => {
-    if (newTag.trim() && !formData.tags.includes(newTag.trim())) {
-      setFormData(prev => ({
-        ...prev,
-        tags: [...prev.tags, newTag.trim()]
-      }));
-      setNewTag('');
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      setImages(Array.from(e.target.files));
     }
   };
 
-  const removeTag = (tag: string) => {
-    setFormData(prev => ({
-      ...prev,
-      tags: prev.tags.filter(t => t !== tag)
-    }));
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!formData.title || !formData.description || !formData.category || !formData.basicPrice) {
+
+    if (!user) {
       toast({
-        title: "Missing Required Fields",
-        description: "Please fill in all required fields",
+        title: "Authentication Error",
+        description: "You must be logged in to create a service.",
         variant: "destructive",
       });
       return;
     }
 
-    // Create FormData for file upload
-    const submitData = new FormData();
-    submitData.append('title', formData.title);
-    submitData.append('description', formData.description);
-    submitData.append('category', formData.category);
-    submitData.append('tags', JSON.stringify(formData.tags));
-    submitData.append('deliveryTime', formData.deliveryDays);
-    
-    // Add pricing plans
-    const pricingPlans = {
-      basic: {
-        name: 'Basic',
-        price: Number(formData.basicPrice),
-        deliveryTime: Number(formData.deliveryDays),
-        features: ['Basic features']
-      }
-    };
-    
-    if (formData.standardPrice) {
-      pricingPlans.standard = {
-        name: 'Standard',
-        price: Number(formData.standardPrice),
-        deliveryTime: Math.ceil(Number(formData.deliveryDays) * 1.5),
-        features: ['Basic features', 'Additional features']
-      };
-    }
-    
-    if (formData.premiumPrice) {
-      pricingPlans.premium = {
-        name: 'Premium',
-        price: Number(formData.premiumPrice),
-        deliveryTime: Number(formData.deliveryDays) * 2,
-        features: ['Basic features', 'Additional features', 'Premium support']
-      };
-    }
-    
-    submitData.append('pricingPlans', JSON.stringify(pricingPlans));
-    
-    // Add images
-    formData.images.forEach((image, index) => {
-      submitData.append('images', image);
-    });
+    setIsLoading(true);
 
-    onSubmit(submitData);
+    try {
+      const formData = new FormData();
+      formData.append('title', title);
+      formData.append('description', description);
+      formData.append('category', category);
+      formData.append('subcategory', subcategory);
+      formData.append('tags', tags);
+
+      // Append images
+      images.forEach((image) => {
+        formData.append('images', image);
+      });
+
+      // Append pricing plans
+      formData.append('pricingPlans[basic][title]', pricingPlans.basic.name);
+      formData.append('pricingPlans[basic][price]', String(pricingPlans.basic.price));
+      formData.append('pricingPlans[basic][deliveryDays]', String(pricingPlans.basic.deliveryTime));
+      formData.append('pricingPlans[standard][title]', pricingPlans.standard.name);
+      formData.append('pricingPlans[standard][price]', String(pricingPlans.standard.price));
+      formData.append('pricingPlans[standard][deliveryDays]', String(pricingPlans.standard.deliveryTime));
+      formData.append('pricingPlans[premium][title]', pricingPlans.premium.name);
+      formData.append('pricingPlans[premium][price]', String(pricingPlans.premium.price));
+      formData.append('pricingPlans[premium][deliveryDays]', String(pricingPlans.premium.deliveryTime));
+
+      const response = await serviceAPI.createService(formData);
+
+      if (response?.success) {
+        toast({
+          title: "Service Created",
+          description: "Your service has been successfully created.",
+        });
+        onSuccess();
+        navigate('/dashboard/freelancer');
+      } else {
+        toast({
+          title: "Error",
+          description: response?.message || "Failed to create service.",
+          variant: "destructive",
+        });
+      }
+    } catch (error: any) {
+      console.error("Service creation error:", error);
+      toast({
+        title: "Error",
+        description: error?.message || "Failed to create service.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
-    <Card className="w-full max-w-2xl mx-auto">
+    <Card className="w-full max-w-4xl mx-auto">
       <CardHeader>
         <CardTitle>Create New Service</CardTitle>
+        <CardDescription>Fill in the details to list your service</CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="space-y-2">
-            <Label htmlFor="title">Service Title *</Label>
-            <Input
-              id="title"
-              name="title"
-              value={formData.title}
-              onChange={handleInputChange}
-              placeholder="I will create a stunning website design"
-              required
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="description">Description *</Label>
-            <Textarea
-              id="description"
-              name="description"
-              value={formData.description}
-              onChange={handleInputChange}
-              placeholder="Describe your service in detail..."
-              rows={4}
-              required
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="category">Category *</Label>
-              <select
-                id="category"
-                name="category"
-                value={formData.category}
-                onChange={handleInputChange}
-                className="w-full p-2 border border-gray-300 rounded-md"
-                required
-              >
-                <option value="">Select Category</option>
-                <option value="web-development">Web Development</option>
-                <option value="mobile-development">Mobile Development</option>
-                <option value="design">Design</option>
-                <option value="writing">Writing</option>
-                <option value="marketing">Marketing</option>
-                <option value="video-animation">Video & Animation</option>
-                <option value="music-audio">Music & Audio</option>
-                <option value="programming">Programming</option>
-                <option value="business">Business</option>
-                <option value="lifestyle">Lifestyle</option>
-              </select>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="deliveryDays">Delivery Time (Days) *</Label>
+          {/* Basic Info */}
+          <div className="space-y-4">
+            <Label className="text-lg font-semibold">Basic Information</Label>
+            <div>
+              <Label htmlFor="title">Title</Label>
               <Input
-                id="deliveryDays"
-                name="deliveryDays"
-                type="number"
-                min="1"
-                max="365"
-                value={formData.deliveryDays}
-                onChange={handleInputChange}
-                placeholder="7"
+                id="title"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
                 required
               />
             </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label>Tags</Label>
-            <div className="flex space-x-2">
-              <Input
-                value={newTag}
-                onChange={(e) => setNewTag(e.target.value)}
-                placeholder="Add a tag"
-                onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addTag())}
-              />
-              <Button type="button" onClick={addTag} variant="outline">
-                <Plus className="h-4 w-4" />
-              </Button>
-            </div>
-            <div className="flex flex-wrap gap-2 mt-2">
-              {formData.tags.map((tag) => (
-                <Badge key={tag} variant="secondary" className="pr-1">
-                  {tag}
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="ml-1 p-0 h-4 w-4"
-                    onClick={() => removeTag(tag)}
-                  >
-                    <X className="h-3 w-3" />
-                  </Button>
-                </Badge>
-              ))}
-            </div>
-          </div>
-
-          <div className="grid grid-cols-3 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="basicPrice">Basic Price (₹) *</Label>
-              <Input
-                id="basicPrice"
-                name="basicPrice"
-                type="number"
-                min="1"
-                value={formData.basicPrice}
-                onChange={handleInputChange}
-                placeholder="500"
+            <div>
+              <Label htmlFor="description">Description</Label>
+              <Textarea
+                id="description"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
                 required
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="standardPrice">Standard Price (₹)</Label>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="category">Category</Label>
+                <Input
+                  id="category"
+                  value={category}
+                  onChange={(e) => setCategory(e.target.value)}
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="subcategory">Subcategory</Label>
+                <Input
+                  id="subcategory"
+                  value={subcategory}
+                  onChange={(e) => setSubcategory(e.target.value)}
+                />
+              </div>
+            </div>
+            <div>
+              <Label htmlFor="tags">Tags (comma separated)</Label>
               <Input
-                id="standardPrice"
-                name="standardPrice"
-                type="number"
-                min="1"
-                value={formData.standardPrice}
-                onChange={handleInputChange}
-                placeholder="1000"
+                id="tags"
+                value={tags}
+                onChange={(e) => setTags(e.target.value)}
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="premiumPrice">Premium Price (₹)</Label>
+            <div>
+              <Label htmlFor="images">Images</Label>
               <Input
-                id="premiumPrice"
-                name="premiumPrice"
-                type="number"
-                min="1"
-                value={formData.premiumPrice}
-                onChange={handleInputChange}
-                placeholder="2000"
-              />
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label>Service Images (Max 5)</Label>
-            <div className="border-2 border-dashed border-gray-300 rounded-lg p-4">
-              <Input
+                id="images"
                 type="file"
                 multiple
-                accept="image/jpeg,image/jpg,image/png,image/webp"
-                onChange={handleImageUpload}
-                className="hidden"
-                id="image-upload"
+                onChange={handleImageChange}
+                accept="image/*"
               />
-              <Label htmlFor="image-upload" className="cursor-pointer block">
-                <div className="text-center">
-                  <Upload className="h-8 w-8 text-gray-400 mx-auto mb-2" />
-                  <p className="text-sm text-gray-600">Click to upload images</p>
-                  <p className="text-xs text-gray-500 mt-1">JPEG, PNG, WebP (max 5MB each)</p>
-                </div>
-              </Label>
-              
-              {formData.images.length > 0 && (
-                <div className="grid grid-cols-3 gap-2 mt-4">
-                  {formData.images.map((file, index) => (
-                    <div key={index} className="relative">
-                      <img
-                        src={URL.createObjectURL(file)}
-                        alt={`Upload ${index + 1}`}
-                        className="w-full h-20 object-cover rounded"
-                      />
-                      <Button
-                        type="button"
-                        variant="destructive"
-                        size="sm"
-                        className="absolute -top-2 -right-2 p-0 h-6 w-6 rounded-full"
-                        onClick={() => removeImage(index)}
-                      >
-                        <X className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              )}
             </div>
           </div>
 
-          <div className="flex space-x-4">
-            <Button type="submit" className="flex-1">
-              Create Service
-            </Button>
-            <Button type="button" variant="outline" onClick={onCancel}>
-              Cancel
-            </Button>
+          {/* Pricing Plans */}
+          <div className="space-y-4">
+            <Label className="text-lg font-semibold">Pricing Plans</Label>
+            
+            {/* Basic Plan */}
+            <div className="border rounded-lg p-4">
+              <h4 className="font-semibold mb-2">Basic Plan</h4>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <Label htmlFor="basic-name">Plan Name</Label>
+                  <Input
+                    id="basic-name"
+                    value={pricingPlans.basic.name}
+                    onChange={(e) => setPricingPlans(prev => ({
+                      ...prev,
+                      basic: { ...prev.basic, name: e.target.value }
+                    }))}
+                    required
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="basic-price">Price ($)</Label>
+                  <Input
+                    id="basic-price"
+                    type="number"
+                    value={pricingPlans.basic.price}
+                    onChange={(e) => setPricingPlans(prev => ({
+                      ...prev,
+                      basic: { ...prev.basic, price: Number(e.target.value) }
+                    }))}
+                    required
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="basic-delivery">Delivery Time (days)</Label>
+                  <Input
+                    id="basic-delivery"
+                    type="number"
+                    value={pricingPlans.basic.deliveryTime}
+                    onChange={(e) => setPricingPlans(prev => ({
+                      ...prev,
+                      basic: { ...prev.basic, deliveryTime: Number(e.target.value) }
+                    }))}
+                    required
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Standard Plan */}
+            <div className="border rounded-lg p-4">
+              <h4 className="font-semibold mb-2">Standard Plan</h4>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <Label htmlFor="standard-name">Plan Name</Label>
+                  <Input
+                    id="standard-name"
+                    value={pricingPlans.standard.name}
+                    onChange={(e) => setPricingPlans(prev => ({
+                      ...prev,
+                      standard: { ...prev.standard, name: e.target.value }
+                    }))}
+                    required
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="standard-price">Price ($)</Label>
+                  <Input
+                    id="standard-price"
+                    type="number"
+                    value={pricingPlans.standard.price}
+                    onChange={(e) => setPricingPlans(prev => ({
+                      ...prev,
+                      standard: { ...prev.standard, price: Number(e.target.value) }
+                    }))}
+                    required
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="standard-delivery">Delivery Time (days)</Label>
+                  <Input
+                    id="standard-delivery"
+                    type="number"
+                    value={pricingPlans.standard.deliveryTime}
+                    onChange={(e) => setPricingPlans(prev => ({
+                      ...prev,
+                      standard: { ...prev.standard, deliveryTime: Number(e.target.value) }
+                    }))}
+                    required
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Premium Plan */}
+            <div className="border rounded-lg p-4">
+              <h4 className="font-semibold mb-2">Premium Plan</h4>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <Label htmlFor="premium-name">Plan Name</Label>
+                  <Input
+                    id="premium-name"
+                    value={pricingPlans.premium.name}
+                    onChange={(e) => setPricingPlans(prev => ({
+                      ...prev,
+                      premium: { ...prev.premium, name: e.target.value }
+                    }))}
+                    required
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="premium-price">Price ($)</Label>
+                  <Input
+                    id="premium-price"
+                    type="number"
+                    value={pricingPlans.premium.price}
+                    onChange={(e) => setPricingPlans(prev => ({
+                      ...prev,
+                      premium: { ...prev.premium, price: Number(e.target.value) }
+                    }))}
+                    required
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="premium-delivery">Delivery Time (days)</Label>
+                  <Input
+                    id="premium-delivery"
+                    type="number"
+                    value={pricingPlans.premium.deliveryTime}
+                    onChange={(e) => setPricingPlans(prev => ({
+                      ...prev,
+                      premium: { ...prev.premium, deliveryTime: Number(e.target.value) }
+                    }))}
+                    required
+                  />
+                </div>
+              </div>
+            </div>
           </div>
+
+          {/* Submit Button */}
+          <Button type="submit" disabled={isLoading}>
+            {isLoading ? "Creating Service..." : "Create Service"}
+          </Button>
         </form>
       </CardContent>
     </Card>

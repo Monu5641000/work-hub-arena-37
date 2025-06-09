@@ -19,7 +19,7 @@ api.interceptors.request.use((config) => {
 
 export const serviceAPI = {
   // Get all services
-  getAllServices: async (params?: any): Promise<ApiResponse<Service[]>> => {
+  getServices: async (params?: any): Promise<ApiResponse<Service[]>> => {
     try {
       const response = await api.get('/services', { params });
       return response.data;
@@ -47,9 +47,13 @@ export const serviceAPI = {
   },
 
   // Create service
-  createService: async (serviceData: any): Promise<ApiResponse<Service>> => {
+  createService: async (serviceData: FormData): Promise<ApiResponse<Service>> => {
     try {
-      const response = await api.post('/services', serviceData);
+      const response = await api.post('/services', serviceData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
       return response.data;
     } catch (error: any) {
       console.error('Create service error:', error);
@@ -61,9 +65,13 @@ export const serviceAPI = {
   },
 
   // Update service
-  updateService: async (id: string, serviceData: any): Promise<ApiResponse<Service>> => {
+  updateService: async (id: string, serviceData: FormData): Promise<ApiResponse<Service>> => {
     try {
-      const response = await api.put(`/services/${id}`, serviceData);
+      const response = await api.put(`/services/${id}`, serviceData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
       return response.data;
     } catch (error: any) {
       console.error('Update service error:', error);
@@ -91,7 +99,7 @@ export const serviceAPI = {
   // Get my services
   getMyServices: async (): Promise<ApiResponse<Service[]>> => {
     try {
-      const response = await api.get('/services/my/services');
+      const response = await api.get('/services/my-services');
       return response.data;
     } catch (error: any) {
       console.error('Get my services error:', error);
@@ -102,20 +110,18 @@ export const serviceAPI = {
     }
   },
 
-  // Upload service images
-  uploadServiceImages: async (id: string, images: FormData): Promise<ApiResponse> => {
+  // Search services
+  searchServices: async (query: string, filters?: any): Promise<ApiResponse> => {
     try {
-      const response = await api.post(`/services/${id}/images`, images, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
+      const response = await api.get('/services/search', {
+        params: { q: query, ...filters }
       });
       return response.data;
     } catch (error: any) {
-      console.error('Upload service images error:', error);
+      console.error('Search services error:', error);
       return {
         success: false,
-        message: error.response?.data?.message || 'Failed to upload images'
+        message: error.response?.data?.message || 'Failed to search services'
       };
     }
   }

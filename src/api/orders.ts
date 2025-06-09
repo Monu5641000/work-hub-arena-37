@@ -61,9 +61,9 @@ export const orderAPI = {
   },
 
   // Update order status
-  updateOrderStatus: async (id: string, status: string): Promise<ApiResponse<Order>> => {
+  updateOrderStatus: async (id: string, statusData: { status: string; note?: string }): Promise<ApiResponse<Order>> => {
     try {
-      const response = await api.put(`/orders/${id}/status`, { status });
+      const response = await api.put(`/orders/${id}/status`, statusData);
       return response.data;
     } catch (error: any) {
       console.error('Update order status error:', error);
@@ -93,9 +93,9 @@ export const orderAPI = {
   },
 
   // Request revision
-  requestRevision: async (id: string, message: string): Promise<ApiResponse> => {
+  requestRevision: async (id: string, revisionData: { reason: string }): Promise<ApiResponse> => {
     try {
-      const response = await api.put(`/orders/${id}/revision`, { message });
+      const response = await api.put(`/orders/${id}/revision`, revisionData);
       return response.data;
     } catch (error: any) {
       console.error('Request revision error:', error);

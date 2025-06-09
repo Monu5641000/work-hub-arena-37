@@ -86,5 +86,33 @@ export const messageAPI = {
         message: error.response?.data?.message || 'Failed to fetch unread count'
       };
     }
+  },
+
+  // Get admin users (for admin messaging)
+  getAdminUsers: async (): Promise<ApiResponse> => {
+    try {
+      const response = await api.get('/messages/admin/users');
+      return response.data;
+    } catch (error: any) {
+      console.error('Get admin users error:', error);
+      return {
+        success: false,
+        message: error.response?.data?.message || 'Failed to fetch users'
+      };
+    }
+  },
+
+  // Admin send message
+  adminSendMessage: async (messageData: any): Promise<ApiResponse> => {
+    try {
+      const response = await api.post('/messages/admin/send', messageData);
+      return response.data;
+    } catch (error: any) {
+      console.error('Admin send message error:', error);
+      return {
+        success: false,
+        message: error.response?.data?.message || 'Failed to send message'
+      };
+    }
   }
 };

@@ -1,4 +1,3 @@
-
 export interface User {
   _id: string;
   firstName: string;
@@ -68,6 +67,13 @@ export interface ApiResponse<T = any> {
   user?: User;
   token?: string;
   error?: string;
+  warning?: string;
+  pagination?: {
+    page: number;
+    limit: number;
+    total: number;
+    pages: number;
+  };
 }
 
 export interface Order {
@@ -119,4 +125,38 @@ export interface PricingPlan {
   deliveryDays: number;
   revisions: number;
   features: string[];
+}
+
+export interface Project {
+  _id: string;
+  title: string;
+  description: string;
+  category: string;
+  subcategory?: string;
+  budget: {
+    type: 'fixed' | 'hourly';
+    amount: number;
+    maxAmount?: number;
+  };
+  timeline: string;
+  skills: string[];
+  client: User;
+  freelancer?: User;
+  status: 'open' | 'in_progress' | 'completed' | 'cancelled';
+  proposals: string[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Proposal {
+  _id: string;
+  project: Project;
+  freelancer: User;
+  coverLetter: string;
+  proposedBudget: number;
+  timeline: string;
+  attachments?: string[];
+  status: 'pending' | 'accepted' | 'rejected';
+  createdAt: string;
+  updatedAt: string;
 }

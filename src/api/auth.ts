@@ -1,3 +1,4 @@
+
 import axios from 'axios';
 import { ApiResponse, User } from '@/types/api';
 
@@ -112,5 +113,3 @@ export const authAPI = {
     return data;
   }
 };
-
-export { authAPI };

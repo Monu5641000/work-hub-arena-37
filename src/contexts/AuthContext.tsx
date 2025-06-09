@@ -7,7 +7,7 @@ interface AuthContextType {
   user: User | null;
   token: string | null;
   loading: boolean;
-  login: (credentials: any) => Promise<void>;
+  login: (token: string, userData: User) => void;
   logout: () => void;
   updateUser: (userData: Partial<User>) => void;
 }
@@ -63,14 +63,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     initializeAuth();
   }, []);
 
-  const login = async (credentials: any) => {
-    const response = await authAPI.login(credentials);
-    if (response.success && response.user && response.token) {
-      setUser(response.user);
-      setToken(response.token);
-      localStorage.setItem('token', response.token);
-      localStorage.setItem('user', JSON.stringify(response.user));
-    }
+  const login = (authToken: string, userData: User) => {
+    setUser(userData);
+    setToken(authToken);
+    localStorage.setItem('token', authToken);
+    localStorage.setItem('user', JSON.stringify(userData));
   };
 
   const logout = () => {
