@@ -26,6 +26,15 @@ export const freelancerProjectAPI = {
     }
   },
 
+  async getMyProjects(params?: any): Promise<ApiResponse> {
+    try {
+      const response = await api.get<ApiResponse>('/freelancer-projects/my', { params });
+      return response.data;
+    } catch (error) {
+      return { success: false, message: 'Failed to fetch my projects' };
+    }
+  },
+
   async createProject(projectData: any): Promise<ApiResponse> {
     try {
       const response = await api.post<ApiResponse>('/freelancer-projects', projectData);

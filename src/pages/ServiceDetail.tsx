@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Star, Clock, RefreshCw, Check, ArrowLeft, MessageSquare } from 'lucide-react';
@@ -33,8 +32,15 @@ const ServiceDetail = () => {
       setLoading(true);
       const response = await serviceAPI.getService(serviceId);
       
-      if (response.success) {
-        setService(response.data);
+      if (response.success && response.data) {
+        // Ensure the service data matches our Service type
+        const serviceData: Service = {
+          ...response.data,
+          addOns: response.data.addOns || [],
+          isActive: response.data.isActive ?? true,
+          clicks: response.data.clicks || 0
+        };
+        setService(serviceData);
       } else {
         throw new Error(response.message);
       }
@@ -77,7 +83,7 @@ const ServiceDetail = () => {
     );
   }
 
-  const isOwner = user?.id === service.freelancer._id;
+  const isOwner = user?._id === service.freelancer._id;
   const availablePlans: [string, PricingPlan][] = Object.entries(service.pricingPlans).filter(
     ([_, plan]) => plan && plan.price
   ) as [string, PricingPlan][];
