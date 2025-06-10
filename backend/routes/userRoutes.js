@@ -9,11 +9,103 @@ const {
 } = require('../controllers/userController');
 const { protect } = require('../middleware/auth');
 const { upload } = require('../middleware/upload');
+const User = require('../models/User');
 
 const router = express.Router();
 
 // Public routes
 router.get('/profile/:username', getFreelancerProfile);
+
+// Check username availability
+router.get('/check-username/:username', protect, async (req, res) => {
+  try {
+    const { username } = req.params;
+    
+    if (!username || username.length < 3) {
+      return res.status(400).json({
+        success: false,
+        message: 'Username must be at least 3 characters long'
+      });
+    }
+
+    const existingUser = await User.findOne({ 
+      username: username.toLowerCase(),
+      _id: { $ne: req.user.id } // Exclude current user
+    });
+
+    res.json({
+      success: true,
+      available: !existingUser
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Error checking username availability'
+    });
+  }
+});
+
+// Get all freelancers
+router.get('/freelancers', async (req, res) => {
+  try {
+    const { skills, category, rating, search, sort = 'rating' } = req.query;
+    
+    const filter = { 
+      role: 'freelancer',
+      isActive: true,
+      requirementsCompleted: true
+    };
+    
+    if (skills) {
+      filter['skills.name'] = { $in: skills.split(',') };
+    }
+    
+    if (rating) {
+      filter['rating.average'] = { $gte: parseFloat(rating) };
+    }
+    
+    if (search) {
+      filter.$or = [
+        { firstName: { $regex: search, $options: 'i' } },
+        { lastName: { $regex: search, $options: 'i' } },
+        { username: { $regex: search, $options: 'i' } },
+        { bio: { $regex: search, $options: 'i' } },
+        { 'skills.name': { $in: [new RegExp(search, 'i')] } }
+      ];
+    }
+
+    let sortQuery = {};
+    switch (sort) {
+      case 'rating':
+        sortQuery = { 'rating.average': -1 };
+        break;
+      case 'hourlyRate':
+        sortQuery = { hourlyRate: 1 };
+        break;
+      case 'newest':
+        sortQuery = { createdAt: -1 };
+        break;
+      default:
+        sortQuery = { 'rating.average': -1 };
+    }
+
+    const freelancers = await User.find(filter)
+      .select('firstName lastName username profilePicture bio skills hourlyRate location rating')
+      .sort(sortQuery)
+      .limit(50);
+
+    res.json({
+      success: true,
+      data: freelancers
+    });
+  } catch (error) {
+    console.error('Get freelancers error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching freelancers'
+    });
+  }
+});
 
 // Protected routes
 router.use(protect);

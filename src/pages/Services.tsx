@@ -258,9 +258,14 @@ const Services = () => {
                             {service.freelancer?.firstName?.[0]}{service.freelancer?.lastName?.[0]}
                           </AvatarFallback>
                         </Avatar>
-                        <span className="text-sm text-gray-600">
-                          {service.freelancer?.firstName} {service.freelancer?.lastName}
-                        </span>
+                        <div className="flex flex-col">
+                          <span className="text-sm text-gray-600">
+                            {service.freelancer?.firstName} {service.freelancer?.lastName}
+                          </span>
+                          {service.freelancer?.username && (
+                            <span className="text-xs text-gray-500">@{service.freelancer.username}</span>
+                          )}
+                        </div>
                       </div>
 
                       {/* Service Title */}
