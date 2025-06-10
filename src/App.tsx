@@ -4,10 +4,9 @@ import { AuthProvider } from '@/contexts/AuthContext';
 import { Toaster } from '@/components/ui/toaster';
 
 // Pages
-import Home from '@/pages/Home';
+import Index from '@/pages/Index';
 import OTPLogin from '@/pages/OTPLogin';
 import RoleSelection from '@/pages/RoleSelection';
-import RequirementsForm from '@/pages/RequirementsForm';
 import FreelancerDashboard from '@/pages/FreelancerDashboard';
 import ClientDashboard from '@/pages/ClientDashboard';
 import AdminLogin from '@/pages/AdminLogin';
@@ -17,14 +16,9 @@ import Services from '@/pages/Services';
 import ServiceDetail from '@/pages/ServiceDetail';
 import CreateService from '@/pages/CreateService';
 import MyServices from '@/pages/MyServices';
-import ClientOrderDashboard from '@/pages/ClientOrderDashboard';
 import FreelancerOrderDashboard from '@/pages/FreelancerOrderDashboard';
 import PostProject from '@/pages/PostProject';
 import FreelancerProjects from '@/pages/FreelancerProjects';
-import BrowseProjects from '@/pages/BrowseProjects';
-import ProjectDetail from '@/pages/ProjectDetail';
-import Profile from '@/pages/Profile';
-import Messaging from '@/pages/Messaging';
 
 // Components
 import ProtectedRoute from '@/components/ProtectedRoute';
@@ -36,12 +30,10 @@ function App() {
         <div className="min-h-screen bg-white">
           <Routes>
             {/* Public Routes */}
-            <Route path="/" element={<Home />} />
+            <Route path="/" element={<Index />} />
             <Route path="/otp-login" element={<OTPLogin />} />
             <Route path="/services" element={<Services />} />
             <Route path="/services/:id" element={<ServiceDetail />} />
-            <Route path="/projects" element={<BrowseProjects />} />
-            <Route path="/projects/:id" element={<ProjectDetail />} />
             
             {/* Admin Routes */}
             <Route path="/admin/login" element={<AdminLogin />} />
@@ -58,20 +50,12 @@ function App() {
                 </ProtectedRoute>
               }
             />
-            <Route
-              path="/requirements"
-              element={
-                <ProtectedRoute requireRole={false}>
-                  <RequirementsForm />
-                </ProtectedRoute>
-              }
-            />
 
             {/* Freelancer Routes */}
             <Route
               path="/freelancer/dashboard"
               element={
-                <ProtectedRoute requireRole="freelancer">
+                <ProtectedRoute requiredRole="freelancer">
                   <FreelancerDashboard />
                 </ProtectedRoute>
               }
@@ -79,7 +63,7 @@ function App() {
             <Route
               path="/freelancer/orders"
               element={
-                <ProtectedRoute requireRole="freelancer">
+                <ProtectedRoute requiredRole="freelancer">
                   <FreelancerOrderDashboard />
                 </ProtectedRoute>
               }
@@ -87,7 +71,7 @@ function App() {
             <Route
               path="/create-service"
               element={
-                <ProtectedRoute requireRole="freelancer">
+                <ProtectedRoute requiredRole="freelancer">
                   <CreateService />
                 </ProtectedRoute>
               }
@@ -95,7 +79,7 @@ function App() {
             <Route
               path="/my-services"
               element={
-                <ProtectedRoute requireRole="freelancer">
+                <ProtectedRoute requiredRole="freelancer">
                   <MyServices />
                 </ProtectedRoute>
               }
@@ -103,7 +87,7 @@ function App() {
             <Route
               path="/post-project"
               element={
-                <ProtectedRoute requireRole="freelancer">
+                <ProtectedRoute requiredRole="freelancer">
                   <PostProject />
                 </ProtectedRoute>
               }
@@ -111,7 +95,7 @@ function App() {
             <Route
               path="/freelancer-projects"
               element={
-                <ProtectedRoute requireRole="freelancer">
+                <ProtectedRoute requiredRole="freelancer">
                   <FreelancerProjects />
                 </ProtectedRoute>
               }
@@ -121,34 +105,8 @@ function App() {
             <Route
               path="/client/dashboard"
               element={
-                <ProtectedRoute requireRole="client">
+                <ProtectedRoute requiredRole="client">
                   <ClientDashboard />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/client/orders"
-              element={
-                <ProtectedRoute requireRole="client">
-                  <ClientOrderDashboard />
-                </ProtectedRoute>
-              }
-            />
-
-            {/* Common Protected Routes */}
-            <Route
-              path="/profile"
-              element={
-                <ProtectedRoute>
-                  <Profile />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/messaging"
-              element={
-                <ProtectedRoute>
-                  <Messaging />
                 </ProtectedRoute>
               }
             />
