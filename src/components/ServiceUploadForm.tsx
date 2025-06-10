@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 
 const ServiceUploadForm = ({ onSubmit, onCancel }: { 
@@ -18,19 +19,58 @@ const ServiceUploadForm = ({ onSubmit, onCancel }: {
     title: '',
     description: '',
     category: '',
+    subcategory: '',
     tags: [] as string[],
-    basicPrice: '',
-    standardPrice: '',
-    premiumPrice: '',
-    deliveryDays: '',
+    pricingPlans: {
+      basic: {
+        title: 'Basic',
+        description: '',
+        price: 0,
+        deliveryTime: 1,
+        revisions: 1,
+        features: [] as string[]
+      }
+    },
     images: [] as File[]
   });
   const [newTag, setNewTag] = useState('');
+  const [newFeature, setNewFeature] = useState('');
+
+  const categories = [
+    'web-development',
+    'mobile-development',
+    'design',
+    'writing',
+    'marketing',
+    'data-science',
+    'consulting',
+    'other'
+  ];
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setFormData({
       ...formData,
       [e.target.name]: e.target.value
+    });
+  };
+
+  const handleCategoryChange = (value: string) => {
+    setFormData({
+      ...formData,
+      category: value
+    });
+  };
+
+  const handlePricingChange = (field: string, value: string | number) => {
+    setFormData({
+      ...formData,
+      pricingPlans: {
+        ...formData.pricingPlans,
+        basic: {
+          ...formData.pricingPlans.basic,
+          [field]: value
+        }
+      }
     });
   };
 
@@ -66,13 +106,48 @@ const ServiceUploadForm = ({ onSubmit, onCancel }: {
     }));
   };
 
+  const addFeature = () => {
+    if (newFeature.trim() && !formData.pricingPlans.basic.features.includes(newFeature.trim())) {
+      setFormData(prev => ({
+        ...prev,
+        pricingPlans: {
+          ...prev.pricingPlans,
+          basic: {
+            ...prev.pricingPlans.basic,
+            features: [...prev.pricingPlans.basic.features, newFeature.trim()]
+          }
+        }
+      }));
+      setNewFeature('');
+    }
+  };
+
+  const removeFeature = (feature: string) => {
+    setFormData(prev => ({
+      ...prev,
+      pricingPlans: {
+        ...prev.pricingPlans,
+        basic: {
+          ...prev.pricingPlans.basic,
+          features: prev.pricingPlans.basic.features.filter(f => f !== feature)
+        }
+      }
+    }));
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!formData.title || !formData.description || !formData.category) {
+      toast({
+        title: "Error",
+        description: "Please fill in all required fields",
+        variant: "destructive",
+      });
+      return;
+    }
+
     onSubmit(formData);
-    toast({
-      title: "Service Created",
-      description: "Your service has been uploaded successfully!",
-    });
   };
 
   return (
@@ -83,7 +158,7 @@ const ServiceUploadForm = ({ onSubmit, onCancel }: {
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-2">
-            <Label htmlFor="title">Service Title</Label>
+            <Label htmlFor="title">Service Title *</Label>
             <Input
               id="title"
               name="title"
@@ -95,7 +170,7 @@ const ServiceUploadForm = ({ onSubmit, onCancel }: {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="description">Description</Label>
+            <Label htmlFor="description">Description *</Label>
             <Textarea
               id="description"
               name="description"
@@ -109,26 +184,30 @@ const ServiceUploadForm = ({ onSubmit, onCancel }: {
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="category">Category</Label>
-              <Input
-                id="category"
-                name="category"
-                value={formData.category}
-                onChange={handleInputChange}
-                placeholder="Web Development"
-                required
-              />
+              <Label>Category *</Label>
+              <Select value={formData.category} onValueChange={handleCategoryChange}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select category" />
+                </SelectTrigger>
+                <SelectContent>
+                  {categories.map(category => (
+                    <SelectItem key={category} value={category}>
+                      {category.split('-').map(word => 
+                        word.charAt(0).toUpperCase() + word.slice(1)
+                      ).join(' ')}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="deliveryDays">Delivery Time (Days)</Label>
+              <Label htmlFor="subcategory">Subcategory</Label>
               <Input
-                id="deliveryDays"
-                name="deliveryDays"
-                type="number"
-                value={formData.deliveryDays}
+                id="subcategory"
+                name="subcategory"
+                value={formData.subcategory}
                 onChange={handleInputChange}
-                placeholder="7"
-                required
+                placeholder="Frontend Development"
               />
             </div>
           </div>
@@ -164,40 +243,74 @@ const ServiceUploadForm = ({ onSubmit, onCancel }: {
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-4">
+          <div className="space-y-4">
+            <Label className="text-lg font-semibold">Basic Package</Label>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="basicPrice">Price (₹) *</Label>
+                <Input
+                  id="basicPrice"
+                  type="number"
+                  value={formData.pricingPlans.basic.price}
+                  onChange={(e) => handlePricingChange('price', parseFloat(e.target.value) || 0)}
+                  placeholder="500"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="deliveryTime">Delivery Time (Days) *</Label>
+                <Input
+                  id="deliveryTime"
+                  type="number"
+                  value={formData.pricingPlans.basic.deliveryTime}
+                  onChange={(e) => handlePricingChange('deliveryTime', parseInt(e.target.value) || 1)}
+                  placeholder="7"
+                  required
+                />
+              </div>
+            </div>
+
             <div className="space-y-2">
-              <Label htmlFor="basicPrice">Basic Price ($)</Label>
-              <Input
-                id="basicPrice"
-                name="basicPrice"
-                type="number"
-                value={formData.basicPrice}
-                onChange={handleInputChange}
-                placeholder="50"
-                required
+              <Label htmlFor="basicDescription">Package Description</Label>
+              <Textarea
+                id="basicDescription"
+                value={formData.pricingPlans.basic.description}
+                onChange={(e) => handlePricingChange('description', e.target.value)}
+                placeholder="What's included in this package..."
+                rows={3}
               />
             </div>
+
             <div className="space-y-2">
-              <Label htmlFor="standardPrice">Standard Price ($)</Label>
-              <Input
-                id="standardPrice"
-                name="standardPrice"
-                type="number"
-                value={formData.standardPrice}
-                onChange={handleInputChange}
-                placeholder="100"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="premiumPrice">Premium Price ($)</Label>
-              <Input
-                id="premiumPrice"
-                name="premiumPrice"
-                type="number"
-                value={formData.premiumPrice}
-                onChange={handleInputChange}
-                placeholder="200"
-              />
+              <Label>Package Features</Label>
+              <div className="flex space-x-2">
+                <Input
+                  value={newFeature}
+                  onChange={(e) => setNewFeature(e.target.value)}
+                  placeholder="Add a feature"
+                  onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addFeature())}
+                />
+                <Button type="button" onClick={addFeature} variant="outline">
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
+              <div className="flex flex-wrap gap-2 mt-2">
+                {formData.pricingPlans.basic.features.map((feature) => (
+                  <Badge key={feature} variant="secondary" className="pr-1">
+                    {feature}
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="ml-1 p-0 h-4 w-4"
+                      onClick={() => removeFeature(feature)}
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </Badge>
+                ))}
+              </div>
             </div>
           </div>
 

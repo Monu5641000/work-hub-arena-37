@@ -17,7 +17,7 @@ const router = express.Router();
 
 // Configure multer for file uploads
 const upload = multer({
-  dest: 'uploads/',
+  dest: 'uploads/services/',
   limits: {
     fileSize: 5 * 1024 * 1024, // 5MB limit
     files: 5 // Maximum 5 files
@@ -59,7 +59,7 @@ router.use(protect);
 
 // Freelancer routes
 router.get('/my/services', restrictTo('freelancer'), getMyServices);
-router.post('/', restrictTo('freelancer'), validateService, handleValidationErrors, createService);
+router.post('/', restrictTo('freelancer'), upload.array('images', 5), validateService, handleValidationErrors, createService);
 router.put('/:id', restrictTo('freelancer'), updateService);
 router.delete('/:id', restrictTo('freelancer'), deleteService);
 router.post('/:id/images', restrictTo('freelancer'), upload.array('images', 5), uploadServiceImages);

@@ -1,4 +1,3 @@
-
 const Service = require('../models/Service');
 const cloudinary = require('cloudinary').v2;
 const fs = require('fs');
@@ -104,15 +103,85 @@ exports.getService = async (req, res) => {
   }
 };
 
-// Create service
+// Create service - Updated to handle image uploads during creation
 exports.createService = async (req, res) => {
   try {
     const serviceData = {
       ...req.body,
-      freelancer: req.user.id
+      freelancer: req.user.id,
+      status: 'active', // Set as active by default
+      isActive: true    // Set as active by default
     };
 
+    // Parse pricing plans if they come as strings
+    if (typeof serviceData.pricingPlans === 'string') {
+      try {
+        serviceData.pricingPlans = JSON.parse(serviceData.pricingPlans);
+      } catch (e) {
+        console.error('Error parsing pricing plans:', e);
+      }
+    }
+
+    // Parse tags if they come as strings
+    if (typeof serviceData.tags === 'string') {
+      try {
+        serviceData.tags = JSON.parse(serviceData.tags);
+      } catch (e) {
+        // If it's a comma-separated string, split it
+        serviceData.tags = serviceData.tags.split(',').map(tag => tag.trim());
+      }
+    }
+
+    // Create the service first
     const service = await Service.create(serviceData);
+
+    // Handle image uploads if files are present
+    if (req.files && req.files.length > 0) {
+      const images = [];
+      
+      // Configure cloudinary if not already configured
+      if (!cloudinary.config().cloud_name) {
+        cloudinary.config({
+          cloud_name: process.env.CLOUDINARY_CLOUD_NAME || 'demo',
+          api_key: process.env.CLOUDINARY_API_KEY || 'demo',
+          api_secret: process.env.CLOUDINARY_API_SECRET || 'demo'
+        });
+      }
+
+      for (const file of req.files) {
+        try {
+          const result = await cloudinary.uploader.upload(file.path, {
+            folder: 'servpe/services',
+            transformation: [
+              { width: 800, height: 600, crop: 'limit' },
+              { quality: 'auto' }
+            ]
+          });
+
+          images.push({
+            url: result.secure_url,
+            alt: `${service.title} image`,
+            isPrimary: images.length === 0
+          });
+
+          // Delete temp file
+          fs.unlinkSync(file.path);
+        } catch (uploadError) {
+          console.error('Error uploading file:', uploadError);
+          // If cloudinary fails, store locally
+          const localUrl = `/uploads/services/${file.filename}`;
+          images.push({
+            url: localUrl,
+            alt: `${service.title} image`,
+            isPrimary: images.length === 0
+          });
+        }
+      }
+
+      // Update service with images
+      service.images = images;
+      await service.save();
+    }
 
     res.status(201).json({
       success: true,
@@ -233,7 +302,7 @@ exports.getMyServices = async (req, res) => {
   }
 };
 
-// Upload service images
+// Upload service images - Fixed to handle file uploads properly
 exports.uploadServiceImages = async (req, res) => {
   try {
     const service = await Service.findById(req.params.id);
@@ -252,25 +321,52 @@ exports.uploadServiceImages = async (req, res) => {
       });
     }
 
+    if (!req.files || req.files.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'No files uploaded'
+      });
+    }
+
     const images = [];
     
+    // Configure cloudinary if not already configured
+    if (!cloudinary.config().cloud_name) {
+      cloudinary.config({
+        cloud_name: process.env.CLOUDINARY_CLOUD_NAME || 'demo',
+        api_key: process.env.CLOUDINARY_API_KEY || 'demo',
+        api_secret: process.env.CLOUDINARY_API_SECRET || 'demo'
+      });
+    }
+
     for (const file of req.files) {
-      const result = await cloudinary.uploader.upload(file.path, {
-        folder: 'servpe/services',
-        transformation: [
-          { width: 800, height: 600, crop: 'limit' },
-          { quality: 'auto' }
-        ]
-      });
+      try {
+        const result = await cloudinary.uploader.upload(file.path, {
+          folder: 'servpe/services',
+          transformation: [
+            { width: 800, height: 600, crop: 'limit' },
+            { quality: 'auto' }
+          ]
+        });
 
-      images.push({
-        url: result.secure_url,
-        alt: `${service.title} image`,
-        isPrimary: images.length === 0
-      });
+        images.push({
+          url: result.secure_url,
+          alt: `${service.title} image`,
+          isPrimary: images.length === 0
+        });
 
-      // Delete temp file
-      fs.unlinkSync(file.path);
+        // Delete temp file
+        fs.unlinkSync(file.path);
+      } catch (uploadError) {
+        console.error('Error uploading file:', uploadError);
+        // If cloudinary fails, store locally
+        const localUrl = `/uploads/services/${file.filename}`;
+        images.push({
+          url: localUrl,
+          alt: `${service.title} image`,
+          isPrimary: images.length === 0
+        });
+      }
     }
 
     service.images = [...service.images, ...images];

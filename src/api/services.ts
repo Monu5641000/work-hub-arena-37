@@ -28,8 +28,34 @@ export const serviceAPI = {
   },
 
   async createService(serviceData: any): Promise<ApiResponse<Service>> {
-    const response = await api.post<ApiResponse<Service>>('/services', serviceData);
-    return response.data;
+    try {
+      // First create the service
+      const formData = new FormData();
+      
+      // Add text fields
+      formData.append('title', serviceData.title);
+      formData.append('description', serviceData.description);
+      formData.append('category', serviceData.category);
+      if (serviceData.subcategory) formData.append('subcategory', serviceData.subcategory);
+      formData.append('tags', JSON.stringify(serviceData.tags));
+      formData.append('pricingPlans', JSON.stringify(serviceData.pricingPlans));
+      
+      // Add images if they exist
+      if (serviceData.images && serviceData.images.length > 0) {
+        serviceData.images.forEach((image: File) => {
+          formData.append('images', image);
+        });
+      }
+
+      const response = await api.post<ApiResponse<Service>>('/services', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      
+      return response.data;
+    } catch (error) {
+      console.error('Create service error:', error);
+      throw error;
+    }
   },
 
   async updateService(id: string, serviceData: any): Promise<ApiResponse<Service>> {
