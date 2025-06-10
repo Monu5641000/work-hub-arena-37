@@ -37,6 +37,7 @@ const ServiceDetail = () => {
         // Ensure the service data matches our Service type
         const serviceData: Service = {
           ...response.data,
+          subcategory: response.data.subcategory || response.data.category,
           addOns: response.data.addOns?.map((addon: any) => ({
             title: addon.title || addon.name || 'Add-on',
             description: addon.description || 'Additional service',

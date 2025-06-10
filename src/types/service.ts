@@ -40,7 +40,7 @@ export interface Service {
   title: string;
   description: string;
   category: string;
-  subcategory: string;
+  subcategory?: string;
   tags: string[];
   freelancer: ServiceFreelancer;
   images: ServiceImage[];
