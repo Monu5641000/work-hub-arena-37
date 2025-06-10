@@ -9,6 +9,7 @@ export interface User {
   whatsappNumber?: string;
   role: 'client' | 'freelancer' | 'admin';
   roleSelected: boolean;
+  needsRoleSelection?: boolean;
   authProvider: 'otpless' | 'google' | 'email';
   otplessUserId?: string;
   googleId?: string;
@@ -50,7 +51,8 @@ export interface User {
 export interface AuthContextType {
   user: User | null;
   token: string | null;
-  login: (userData: User, authToken: string) => void;
+  isLoading: boolean;
+  login: (token: string, userData: User) => void;
   logout: () => void;
   updateUser: (userData: Partial<User>) => void;
 }

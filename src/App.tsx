@@ -45,7 +45,7 @@ function App() {
             <Route
               path="/role-selection"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute requireRoleSelection={false}>
                   <RoleSelection />
                 </ProtectedRoute>
               }
@@ -54,6 +54,14 @@ function App() {
             {/* Freelancer Routes */}
             <Route
               path="/freelancer/dashboard"
+              element={
+                <ProtectedRoute requiredRole="freelancer">
+                  <FreelancerDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/dashboard/freelancer"
               element={
                 <ProtectedRoute requiredRole="freelancer">
                   <FreelancerDashboard />
@@ -104,6 +112,14 @@ function App() {
             {/* Client Routes */}
             <Route
               path="/client/dashboard"
+              element={
+                <ProtectedRoute requiredRole="client">
+                  <ClientDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/dashboard/client"
               element={
                 <ProtectedRoute requiredRole="client">
                   <ClientDashboard />
