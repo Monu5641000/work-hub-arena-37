@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Star, Clock, RefreshCw, Check, ArrowLeft, MessageSquare } from 'lucide-react';
@@ -37,7 +36,12 @@ const ServiceDetail = () => {
         // Ensure the service data matches our Service type
         const serviceData: Service = {
           ...response.data,
-          addOns: response.data.addOns || [],
+          addOns: response.data.addOns?.map((addon: any) => ({
+            title: addon.title || addon.name || 'Add-on',
+            description: addon.description || 'Additional service',
+            price: addon.price || 0,
+            deliveryTime: addon.deliveryTime || 1
+          })) || [],
           isActive: response.data.isActive ?? true,
           clicks: response.data.clicks || 0,
           images: response.data.images?.map((img: any) => ({

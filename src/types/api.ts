@@ -85,18 +85,24 @@ export interface Service {
   }[];
   pricingPlans: {
     basic: {
+      title?: string;
+      description?: string;
       price: number;
       deliveryTime: number;
       revisions: number;
       features: string[];
     };
     standard?: {
+      title?: string;
+      description?: string;
       price: number;
       deliveryTime: number;
       revisions: number;
       features: string[];
     };
     premium?: {
+      title?: string;
+      description?: string;
       price: number;
       deliveryTime: number;
       revisions: number;
@@ -104,7 +110,8 @@ export interface Service {
     };
   };
   addOns?: {
-    name: string;
+    title: string;
+    description: string;
     price: number;
     deliveryTime: number;
   }[];
