@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Star, Clock, RefreshCw, Check, ArrowLeft, MessageSquare } from 'lucide-react';
@@ -44,6 +45,11 @@ const ServiceDetail = () => {
           })) || [],
           isActive: response.data.isActive ?? true,
           clicks: response.data.clicks || 0,
+          status: response.data.status || 'active',
+          averageRating: response.data.averageRating || 0,
+          totalReviews: response.data.totalReviews || 0,
+          impressions: response.data.impressions || 0,
+          orders: response.data.orders || 0,
           images: response.data.images?.map((img: any) => ({
             url: img.url,
             alt: img.alt || response.data.title || 'Service image',
