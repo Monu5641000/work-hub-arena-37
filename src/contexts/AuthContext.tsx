@@ -1,42 +1,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { authAPI } from '@/api/auth';
-
-interface User {
-  _id: string;
-  firstName: string;
-  lastName: string;
-  fullName?: string;
-  email?: string;
-  phoneNumber?: string;
-  role?: 'client' | 'freelancer' | 'admin';
-  profilePicture?: string;
-  needsRoleSelection?: boolean;
-  roleSelected?: boolean;
-  isVerified: boolean;
-  location?: string;
-  bio?: string;
-  skills?: Array<{
-    name: string;
-    level: 'beginner' | 'intermediate' | 'expert';
-  }>;
-  hourlyRate?: number;
-  rating?: {
-    average: number;
-    count: number;
-  };
-  createdAt: string;
-  updatedAt: string;
-}
-
-interface AuthContextType {
-  user: User | null;
-  token: string | null;
-  isLoading: boolean;
-  login: (token: string, userData: User) => void;
-  logout: () => void;
-  updateUser: (userData: Partial<User>) => void;
-}
+import { User, AuthContextType } from '@/types/user';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 

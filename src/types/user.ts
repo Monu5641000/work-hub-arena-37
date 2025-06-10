@@ -15,11 +15,7 @@ export interface User {
   requirements?: any;
   requirementsCompleted: boolean;
   profilePicture?: string;
-  location?: {
-    country?: string;
-    city?: string;
-    address?: string;
-  };
+  location?: string;
   skills?: Array<{
     name: string;
     level: 'beginner' | 'intermediate' | 'expert';
