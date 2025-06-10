@@ -5,17 +5,18 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { ApiResponse, UsernameCheckResponse } from '@/types/api';
 import axios from 'axios';
 
 const API_BASE_URL = 'http://localhost:5000/api';
 
 const UsernameSettings = () => {
-  const { user, token } = useAuth();
+  const { user, token, updateUser } = useAuth();
   const { toast } = useToast();
   const [username, setUsername] = useState(user?.username || '');
   const [loading, setLoading] = useState(false);
   const [checking, setChecking] = useState(false);
-  const [isAvailable, setIsAvailable] = useState(null);
+  const [isAvailable, setIsAvailable] = useState<boolean | null>(null);
 
   const checkUsername = async (usernameToCheck: string) => {
     if (!usernameToCheck || usernameToCheck.length < 3) {
@@ -25,7 +26,7 @@ const UsernameSettings = () => {
 
     try {
       setChecking(true);
-      const response = await axios.get(`${API_BASE_URL}/users/check-username/${usernameToCheck}`, {
+      const response = await axios.get<UsernameCheckResponse>(`${API_BASE_URL}/users/check-username/${usernameToCheck}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setIsAvailable(response.data.available);
@@ -40,7 +41,9 @@ const UsernameSettings = () => {
   const handleUsernameChange = (value: string) => {
     setUsername(value);
     // Check username availability after user stops typing
-    clearTimeout(window.usernameTimeout);
+    if (window.usernameTimeout) {
+      clearTimeout(window.usernameTimeout);
+    }
     window.usernameTimeout = setTimeout(() => checkUsername(value), 500);
   };
 
@@ -65,7 +68,7 @@ const UsernameSettings = () => {
 
     try {
       setLoading(true);
-      const response = await axios.put(`${API_BASE_URL}/users/profile`, 
+      const response = await axios.put<ApiResponse>(`${API_BASE_URL}/users/profile`, 
         { username },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -75,8 +78,10 @@ const UsernameSettings = () => {
           title: "Success",
           description: "Username updated successfully",
         });
-        // Update user context if needed
-        window.location.reload();
+        // Update user context
+        if (user) {
+          updateUser({ ...user, username });
+        }
       }
     } catch (error: any) {
       console.error('Update username error:', error);

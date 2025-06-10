@@ -1,100 +1,237 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { Menu, X, Search, Bell, User, Settings, LogOut, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/contexts/AuthContext';
-import UserMenu from '@/components/UserMenu';
-import { Sparkles, ChevronRight } from 'lucide-react';
 
 const Navbar = () => {
-  const { user, token } = useAuth();
   const navigate = useNavigate();
+  const { user, logout } = useAuth();
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
-  const getNavItems = () => {
-    if (!user || !token) {
-      return [
-        { label: 'Services', href: '/services' },
-        { label: 'Find Freelancers', href: '/find-freelancers' },
-      ];
+  const handleLogout = () => {
+    logout();
+    navigate('/');
+  };
+
+  const getDashboardRoute = () => {
+    if (!user) return '/otp-login';
+    
+    switch (user.role) {
+      case 'freelancer':
+        return '/freelancer/dashboard';
+      case 'client':
+        return '/client/dashboard';
+      case 'admin':
+        return '/admin/dashboard';
+      default:
+        return '/role-selection';
     }
-
-    const baseItems = [
-      { label: 'Services', href: '/services' },
-      { label: 'Find Freelancers', href: '/find-freelancers' },
-    ];
-
-    if (user.role === 'client') {
-      return [
-        ...baseItems,
-        { label: 'Dashboard', href: '/client/dashboard' },
-        { label: 'My Orders', href: '/client/orders' },
-        { label: 'Post Project', href: '/post-project' },
-        { label: 'Messages', href: '/messages' },
-      ];
-    }
-
-    if (user.role === 'freelancer') {
-      return [
-        ...baseItems,
-        { label: 'Dashboard', href: '/freelancer/dashboard' },
-        { label: 'My Services', href: '/my-services' },
-        { label: 'Orders', href: '/freelancer/orders' },
-        { label: 'Proposals', href: '/my-proposals' },
-        { label: 'Messages', href: '/messages' },
-      ];
-    }
-
-    if (user.role === 'admin') {
-      return [
-        { label: 'Admin Dashboard', href: '/admin/dashboard' },
-        { label: 'Users', href: '/admin/users' },
-        { label: 'Categories', href: '/admin/categories' },
-      ];
-    }
-
-    return baseItems;
   };
 
   return (
-    <nav className="glass border-b border-gray-200 sticky top-0 z-50">
+    <nav className="bg-white border-b border-gray-200 sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between h-16">
+        <div className="flex justify-between items-center h-16">
+          {/* Logo */}
           <div className="flex items-center">
-            <Link to="/" className="flex items-center group">
-              <Sparkles className="w-6 h-6 text-purple-400 animate-pulse-glow mr-2" />
-              <span className="text-2xl font-bold text-gradient-purple hover:scale-105 transition-all duration-300">Servpe</span>
+            <Link to="/" className="text-2xl font-bold text-blue-600">
+              FreelancePlatform
             </Link>
           </div>
 
+          {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-8">
-            {getNavItems().map((item) => (
-              <Link
-                key={item.href}
-                to={item.href}
-                className="text-gray-700 hover:text-gray-900 px-3 py-2 text-sm font-medium transition-all duration-300 hover:scale-105 relative group"
-              >
-                {item.label}
-                <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-purple-400 to-pink-600 group-hover:w-full transition-all duration-300"></span>
+            <Link to="/services" className="text-gray-600 hover:text-gray-900">
+              Browse Services
+            </Link>
+            <Link to="/projects" className="text-gray-600 hover:text-gray-900">
+              Browse Projects
+            </Link>
+            {user && (
+              <Link to="/messaging" className="text-gray-600 hover:text-gray-900">
+                Messages
               </Link>
-            ))}
-          </div>
-
-          <div className="flex items-center space-x-4">
-            {!token ? (
-              <>
-                <Button variant="ghost" onClick={() => navigate('/otp-login')} className="text-gray-900 border-gray-300 hover:bg-gray-100 btn-3d">
-                  Login
-                </Button>
-                <Button onClick={() => navigate('/otp-login')} className="bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 btn-3d group">
-                  Get Started
-                  <ChevronRight className="ml-2 h-4 w-4 arrow-hover" />
-                </Button>
-              </>
-            ) : (
-              <UserMenu />
             )}
           </div>
+
+          {/* Search Bar */}
+          <div className="hidden md:flex flex-1 max-w-md mx-8">
+            <div className="relative w-full">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <Input
+                type="text"
+                placeholder="Search services or projects..."
+                className="pl-10 w-full"
+              />
+            </div>
+          </div>
+
+          {/* User Menu */}
+          <div className="flex items-center space-x-4">
+            {user ? (
+              <>
+                {/* Notifications */}
+                <Button variant="ghost" size="sm">
+                  <Bell className="h-5 w-5" />
+                </Button>
+
+                {/* User Dropdown */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger>
+                    <Avatar className="h-8 w-8 cursor-pointer">
+                      <AvatarImage src={user.profilePicture} />
+                      <AvatarFallback>
+                        {user.firstName[0]}{user.lastName[0]}
+                      </AvatarFallback>
+                    </Avatar>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-56">
+                    <div className="px-3 py-2">
+                      <p className="text-sm font-medium">{user.firstName} {user.lastName}</p>
+                      <p className="text-xs text-gray-500">{user.email}</p>
+                    </div>
+                    <DropdownMenuSeparator />
+                    
+                    <DropdownMenuItem onClick={() => navigate(getDashboardRoute())}>
+                      <User className="mr-2 h-4 w-4" />
+                      Dashboard
+                    </DropdownMenuItem>
+                    
+                    <DropdownMenuItem onClick={() => navigate('/profile')}>
+                      <Settings className="mr-2 h-4 w-4" />
+                      Profile Settings
+                    </DropdownMenuItem>
+
+                    {user.role === 'freelancer' && (
+                      <>
+                        <DropdownMenuItem onClick={() => navigate('/my-services')}>
+                          <User className="mr-2 h-4 w-4" />
+                          My Services
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => navigate('/freelancer/orders')}>
+                          <User className="mr-2 h-4 w-4" />
+                          My Orders
+                        </DropdownMenuItem>
+                      </>
+                    )}
+
+                    {user.role === 'client' && (
+                      <DropdownMenuItem onClick={() => navigate('/client/orders')}>
+                        <User className="mr-2 h-4 w-4" />
+                        My Orders
+                      </DropdownMenuItem>
+                    )}
+
+                    <DropdownMenuSeparator />
+                    
+                    <DropdownMenuItem onClick={handleLogout}>
+                      <LogOut className="mr-2 h-4 w-4" />
+                      Logout
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </>
+            ) : (
+              <div className="flex items-center space-x-3">
+                <Button 
+                  variant="outline" 
+                  onClick={() => navigate('/otp-login')}
+                >
+                  Sign In
+                </Button>
+                <Button 
+                  onClick={() => navigate('/otp-login')}
+                  className="bg-blue-600 hover:bg-blue-700"
+                >
+                  Get Started
+                </Button>
+                <Button 
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => navigate('/admin/login')}
+                  className="text-red-600 hover:text-red-700"
+                >
+                  <Shield className="h-4 w-4 mr-1" />
+                  Admin
+                </Button>
+              </div>
+            )}
+
+            {/* Mobile menu button */}
+            <div className="md:hidden">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsMenuOpen(!isMenuOpen)}
+              >
+                {isMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+              </Button>
+            </div>
+          </div>
         </div>
+
+        {/* Mobile Navigation */}
+        {isMenuOpen && (
+          <div className="md:hidden border-t border-gray-200 py-4">
+            <div className="space-y-2">
+              <Link
+                to="/services"
+                className="block px-3 py-2 text-gray-600 hover:text-gray-900"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                Browse Services
+              </Link>
+              <Link
+                to="/projects"
+                className="block px-3 py-2 text-gray-600 hover:text-gray-900"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                Browse Projects
+              </Link>
+              {user && (
+                <Link
+                  to="/messaging"
+                  className="block px-3 py-2 text-gray-600 hover:text-gray-900"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  Messages
+                </Link>
+              )}
+              {!user && (
+                <Link
+                  to="/admin/login"
+                  className="block px-3 py-2 text-red-600 hover:text-red-700"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  Admin Login
+                </Link>
+              )}
+            </div>
+            
+            {/* Mobile Search */}
+            <div className="mt-4 px-3">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                <Input
+                  type="text"
+                  placeholder="Search..."
+                  className="pl-10 w-full"
+                />
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </nav>
   );

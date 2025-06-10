@@ -7,7 +7,8 @@ const {
   getMe,
   updateProfile,
   changePassword,
-  updateRequirements
+  updateRequirements,
+  adminLogin
 } = require('../controllers/authController');
 const {
   sendOTP,
@@ -29,6 +30,7 @@ router.post('/google-login', googleLogin);
 // Traditional auth routes
 router.post('/register', validateRegistration, handleValidationErrors, register);
 router.post('/login', validateLogin, handleValidationErrors, login);
+router.post('/admin-login', adminLogin);
 router.get('/logout', logout);
 
 // Protected routes

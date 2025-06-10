@@ -11,6 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import ServiceOrderForm from '@/components/ServiceOrderForm';
 import { Service, PricingPlan } from '@/types/service';
+import { ApiResponse } from '@/types/api';
 
 const ServiceDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -31,7 +32,7 @@ const ServiceDetail = () => {
   const loadService = async (serviceId: string) => {
     try {
       setLoading(true);
-      const response = await serviceAPI.getService(serviceId);
+      const response: ApiResponse<Service> = await serviceAPI.getService(serviceId);
       
       if (response.success && response.data) {
         // Ensure the service data matches our Service type

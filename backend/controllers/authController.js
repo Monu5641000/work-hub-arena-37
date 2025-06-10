@@ -1,25 +1,59 @@
 
 const User = require('../models/User');
+const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const { validationResult } = require('express-validator');
 
-// Generate JWT token
 const generateToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, {
-    expiresIn: process.env.JWT_EXPIRE || '7d'
+    expiresIn: process.env.JWT_EXPIRE || '30d',
   });
 };
 
-// Register user
-exports.register = async (req, res) => {
-  try {
-    const { firstName, lastName, email, password, role } = req.body;
+const sendTokenResponse = (user, statusCode, res) => {
+  const token = generateToken(user._id);
 
-    // Check if user already exists
+  res.status(statusCode).json({
+    success: true,
+    token,
+    user: {
+      _id: user._id,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      username: user.username,
+      email: user.email,
+      phoneNumber: user.phoneNumber,
+      role: user.role,
+      roleSelected: user.roleSelected,
+      profilePicture: user.profilePicture,
+      isActive: user.isActive,
+      isVerified: user.isVerified,
+    },
+  });
+};
+
+// @desc    Register user
+// @route   POST /api/auth/register
+// @access  Public
+const register = async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        success: false,
+        message: 'Validation failed',
+        errors: errors.array()
+      });
+    }
+
+    const { firstName, lastName, email, password } = req.body;
+
+    // Check if user exists
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       return res.status(400).json({
         success: false,
-        message: 'User already exists with this email'
+        message: 'User with this email already exists'
       });
     }
 
@@ -29,36 +63,36 @@ exports.register = async (req, res) => {
       lastName,
       email,
       password,
-      role
+      authProvider: 'email'
     });
 
-    // Generate token
-    const token = generateToken(user._id);
-
-    // Remove password from response
-    user.password = undefined;
-
-    res.status(201).json({
-      success: true,
-      token,
-      user
-    });
+    sendTokenResponse(user, 201, res);
   } catch (error) {
-    console.error('Registration error:', error);
+    console.error('Register error:', error);
     res.status(500).json({
       success: false,
-      message: 'Registration failed',
-      error: error.message
+      message: 'Error creating user'
     });
   }
 };
 
-// Login user
-exports.login = async (req, res) => {
+// @desc    Login user
+// @route   POST /api/auth/login
+// @access  Public
+const login = async (req, res) => {
   try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        success: false,
+        message: 'Validation failed',
+        errors: errors.array()
+      });
+    }
+
     const { email, password } = req.body;
 
-    // Check if user exists and get password
+    // Check for user
     const user = await User.findOne({ email }).select('+password');
     if (!user) {
       return res.status(401).json({
@@ -68,19 +102,11 @@ exports.login = async (req, res) => {
     }
 
     // Check password
-    const isPasswordValid = await user.comparePassword(password);
-    if (!isPasswordValid) {
+    const isMatch = await user.comparePassword(password);
+    if (!isMatch) {
       return res.status(401).json({
         success: false,
         message: 'Invalid credentials'
-      });
-    }
-
-    // Check if account is active
-    if (!user.isActive) {
-      return res.status(401).json({
-        success: false,
-        message: 'Your account has been deactivated'
       });
     }
 
@@ -88,44 +114,97 @@ exports.login = async (req, res) => {
     user.lastLogin = new Date();
     await user.save();
 
-    // Generate token
-    const token = generateToken(user._id);
-
-    // Remove password from response
-    user.password = undefined;
-
-    res.status(200).json({
-      success: true,
-      token,
-      user
-    });
+    sendTokenResponse(user, 200, res);
   } catch (error) {
     console.error('Login error:', error);
     res.status(500).json({
       success: false,
-      message: 'Login failed',
-      error: error.message
+      message: 'Error logging in'
     });
   }
 };
 
-// Logout user
-exports.logout = (req, res) => {
+// @desc    Admin login
+// @route   POST /api/auth/admin-login
+// @access  Public
+const adminLogin = async (req, res) => {
+  try {
+    const { username, password } = req.body;
+
+    if (!username || !password) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide username and password'
+      });
+    }
+
+    // For demo purposes - in production, store admin credentials securely
+    const adminCredentials = {
+      username: 'admin',
+      password: 'admin123'
+    };
+
+    if (username !== adminCredentials.username || password !== adminCredentials.password) {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid admin credentials'
+      });
+    }
+
+    // Find or create admin user
+    let adminUser = await User.findOne({ email: 'admin@freelanceplatform.com' });
+    
+    if (!adminUser) {
+      adminUser = await User.create({
+        firstName: 'System',
+        lastName: 'Administrator',
+        username: 'admin',
+        email: 'admin@freelanceplatform.com',
+        role: 'admin',
+        roleSelected: true,
+        authProvider: 'email',
+        requirementsCompleted: true,
+        isVerified: true
+      });
+    }
+
+    // Update last login
+    adminUser.lastLogin = new Date();
+    await adminUser.save();
+
+    sendTokenResponse(adminUser, 200, res);
+  } catch (error) {
+    console.error('Admin login error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error logging in as admin'
+    });
+  }
+};
+
+// @desc    Logout user
+// @route   GET /api/auth/logout
+// @access  Public
+const logout = (req, res) => {
   res.status(200).json({
     success: true,
-    message: 'Logged out successfully'
+    message: 'User logged out successfully'
   });
 };
 
-// Get current user
-exports.getMe = async (req, res) => {
+// @desc    Get current logged in user
+// @route   GET /api/auth/me
+// @access  Private
+const getMe = async (req, res) => {
   try {
     const user = await User.findById(req.user.id);
+    
     res.status(200).json({
       success: true,
-      user
+      data: user
     });
   } catch (error) {
+    console.error('Get me error:', error);
     res.status(500).json({
       success: false,
       message: 'Error fetching user data'
@@ -133,24 +212,36 @@ exports.getMe = async (req, res) => {
   }
 };
 
-// Update profile
-exports.updateProfile = async (req, res) => {
+// @desc    Update user profile
+// @route   PUT /api/auth/profile
+// @access  Private
+const updateProfile = async (req, res) => {
   try {
-    const allowedFields = [
-      'firstName', 'lastName', 'phone', 'location', 'bio', 
-      'skills', 'hourlyRate', 'experience', 'education', 'portfolio'
-    ];
+    const fieldsToUpdate = {
+      firstName: req.body.firstName,
+      lastName: req.body.lastName,
+      username: req.body.username,
+      phoneNumber: req.body.phoneNumber,
+      whatsappNumber: req.body.whatsappNumber,
+      bio: req.body.bio,
+      location: req.body.location,
+      skills: req.body.skills,
+      hourlyRate: req.body.hourlyRate,
+      portfolio: req.body.portfolio,
+      experience: req.body.experience,
+      education: req.body.education
+    };
 
-    const updateData = {};
-    allowedFields.forEach(field => {
-      if (req.body[field] !== undefined) {
-        updateData[field] = req.body[field];
+    // Remove undefined fields
+    Object.keys(fieldsToUpdate).forEach(key => {
+      if (fieldsToUpdate[key] === undefined) {
+        delete fieldsToUpdate[key];
       }
     });
 
     const user = await User.findByIdAndUpdate(
       req.user.id,
-      updateData,
+      fieldsToUpdate,
       {
         new: true,
         runValidators: true
@@ -159,26 +250,29 @@ exports.updateProfile = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      user
+      data: user
     });
   } catch (error) {
-    res.status(500).json({
+    console.error('Update profile error:', error);
+    res.status(400).json({
       success: false,
-      message: 'Error updating profile',
-      error: error.message
+      message: error.message
     });
   }
 };
 
-// Change password
-exports.changePassword = async (req, res) => {
+// @desc    Change password
+// @route   PUT /api/auth/change-password
+// @access  Private
+const changePassword = async (req, res) => {
   try {
     const { currentPassword, newPassword } = req.body;
 
     const user = await User.findById(req.user.id).select('+password');
-    
-    const isCurrentPasswordValid = await user.comparePassword(currentPassword);
-    if (!isCurrentPasswordValid) {
+
+    // Check current password
+    const isMatch = await user.comparePassword(currentPassword);
+    if (!isMatch) {
       return res.status(400).json({
         success: false,
         message: 'Current password is incorrect'
@@ -190,19 +284,21 @@ exports.changePassword = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      message: 'Password changed successfully'
+      message: 'Password updated successfully'
     });
   } catch (error) {
+    console.error('Change password error:', error);
     res.status(500).json({
       success: false,
-      message: 'Error changing password',
-      error: error.message
+      message: 'Error changing password'
     });
   }
 };
 
-// Update requirements
-exports.updateRequirements = async (req, res) => {
+// @desc    Update user requirements
+// @route   PUT /api/auth/requirements
+// @access  Private
+const updateRequirements = async (req, res) => {
   try {
     const user = await User.findByIdAndUpdate(
       req.user.id,
@@ -218,13 +314,24 @@ exports.updateRequirements = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      user
+      data: user
     });
   } catch (error) {
-    res.status(500).json({
+    console.error('Update requirements error:', error);
+    res.status(400).json({
       success: false,
-      message: 'Error updating requirements',
-      error: error.message
+      message: error.message
     });
   }
+};
+
+module.exports = {
+  register,
+  login,
+  adminLogin,
+  logout,
+  getMe,
+  updateProfile,
+  changePassword,
+  updateRequirements
 };

@@ -1,17 +1,11 @@
 
 export interface PricingPlan {
-  title?: string;
-  description?: string;
+  title: string;
+  description: string;
   price: number;
   deliveryTime: number;
   revisions: number;
   features: string[];
-}
-
-export interface ServicePricingPlans {
-  basic: PricingPlan;
-  standard?: PricingPlan;
-  premium?: PricingPlan;
 }
 
 export interface ServiceImage {
@@ -27,12 +21,16 @@ export interface ServiceAddOn {
   deliveryTime: number;
 }
 
-export interface ServiceFreelancer {
+export interface Freelancer {
   _id: string;
   firstName: string;
   lastName: string;
-  profilePicture?: string;
   username?: string;
+  profilePicture?: string;
+  rating?: {
+    average: number;
+    count: number;
+  };
 }
 
 export interface Service {
@@ -42,16 +40,20 @@ export interface Service {
   category: string;
   subcategory?: string;
   tags: string[];
-  freelancer: ServiceFreelancer;
-  images: ServiceImage[];
-  pricingPlans: ServicePricingPlans;
+  pricingPlans: {
+    basic: PricingPlan;
+    standard?: PricingPlan;
+    premium?: PricingPlan;
+  };
   addOns: ServiceAddOn[];
-  status: string;
+  images: ServiceImage[];
+  freelancer: Freelancer;
   isActive: boolean;
+  clicks: number;
+  status: 'active' | 'paused' | 'draft' | 'pending';
   averageRating: number;
   totalReviews: number;
   impressions: number;
-  clicks: number;
   orders: number;
   createdAt: string;
   updatedAt: string;
