@@ -33,3 +33,85 @@ export interface User {
   createdAt: string;
   updatedAt: string;
 }
+
+export interface Project {
+  _id: string;
+  title: string;
+  description: string;
+  category: string;
+  subcategory?: string;
+  skills: string[];
+  budget: {
+    type: 'fixed' | 'hourly';
+    amount: number;
+    currency: string;
+  };
+  duration: string;
+  client: User;
+  status: 'open' | 'in_progress' | 'completed' | 'cancelled';
+  proposals?: Proposal[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Proposal {
+  _id: string;
+  project: Project | string;
+  freelancer: User;
+  coverLetter: string;
+  proposedBudget: {
+    amount: number;
+    currency: string;
+  };
+  deliveryTime: number;
+  status: 'pending' | 'accepted' | 'rejected';
+  attachments?: string[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Service {
+  _id: string;
+  title: string;
+  description: string;
+  category: string;
+  subcategory?: string;
+  tags: string[];
+  freelancer: User;
+  images: {
+    url: string;
+    alt: string;
+    isPrimary: boolean;
+  }[];
+  pricingPlans: {
+    basic: {
+      price: number;
+      deliveryTime: number;
+      revisions: number;
+      features: string[];
+    };
+    standard?: {
+      price: number;
+      deliveryTime: number;
+      revisions: number;
+      features: string[];
+    };
+    premium?: {
+      price: number;
+      deliveryTime: number;
+      revisions: number;
+      features: string[];
+    };
+  };
+  addOns?: {
+    name: string;
+    price: number;
+    deliveryTime: number;
+  }[];
+  isActive: boolean;
+  clicks: number;
+  rating?: number;
+  reviewCount?: number;
+  createdAt: string;
+  updatedAt: string;
+}
